@@ -1,23 +1,16 @@
 /**
- * File:
- *   clients/proposal_tv.ycp
- *
- * Package:
- *   Configuration of tv
- *
- * Summary:
- *   Proposal function dispatcher.
- *
- * Authors:
- *   Jan Holesovsky <kendy@suse.cz>
+ * File:	clients/tv_proposal.ycp
+ * Package:	Configuration of TV cards
+ * Summary:	Proposal function dispatcher.
+ * Authors:	Jan Holesovsky <kendy@suse.cz>
  *
  * $Id$
  *
  * Proposal function dispatcher for tv configuration.
- *
  */
 
 {
+
     textdomain "tv";
 
     import "Tv";
@@ -109,4 +102,6 @@
     }
 
     return ret;
+
+/* EOF */
 }
