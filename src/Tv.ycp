@@ -308,14 +308,16 @@
     {
         // Popup text (required application are %1 and %2):
         InstallApplication (["kradio", tv_app], sformat(_("<p>To watch TV and listen to radio on your computer, you can use
-the <b>%1</b> and <b>%2</b> applications. None of them is currently not
-installed. Install now?</p>"), tv_app, "kradio"));
+the <b>%1</b> and <b>%2</b> applications. They are not currently 
+installed. Install now?</p>
+"), tv_app, "kradio"));
     }
     else if (tv && !tv_app_installed)
 	{
         // Popup text (required application is %1):
-        InstallApplication ([tv_app], sformat(_("<p>If you want to watch TV on your screen, you need the <b>%1</b> application.
-It is currently not installed. Do you want to install it now?</p>"), tv_app));
+        InstallApplication ([tv_app], sformat(_("<p>To watch TV on your screen, the <b>%1</b> application is required.
+It is currently not installed. Install it now?</p>
+"), tv_app));
     }
     else if (radio && !radio_app_installed && tv_app == "kwintv")
     {
@@ -453,7 +455,7 @@ It is currently not installed. Install it now?</p>"), "kradio"));
             `RichText (`id(`rt), text),
             `CheckBox (`id(`ch), `opt(`notify),
                 // checkbox label
-                _("Don't show this message &again")),
+                _("Do Not Show This Message &Again")),
             `HBox(
               `PushButton (`id(`ok),`opt(`key_F10), Label::YesButton()),
               `PushButton (`id(`cancel),`opt(`key_F9), Label::NoButton())
