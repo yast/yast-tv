@@ -795,6 +795,103 @@ available kernel modules."));
     }
 
 
+    define boolean InstallFWCard(string card, string source, string target) {
+	boolean ret = true;
+
+	// is the firmware already installed?
+	if (SCR::Read(.target.size, target) > 0)
+	{
+	    y2milestone("Required firmware (%1) is already installed", target);
+	    return true;
+	}
+
+
+	// popup dialog - ask user for driver CD
+	if (Popup::ContinueCancel(sformat(_("TV card '%1'\nrequires firmware installtion to work.\n\nPlease insert driver CD for this card."), card)) == true)
+	{
+	    // detect CD-ROM devices
+	    list<map> cdroms = (list<map>) SCR::Read(.probe.cdrom);
+
+	    // create mount point
+	    string mpoint = tmpdir + "/mpoint";
+
+	    SCR::Execute(.target.mkdir, mpoint);
+
+	    boolean firmware_found = false;
+
+	    foreach(map cdrom, cdroms, {
+		    string cddevice = cdrom["dev_name"]:"";
+
+		    if (!firmware_found && cddevice != "" && cddevice != nil)
+		    {
+			// mount the CD-ROM device
+			boolean result = (boolean) SCR::Execute(.target.mount, [cddevice, mpoint], "-o ro");
+
+			// start search
+			string search = sformat("/usr/bin/find '%1' -name '%2'", mpoint, source);
+			map out = (map) SCR::Execute(.target.bash_output, search);
+
+			// check results
+			if (out["exit"]:-1 == 0)
+			{
+			    string output = out["stdout"]:"";
+
+			    list<string> foundfiles = splitstring(output, "\n");
+
+			    if (size(foundfiles) > 1)
+			    {
+				y2warning("Found firmwares: %1, using: %2", foundfiles, foundfiles[0]:"");
+			    }
+
+			    string firmware = foundfiles[0]:"";
+
+			    if (firmware != "")
+			    {
+				// copy the firmware
+				string copy = sformat("/bin/cp '%1' '%2'", firmware, target);
+				y2milestone("copying firmware %1 -> %2", firmware, target);
+
+				integer result = (integer) SCR::Execute(.target.bash, copy);
+				ret = (result == 0);
+
+				firmware_found = true;
+			    }
+			}
+
+			// unmount the device
+			SCR::Execute(.target.umount, mpoint);
+		    }
+		}
+	    );
+	}
+
+	if (ret == false)
+	{
+	    // firmware is not installed, display warning message
+	    Report::Warning(_("The TV card will not work without firmware."));
+	}
+
+	return ret;
+    }
+
+    define boolean InstallFW() {
+	boolean ret = true;
+
+	foreach (map card, (list<map>) cards, {
+		if (card["FWsource"]:"" != "" && card["FWtarget"]:"" != "")
+		{
+		    if (!InstallFWCard(card["name"]:"TV", card["FWsource"]:"", card["FWtarget"]:""))
+		    {
+			ret = false;
+		    }
+		}
+	    }
+	);
+
+	return ret;
+    }
+
+
     /**
      * Fill the map of all tv settings from the SCR.
      * @return boolean Was the reading succesfull?
