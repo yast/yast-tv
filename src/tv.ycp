@@ -133,7 +133,7 @@ define boolean AddCardHandler (map options ) {
 	card ["parameters"] = $[];
 
     // add tuner parameters
-    string tuner_id = (string) lookup (options, "tuner", nil);
+    string tuner_id = (string) options["tuner"]:nil;
     if (tuner_id != nil)
     {
 	card["parameters", "tuner"] = tuner_id;

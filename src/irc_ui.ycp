@@ -160,9 +160,9 @@ define boolean IRCTestPopup (string config_file, string mod, boolean modified) `
         if ((boolean) SCR::Read(.background.output_open) &&
 	    (integer) SCR::Read(.background.newlines)>0)
         {
+	    list<string> newout = (list<string>)SCR::Read(.background.newout);
             // read the output line from irw:
-            test_output = (string)
-		select ((list)SCR::Read(.background.newout), 0, nil);
+            test_output = (string) newout[0]:nil;
 	    if (test_output != nil)
 		UI::ChangeWidget (`id(`irw), `LastLine, test_output + "\n");
         }
