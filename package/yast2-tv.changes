@@ -1,5 +1,10 @@
 -------------------------------------------------------------------
-Wed Jul 24 14:48:47 CEST 2002 - jsuchome@suse.de
+Fri Jul 26 13:48:14 CEST 2002 - jsuchome@suse.cz
+
+- removed yast2-runlevel from Required and needforbuild
+
+-------------------------------------------------------------------
+Wed Jul 24 14:48:47 CEST 2002 - jsuchome@suse.cz
 
 - executed v4l-conf instead of kv4lsetup 
 
