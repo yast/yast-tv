@@ -19,11 +19,11 @@ $saa7134_cardlist_fname = $ARGV[1];
 # Names to translate
 %clean_names =
     (
-    	"*** UNKNOWN/GENERIC *** " => "_(\"Unknown bttv card\")",
-    	"UNKNOWN/GENERIC" => "_(\"Unknown saa7134 card\")",
+    	"*** UNKNOWN/GENERIC *** " => " // Item text in the list of cards\n\t\t\t_(\"Unknown bttv card\")",
+    	"UNKNOWN/GENERIC" => " // Item text in the list of cards\n\t\t\t_(\"Unknown saa7134 card\")",
     	"[many vendors] CPH05X/06X (bt878)" => "\"CPH05X/06X (bt878)\"",
     	"Flyvideo 98 (LR50Q) / Chronos Video Shuttle II" => "\"FlyVideo 98 (LR50Q) / Chronos Video Shuttle II\"",
-    	"Flyvideo 98EZ (capture only)" => "_(\"FlyVideo 98EZ (capture only)\")",
+    	"Flyvideo 98EZ (capture only)" => " // Item text in the cards list (translate \"capture only\")\n\t\t\t\t\t_(\"FlyVideo 98EZ (capture only)\")",
     	"Flyvideo 98FM (LR50Q) / Typhoon TView TV/FM Tuner" => "\"FlyVideo 98FM (LR50Q) / Typhoon TView TV/FM Tuner\""
     );
 
@@ -216,7 +216,7 @@ while ($index <= $#cards)
 }
 
 # Print it now
-dbPrint("_(\"Other vendors\")", \@cards);
+dbPrint(" // Item text in the list of card vendors\n\t\t\t\t_(\"Other vendors\")", \@cards);
 foreach $vendor (sort keys %vendors)
 {
     print ",\n";

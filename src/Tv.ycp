@@ -151,12 +151,19 @@
 
 	// We do not set help text here, because it was set outside
 	Progress::New ( caption, " ", no_of_steps,
+               // Progress stage
 		       [ _("Read the database"),
+               // Progress stage
 			 _("Read the previous settings"),
+               // Progress stage
 			 _("Detect the devices") ],
+               // Progress stage
 		       [ _("Reading the database..."),
+               // Progress stage
 			 _("Reading the previous settings..."),
+               // Progress stage
 			 _("Detecting the devices..."),
+               // Progress stage
 			 _("Finished") ],
 		       "" );
 
@@ -220,12 +227,19 @@
 
 	// We do not set help text here, because it was set outside
 	Progress::New ( caption, " ", no_of_steps,
+               // Progress stage
 		       [ _("Write the settings"),
+               // Progress stage
 			 _("Update sound volume"),
+               // Progress stage
 			 _("Check for KWinTV")],
+               // Progress stage
 		       [ _("Writing the settings..."),
+               // Progress stage
 			 _("Updating the sound volume..."),
+               // Progress stage
 			 _("Checking for KWinTV..."),
+               // Progress stage
 			 _("Finished") ],
 		       "" );
 
@@ -247,6 +261,7 @@
 	Progress::NextStage ();
 	boolean kwintv_is_installed =
 	    RequireAndConflictButtons(["kwintv"], [],
+   // Popup text (required application):
 _("If you want to watch TV on your screen, you need the KWinTV application.
 It is currently not installed. Do you want to install it now?"),
 		YesButtonLabel(), NoButtonLabel());
@@ -254,7 +269,6 @@ It is currently not installed. Do you want to install it now?"),
 	if (kwintv_is_installed)
 	{
 	    // Initialize setup - kv4lsetup was removed
-//	    SCR::Execute(.target.bash, "/opt/kde2/bin/kv4lsetup");
 	    SCR::Execute(.target.bash, "/usr/X11R6/bin/v4l-conf");
 	}
 	// increase the progress to "finish" -- problems ???
@@ -380,6 +394,7 @@ It is currently not installed. Do you want to install it now?"),
 	}
 	if (cards_database == nil)
 	{
+        // Error message popup:
 	    Report::Error(_("Unable to read the TV card database."));
 	    cards_database = [];
 	    return false;
@@ -402,6 +417,7 @@ It is currently not installed. Do you want to install it now?"),
 	}
 	if (tuners_database == nil)
 	{
+        // Error message popup:
 	    Report::Error(_("Unable to read the tuner database!"));
 	    tuners_database = $[];
 	    return false;
@@ -425,7 +441,8 @@ It is currently not installed. Do you want to install it now?"),
 	list modules_list = SCR::Dir (video_path);
 	if (modules_list == nil)
 	{
-	    Report::Warning(_("Unable to read the list of
+	    // Warning message popup:
+        Report::Warning(_("Unable to read the list of
 available kernel modules."));
 	    return true;
 	}
@@ -737,6 +754,7 @@ available kernel modules."));
 	// write the parameters
 	if (!WriteModulesParameters (modules_parameters))
 	{
+        // Error message popup
 	    Report::Error (_("Unable to write parameters
 to /etc/modules.conf."));
 	    result = false;
@@ -754,6 +772,7 @@ to /etc/modules.conf."));
 	if (!SCR::Write (.modules, nil))
 	{
 	    result = false;
+        // Error message popup
 	    Report::Error (_("Unable to write /etc/modules.conf."));
 	}
 
@@ -788,6 +807,7 @@ to /etc/modules.conf."));
 	list probe_tv = SCR::Read(.probe.tv);
 	if (probe_tv == nil)
 	{
+        // Warning message popup (detection problem):
 	    Report::Warning(_("Unable to probe the TV cards."));
 	    y2warning("Cannot probe TV cards: Read(.probe.tv) is nil.");
 		detected_cards = [];
@@ -864,6 +884,7 @@ to /etc/modules.conf."));
 		    string name = lookup(card, "name", nil);
 		    if (name != nil)
 		    {
+            // Summary text (%1 will be number)
 			string installed_str = sformat(_("Installed as TV card number %1."), card_no);
 			card_item = Summary::Device(name, installed_str);
 		    }
@@ -1151,6 +1172,7 @@ to /etc/modules.conf."));
 	if (autodetected != nil && autodetected != $[])
 	{
 	    vendors = prepend (vendors, `item ( `id (0),
+                        // Item of cards list:
 						_("Autodetected card"),
 						preselect_vendor == 0 ));
 	}
@@ -1213,8 +1235,10 @@ to /etc/modules.conf."));
 	}
 
 	list tuners = lookup (tuners_database, kernel_module, []);
-	tuners = prepend(tuners, $[ "name" : _("Default (detected)"),
-				    "parameters" : $[] ]);
+	tuners = prepend(tuners, $[ "name" :
+                                    // Default item of tuners list:
+                                    _("Default (detected)"),
+				                "parameters" : $[] ]);
 
 	integer tuner_no = 0;
 	boolean some_is_selected = false;
