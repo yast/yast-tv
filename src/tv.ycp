@@ -38,13 +38,13 @@
     boolean no_io = false;
 
     integer i = 0;
-    while (i < size (Args()))
+    while (i < size (WFM::Args()))
     {
-	if (Args (i) == .noio)
+	if (WFM::Args (i) == .noio)
 	{
 	    no_io = true;
 	}
-	else if (Args (i) == .test)
+	else if (WFM::Args (i) == .test)
 	{
 	    Mode::test = true;
 	}

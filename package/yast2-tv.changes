@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Jul 12 15:52:47 CEST 2002 - arvin@suse.de
+
+- use proper namespace for Args and CallFunction (#16776)
+
+-------------------------------------------------------------------
 Tue Jul  9 11:55:22 CEST 2002 - mvidner@suse.cz
 
 - Provides/Obsoletes yast2-lib-hardware (UniqueKeys.ycp)
