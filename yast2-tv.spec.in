@@ -1,5 +1,5 @@
 @HEADER-COMMENT@
-# neededforbuild yast2-devel-packages yast2-packager yast2-sound
+# neededforbuild yast2-devel-packages yast2-sound
 
 @HEADER@
 Requires:	yast2 yast2-sound yast2-packager
