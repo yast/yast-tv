@@ -266,6 +266,10 @@
 	0x4cb51019
     ];
 
+    string firmware_prefix = "/usr/lib/hotplug/firmware/";
+
+    map<string, string> fw_source_cache = $[];
+
     // ------------------- function prototypes for include files:
 
     global define boolean IsDirty ();
@@ -918,8 +922,6 @@ available kernel modules."));
     }
 
     global define boolean IsFWInstalled(string FWpath) {
-	boolean ret = false;
-
 	// is the firmware already installed?
 	if (SCR::Read(.target.size, FWpath) > 0)
 	{
@@ -927,7 +929,7 @@ available kernel modules."));
 	    return true;
 	}
 
-	return ret;
+	return false;
     }
 
     define string AskForFirmware(string card, string filename)
@@ -1002,51 +1004,123 @@ available kernel modules."));
 	return (ui != `cont) ? nil : file;
     }
 
+    define string AskForFirmwareCached(string card, string filename)
+    {
+	string ret = "";
 
-    define boolean InstallFWCard(string card, string source, string target) {
+	// is the file name in cache?
+	if (haskey(fw_source_cache, filename))
+	{
+	    ret = fw_source_cache[filename]:"";
+	}
+	else
+	{
+	    ret = AskForFirmware(card, filename);
+
+	    // store the file name into cache
+	    if (ret != nil && ret != "")
+	    {
+		fw_source_cache[filename] = ret;
+	    }
+	}
+
+	return ret;
+    }
+
+
+    define boolean InstallFWCard(string source, string target, integer offset, integer length, string md5, boolean ask) {
 	boolean ret = false;
+
+	y2milestone("Installing firmware:  source: %1, target: %2, offset: %3, length: %4, md5: %5, ask: %6",
+	    source, target, offset, length, md5, ask
+	);
 
 	if (IsFWInstalled(target))
 	{
-	    // the firmware is already instralled
+	    // the firmware is already installed
 	    return true;
 	}
 
-	boolean firmware_found = false;
 	boolean install = true;
 
-	// install firmware until it succeeds or user cancels the installation
-	while (install)
+	if (source != "" && source != nil)
 	{
-	    string firmware = AskForFirmware(card,source);
-
-	    if (firmware != "" && firmware != nil)
+	    if (offset == 0 && length == nil)
 	    {
 		// copy the firmware
-		string copy = sformat("/bin/cp '%1' '%2'", firmware, target);
+		string copy = sformat("/bin/cp '%1' '%2'", source, target);
 		integer result = (integer) SCR::Execute(.target.bash, copy);
 
 		ret = (result == 0);
-		y2milestone("copying firmware %1 -> %2 exit: %3", firmware, target, result);
-
-		firmware_found = true;
-	    }
-
-	    if (ret == false)
-	    {
-		// try installation of the firmware again?
-		install = Popup::YesNo(_("Installation of the firmware has failed.\nTry the installation again?"));
+		y2milestone("copying firmware %1 -> %2 exit: %3", source, target, result);
 	    }
 	    else
 	    {
-		install = false;
+		// use dd to copy only required part of the file
+		string dd = sformat("/bin/dd bs=1 if=%1 of=%2 skip=%3 count=%4", source, target, offset, length);
+		integer result = (integer) SCR::Execute(.target.bash, dd);
+
+		ret = (result == 0);
+		y2milestone("copying firmware %1 -> %2 (offset: %3, length: %4) exit: %5", source, target, offset, length, result);
 	    }
 	}
 
-	if (ret == false)
+	if (!ret && ask)
 	{
 	    // firmware is not installed, display warning message
 	    Report::Warning(_("The TV card will not work without firmware."));
+	}
+
+	// check MD5 if it's specified
+	if (md5 != nil && md5 != "")
+	{
+	    // compute MD5 hash of the firmware file
+	    string md5cmd = sformat("/usr/bin/md5sum %1", target);
+	    map result = (map) SCR::Execute(.target.bash_output, md5cmd);
+
+	    ret = (result["exit"]:-1 == 0);
+
+	    if (ret == false)
+	    {
+		if (ask)
+		{
+		    // warning popup - md5sum returned non-zero exit status
+		    Report::Warning(_("Could not check MD5 sum of the firmware."));
+		}
+		else
+		{
+		    y2warning("Could not check MD5 sum of the firmware");
+		}
+	    }
+	    else
+	    {
+		// compare computed and expected MD5
+		string md5line = (splitstring(result["stdout"]:"", "\n"))[0]:"";
+		string sum = (splitstring(md5line, " "))[0]:"";
+
+		if (sum != md5)
+		{
+		    y2warning("MD5sum of the firmware is incorrect (expected: %1, computed: %2)", sum, md5);
+
+		    // warning popup - computed and expected md5sum don't match
+		    if (!ask || !Popup::YesNo(_("MD5 check sum of the installed firmware
+does not match the value in the database. 
+
+Use the firmware file anyway?")))
+		    {
+			// pressed 'NO' - remove the file
+			string rm = sformat("/bin/rm %1", target);
+			integer result = (integer) SCR::Execute(.target.bash, rm);
+
+			ret = false;
+			y2milestone("removing bad firmware file %1, exit: %2", target, result);
+		    }
+		}
+		else
+		{
+		    y2debug("MD5 sum (%1) matches the value in the database.", sum);
+		}
+	    }
 	}
 
 	return ret;
@@ -1089,7 +1163,7 @@ available kernel modules."));
 
     define list<string> FirmwareDrivers()
     {
-	return (list<string>)maplist(string modname, map fw,(map<string,map>)firmware_database, {
+	return (list<string>)maplist(string modname, list fws, (map<string,list>)firmware_database, {
 		return modname;
 	    }
 	);
@@ -1132,15 +1206,81 @@ available kernel modules."));
 			}
 		    );
 
-		    map<string,string> files = (map<string,string>)firmware_database[drv]:$[];
 
-		    foreach(string source, string target, files, {
-			    if (!InstallFWCard(cardname, source, target))
+		    list<map<string,any> > fws = (list<map<string,any> >)firmware_database[drv]:[];
+
+		    foreach(map<string,any> fw, fws, {
+			    string target = fw["target"]:"";
+			    string source = fw["source"]:"";
+
+			    if (target != nil && target != "" && source != nil && source != "")
 			    {
-				ret = false;
+				boolean install = true;
+
+				// install fw in a loop until it succeeds or a wrong fw is confirmed
+				while (install)
+				{
+
+				    string firmware_source = AskForFirmwareCached(cardname, source);
+				    string firmware_target = firmware_prefix + target;
+
+				    list<map> info = fw["info"]:[];
+				    integer info_size = size(info);
+
+				    y2debug("info_size: %1", info_size);
+				    y2debug("info: %1", info);
+
+				    if (info_size > 1)
+				    {
+					integer index = 0;
+
+					while (index < info_size)
+					{
+					    map inf = info[index]:$[];
+					    y2milestone("Using FW info[%1]: %2", index, inf);
+
+					    integer offset = inf["offset"]:0;
+					    integer length = (integer)inf["length"]:nil;
+					    string md5 = inf["md5sum"]:"";
+
+					    if (!InstallFWCard(firmware_source, firmware_target, offset, length, md5, index + 1 == info_size))
+					    {
+						ret = false;
+						index = index + 1;
+					    }
+					    else
+					    {
+						// installation was successful, skip all other versions
+						index = info_size;
+						ret = true;
+					    }
+					}
+				    }
+				    else
+				    {
+					if (!InstallFWCard(firmware_source, firmware_target, 0, nil, "", true))
+					{
+					    ret = false;
+					}
+				    }
+
+				    if (ret == false)
+				    {
+					// try installation of the firmware again?
+					install = Popup::YesNo(_("Installation of the firmware has failed.\nTry the installation again?"));
+
+					// remove the invalid file from the cache
+					fw_source_cache = remove(fw_source_cache, source);
+				    }
+				    else
+				    {
+					install = false;
+				    }
+				}
 			    }
 			}
 		    );
+
 		}
 	    );
 	}
@@ -1699,12 +1839,14 @@ to %1."), "/etc/modprobe.d/tv."));
 
 			if (firmware_database != nil && size(firmware_database) > 0)
 			{
-			    foreach(string fwmod, map<string,string> fw, (map<string,map<string,string> >)firmware_database, {
+			    foreach(string fwmod, list<map<string,any> > fws, (map<string,list<map<string,any> > >)firmware_database, {
 
 				    if (contains(card["module"]:[], fwmod))
 				    {
-					foreach(string source, string target, fw, {
-						boolean inst = IsFWInstalled(target);
+					foreach(map<string,any> fw, fws, {
+						string target = fw["target"]:"";
+						string source = fw["source"]:"";
+						boolean inst = IsFWInstalled(firmware_prefix + target);
 
 						installed_str = installed_str + "<BR>" + _("Firmware: ") +
 						((inst) ? sformat(_("Installed (%1)"), target) : sformat(_("Not installed (%1)"), source));

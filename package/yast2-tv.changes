@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Dec  3 17:39:18 CET 2004 - lslezak@suse.cz
+
+- extended firmware database (offset, md5sum, support more
+  versions), firmware installation updated (#46636)
+- version 2.11.1
+
+-------------------------------------------------------------------
 Mon Nov 22 16:54:15 CET 2004 - lslezak@suse.cz
 
 - Mode::, lookup&select fixes
