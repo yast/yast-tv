@@ -21,7 +21,6 @@ import "Runlevel";
 import "Tv";
 
 include "wizard/sequencer.ycp";
-include "ui/file_popups.ycp";
 
 include "tv/helps.ycp";
 include "tv/misc.ycp";
@@ -111,7 +110,7 @@ global define any IRCDialog (boolean alone) ``{
 	Label::BackButton (), alone?Label::FinishButton():Label::NextButton ());
 
 
-    foreach (symbol widget, [`config, `brow, `mods, `test],``{
+    foreach (symbol widget, [`config, `brow, `mods, `test, `desc_ch],``{
 	UI::ChangeWidget (`id (widget), `Enabled, use_irc);
     });
 
@@ -173,14 +172,14 @@ Install it now?")))
 		use_irc = false;
 		UI::ChangeWidget (`id(`rd), `CurrentButton, `no);
 	    }
-	    foreach (symbol widget, [`config, `brow, `mods, `test],``{
+	    foreach (symbol widget, [`config, `brow, `mods, `test, `desc_ch],``{
 		UI::ChangeWidget (`id (widget), `Enabled, use_irc);
 	    });
 	}
 	if (ret == `brow)
 	{
-	    string file = PopupFile (startdir);
-	    if (file != "")
+	    string file = UI::AskForExistingFile (startdir, "*", "");
+	    if (file != nil)
 	    {
 		remotes_items = union (remotes_items, [`item(`id(file), file)]);
 		UI::ReplaceWidget (`id(`configs), `HBox(
