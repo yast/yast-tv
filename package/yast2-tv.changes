@@ -1,10 +1,16 @@
 -------------------------------------------------------------------
+Wed Sep  1 13:46:51 CEST 2004 - lslezak@suse.cz
+
+- ask for firmware file (firmware installation)
+- testsuite update
+- version 2.10.2
+
+-------------------------------------------------------------------
 Wed Aug 25 09:05:07 CEST 2004 - lslezak@suse.cz
 
 - DVB card database
 - read DVB kernel modules
 - edit DVB module parameters
-
 
 -------------------------------------------------------------------
 Mon Aug 23 16:42:20 CEST 2004 - lslezak@suse.cz

@@ -72,7 +72,7 @@ sub dbPrint
 	    print ",\n";
 	}
 	print "\t    \$[ \"name\" : $ref->{\"name\"},\n";
-	print "\t       \"module\" : $ref->{\"module\"},\n";
+	print "\t       \"module\" : [ $ref->{\"module\"} ],\n";
 	print "\t       \"parameters\" : $ref->{\"parameters\"}\n";
 	print "\t    ]";
     }
