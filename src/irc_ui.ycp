@@ -1,0 +1,419 @@
+/**
+ * File:
+ * Package:	TV cards configuration
+ * Summary:	User interface functions.
+ * Authors:
+ *
+ * $Id$
+ *
+ */
+
+{
+
+textdomain "tv";
+
+import "Wizard";
+import "Progress";
+import "Popup";
+import "Label";
+import "Runlevel";
+
+import "Tv";
+
+include "wizard/sequencer.ycp";
+include "ui/file_popups.ycp";
+
+include "tv/helps.ycp";
+
+
+/**
+ * Enhanced version of UserInput which asks if really abort after
+ * pressing [Abort].
+ * @return any The value of the resulting UserInput.
+ */
+global define any tvUserInput() ``{
+    any ret = nil;
+
+    do
+    {
+	ret = UI::UserInput();
+    } while ((ret == `cancel || ret == `abort) &&
+	     (Tv::IsDirty()? !Popup::ReallyAbort (true): false));
+
+    return (ret == `cancel)? `abort: ret;
+}
+
+/**
+ * Dialog for seting up IRC
+ * @param run from irc.ycp client? (=not from tv module)
+ */
+global define any IRCDialog (boolean alone) ``{
+
+    // For translators: Caption of the dialog
+    string caption = _("Infra red control configuration");
+
+    // The selected card
+    map selected_card = Tv::current_card;
+    if (selected_card == $[])
+    {
+	selected_card = Tv::CardGet (0);
+	// TODO offer cards, when there are more of them?
+    }
+
+    map current_card_parameters = selected_card["parameters"]:$[];
+    string module_name_tmp	= selected_card["module"]:nil;
+    map	selected_tuner		= Tv::GetTuner (
+	module_name_tmp, current_card_parameters["tuner"]:"-1");
+
+// FIXME don't have a card number when card was detected! - how to guess module?
+    integer card_id = tointeger (current_card_parameters["card"]:-1);
+
+    boolean use_irc	= Tv::use_irc;
+    string irc_config	= Tv::irc_config;
+    string irc_module	= Tv::irc_module;
+    list mods		= Tv::irc_modules_list;
+
+    string startdir = "/usr/share/doc/packages/lirc/remotes/";
+
+    list remotes_items = [];
+    foreach (string control, Tv::remotes, ``{
+	list aslist = splitstring (control, "/");
+	string last = select (aslist, size(aslist)-1, "");
+	if (last != "")
+	    remotes_items = add (remotes_items, `item(`id(control), last));
+    });
+
+    if (irc_config == "/etc/lircd.conf")
+	remotes_items = add (remotes_items,
+	    `item(`id("/etc/lircd.conf"), _("current (/etc/lircd.conf)")));
+
+    term con = `HBox (`HSpacing (3), `VBox (
+        `VSpacing (2),
+        `RadioButtonGroup(`id(`rd),
+	    `Left(`HVSquash(`VBox (
+                `Left (`RadioButton(`id(`no), `opt (`notify),
+		    // radio button label
+		    _("Do No&t Use IRC"), !use_irc)),
+                `Left(`RadioButton(`id(`yes), `opt (`notify),
+		    // radio button label
+		    _("&Use IRC"), use_irc)))))
+	),
+        `VSpacing (0.5),
+	// frame label
+	`Frame (_("IRC Settings"), `HBox(`HSpacing (0.5),
+	    `VBox(
+		`VSpacing (0.5),
+		`HBox(
+		    // combobox label
+		    `ComboBox(`id(`config), `opt(`hstretch),
+			_("IRC Config File"), remotes_items)
+		    /* FIXME: choose the rest of files, adapt combo items???
+		    `VBox(
+			`Label (""),
+			// button label
+			`PushButton(`id(`brow),`opt(`key_F7), _("Cho&ose..."))
+		    )
+		    */
+		),
+		`ComboBox (`id(`mods), `opt(`notify, `hstretch),
+		    // combobox label
+		    _("Kernel module"), mods),
+		`Left(
+		    `CheckBox (`id(`desc_ch), `opt (`notify),
+			//checkbox label
+			_("Show module description"), false)
+		),
+		`ReplacePoint (`id(`rp), `Empty ()),
+		`VSpacing (0.5),
+		`Right(
+		    // button label
+		    `PushButton (`id(`test), `opt(`key_F6), _("&Test"))),
+		`VSpacing (0.5)
+	    ), `HSpacing (0.5)
+	)),
+	`VStretch ()
+    ), `HSpacing(3));
+
+
+    Wizard::SetContentsButtons ( caption, con, IRCDialogHelp (),
+	Label::BackButton (), alone?Label::FinishButton():Label::NextButton ());
+
+
+//    foreach (symbol widget, [`config, `brow, `mods, `test],``{
+    foreach (symbol widget, [`config, `mods, `test],``{
+	UI::ChangeWidget (`id (widget), `Enabled, use_irc);
+    });
+
+    // propose lirc_gpio module for some TV cards
+    if (contains (Tv::cards_with_lirc_gpio, card_id) && irc_module == "")
+	irc_module = "lirc_gpio";
+    if (contains (mods, irc_module))
+    {
+	UI::ChangeWidget (`id(`mods), `Value, irc_module);
+    }
+
+    UI::ChangeWidget (`id(`config), `Value, irc_config);
+
+    any ret = nil;
+    do
+    {
+	ret = tvUserInput();
+
+	irc_config = UI::QueryWidget (`id(`config),  `Value);
+
+	if (irc_module != UI::QueryWidget (`id(`mods),  `Value))
+	{
+	    irc_module = UI::QueryWidget (`id(`mods),  `Value);
+	    if (UI::QueryWidget (`id(`desc_ch), `Value))
+		UI::ChangeWidget (`id(`desc),`Value,
+		    Tv::irc_modules [irc_module]:"");
+	}
+	if (ret == `desc_ch)
+	{
+	    if (UI::QueryWidget (`id(`desc_ch), `Value))
+	    {
+		if (Tv::irc_modules == $[])
+		{
+		    UI::OpenDialog (
+			Wizard_hw::SpacingAround (
+			    // popup label (waiting for other action):
+			    `Label(_("Please wait while getting list
+of kernel modules description...")),
+			    1.5, 1.5, 0.5, 0.5
+			)
+		    );
+		    Tv::LoadIRCModulesDescription();
+		    UI::CloseDialog();
+		}
+		UI::ReplaceWidget (`id(`rp), `VSquash(`HBox (
+		    `VSpacing (3),
+		    `RichText (`id(`desc), `opt (`shrinkable),
+			Tv::irc_modules [irc_module]:"")
+		)));
+	    }
+	    else
+		UI::ReplaceWidget (`id(`rp), `Empty());
+	}
+
+        if (ret == `yes || ret == `no)
+	{
+            use_irc = (ret == `yes);
+	    if (use_irc && !Require::RequireAndConflictTarget (["lirc"], [],
+		// popup label (install required application?)
+		_("For using infra red devices, package 'lirc' is required.
+Install it now?")))
+
+	    {
+		use_irc = false;
+		UI::ChangeWidget (`id(`rd), `CurrentButton, `no);
+	    }
+//	    foreach (symbol widget, [`config, `brow, `mods, `test],``{
+	    foreach (symbol widget, [`config, `mods, `test],``{
+		UI::ChangeWidget (`id (widget), `Enabled, use_irc);
+	    });
+	}
+	if (ret == `brow)
+	{
+	    /*
+	    string file = irc_config;
+	    if (SCR::Read(.target.size, file ) == -1)
+		file = startdir;
+	    file = PopupFileWithMask (file, ["lircd.conf.*"]);
+	    */
+	    string file = PopupFile (startdir);
+	    if (file != "")
+	    {
+		// FIXME only the file name, not whole path
+		remotes_items = union (remotes_items, [`item(`id(file), file)]);
+		UI::ChangeWidget (`id(`config), `Items, remotes_items);
+		UI::ChangeWidget (`id(`config), `Value, file);
+	    }
+
+	}
+	if (use_irc && (ret == `next || ret == `test))
+	{
+	    if (irc_config == "" || SCR::Read (.target.size, irc_config) == -1)
+	    {
+		// FIXME better text
+		Popup::Message (_("Enter the corect config file name."));
+		UI::SetFocus (`id(`config));
+		continue;
+	    }
+	}
+	if (ret == `test)
+	{
+	    IRCTestPopup (irc_config, irc_module, (use_irc != Tv::use_irc ||
+		irc_module != Tv::irc_module || irc_config != Tv::irc_config));
+	}
+
+    } while (!contains ([`back, `abort, `cancel, `next, `ok], ret));
+
+    if (ret == `next && (use_irc != Tv::use_irc || irc_module != Tv::irc_module
+			 || irc_config != Tv::irc_config))
+    {
+	Tv::irc_modified = true;
+	Tv::use_irc = use_irc;
+	Tv::irc_module = irc_module;
+	Tv::irc_config = irc_config;
+    }
+    return ret;
+}
+
+/**
+ * Dialog for testing IRC
+ * @return boolean false when Abort was pressed or some problems occured
+ */
+global define boolean IRCTestPopup (string config_file, string mod, boolean modified) ``{
+
+    /**
+     * internal function
+     * start with temporary LIRC configuration to enable the test
+     * @return empty string on success, error message otherwise
+     */
+    define string lirc_tmp_start () ``{
+
+	if (!modified)
+	    return true;
+	// store old configuration
+	orig_module = SCR::Read (.sysconfig.lirc.LIRC_MODULE);
+	if (SCR::Read (.target.size, "/etc/lircd.conf") != -1)
+	{
+	    orig_config = Tv::tmpdir + "/lircd.conf";
+	    SCR::Execute (.target.bash,"/bin/cp /etc/lircd.conf "+orig_config);
+	    y2internal ("copy /etc/lirc.conf to %1", orig_config);
+	}
+	// 1. copy new config file, update sysconfig value
+
+	SCR::Write (.sysconfig.lirc.LIRC_MODULE, mod);
+	SCR::Write (.sysconfig.lirc, nil);
+
+	if (config_file != "/etc/lircd.conf")
+	    SCR::Execute (.target.bash,
+		sformat ("/bin/cp %1 /etc/lircd.conf", config_file));
+
+        // 2. start service (what if it is running?)
+	orig_start = (Runlevel::ServiceStatus ("lirc") == 0);
+
+	map out = $[];
+	//when module cannot be loaded, Runlevel returns 0 -> use target.bash
+	if (orig_start)
+	    out = SCR::Execute (.target.bash_output, "rclirc restart");
+	else
+	    out = SCR::Execute (.target.bash_output, "rclirc start");
+	return out["stderr"]:"";
+    }
+
+    /**
+     * internal function
+     * return LIRC configuration to original state after testing
+     */
+    define boolean lirc_tmp_stop () ``{
+
+	if (!modified)
+	    return true;
+	if (orig_config != "")
+	{
+	    y2internal ("copy %1 to /etc", orig_config);
+	    SCR::Execute (.target.bash,
+		sformat ("/bin/cp %1 /etc/lircd.conf ", orig_config));
+	}
+	SCR::Write (.sysconfig.lirc.LIRC_MODULE, orig_module);
+	SCR::Write (.sysconfig.lirc, nil);
+	if (orig_start)
+	    Runlevel::RunInitScript ("lirc", "restart");
+	else
+	    Runlevel::RunInitScript ("lirc", "stop");
+	return true;
+    }
+
+    UI::OpenDialog(`opt(`decorated), `HBox(`HSpacing(1.5),
+    `VBox(
+        `VSpacing(1),
+        // Wait text label
+        `Label(_("Initializing -- please wait...")),
+        `VSpacing(1),
+        `PushButton(`id(`done), `opt(`default), Label::AbortButton()),
+        `VSpacing(1)),
+    `HSpacing(1.5)
+    ));
+
+    string orig_module	= "";
+    string orig_config	= "";
+    boolean orig_start	= false;
+
+    string start = lirc_tmp_start ();
+    if (start != "")
+    {
+	// error popup text
+	ErrorWithDetails (_("Starting the 'lirc' service failed."), start);
+	UI::CloseDialog();
+	lirc_tmp_stop ();
+	return false;
+    }
+
+    // test if IRC device is present
+    if (SCR::Execute(.target.bash, "echo 2>/dev/null < /dev/lirc") != 0)
+    {
+	// error popup text
+	Popup::Error (_("No IRC device is present.
+(Maybe wrong module was loaded.)"));
+	UI::CloseDialog();
+	lirc_tmp_stop ();
+	return false;
+    }
+
+    // 3. run irw -> test
+    SCR::Execute (.background.run_output, "/usr/bin/irw");
+
+    UI::CloseDialog();
+    // construct the dialog
+    UI::OpenDialog(`opt(`decorated), `HBox(`HSpacing(1.5),
+    `VSpacing(18),
+    `VBox(
+        `HSpacing(60),
+        `VSpacing(0.5),
+	// Popup label (heading)
+        `Label(_("IRC Test")),
+	// Popup label (info text), please keep translation
+        `Label(_("Push the buttons of your IR controler to test its functionality.")),
+        `VSpacing(0.5),
+        `LogView (`id (`irw), "", 10, 0),
+        `VSpacing(0.5),
+        `PushButton(`id(`done), `opt(`default), Label::OKButton()),
+        `VSpacing(0.5)),
+    `HSpacing(1.5)
+    ));
+
+    // read the irw output
+    string test_output = "";
+    any ret = nil;
+    do
+    {
+	ret = UI::PollInput();
+        if (SCR::Read(.background.output_open) &&
+	    SCR::Read(.background.newlines)>0)
+        {
+            // read the output line from irw:
+            test_output = select (SCR::Read(.background.newout), 0, nil);
+	    if (test_output != nil)
+		UI::ChangeWidget (`id(`irw), `LastLine, test_output + "\n");
+        }
+	else if (!SCR::Read(.background.output_open))
+	{
+	    // error text
+	    Popup::Error(_("Testing application is not responding."));
+	    ret = `ok;
+	}
+    }
+    while (ret == nil);
+
+    SCR::Execute(.background.kill, nil);
+    lirc_tmp_stop ();
+    UI::CloseDialog();
+
+    return true;
+}
+
+
+/* EOF */
+}

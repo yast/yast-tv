@@ -183,5 +183,25 @@ cards</B> button.
 </P>");
 }
 
+/**
+ * Help text for ChannelsDialog()
+ * @return The help text.
+ */
+global define string ChannelsDialogHelp () ``{
+
+    return
+_("helptext for TV stations scan/edit FIXME");
+}
+
+/**
+ * Help text for IRCDialog()
+ * @return The help text.
+ */
+global define string IRCDialogHelp () ``{
+
+    return
+_("helptext for IRC config FIXME");
+}
+
 /* EOF */
 }
