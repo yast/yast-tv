@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Dec 13 18:52:50 CET 2002 - jsuchome@suse.de
+
+- updated to new modules agent interface
+- 2.7.1
+
+-------------------------------------------------------------------
 Fri Oct 25 14:25:08 CEST 2002 - jsuchome@suse.cz
 
 - radio card support

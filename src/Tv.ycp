@@ -550,7 +550,8 @@ available kernel modules."));
 
     map options = $[];
 	if (contains (SCR::Dir(.modules.options), module_name))
-        options = SCR::Read(.modules.options, module_name);
+//        options = SCR::Read(.modules.options, module_name);
+        options = SCR::Read( add (.modules.options, module_name));
 
 	if (options == nil)
 	{
@@ -608,7 +609,7 @@ available kernel modules."));
 		string unique_key = nil;
 
 		// get the module name
-		string module_name = SCR::Read(.modules.alias, alias);
+		string module_name = SCR::Read( add (.modules.alias,alias) );
 		y2debug("Reading alias %1: module name is '%2'", alias, module_name);
 		if (module_name != nil && module_name != "" && module_name != "off")
 		{
@@ -621,7 +622,8 @@ available kernel modules."));
 		    }
 
 		    // get the name and unique key
-		    string comment = SCR::Read(.modules.alias.comment, alias);
+		    string comment = SCR::Read(
+                add( add(.modules.alias, alias), "comment"));
 		    map name_and_uk = ModulesComments::ExtractFromComment (comment);
 		    if (name_and_uk != nil)
 		    {
@@ -731,14 +733,17 @@ available kernel modules."));
 		// We have to empty the options...
 		if (contains (SCR::Dir(.modules.options), module_name))
 		{
-		    SCR::Write (.modules.options, nil, module_name);
+//		    SCR::Write (.modules.options, nil, module_name);
+		    SCR::Write ( add (.modules.options, module_name), nil);
 		}
 	    }
 	    else
 	    {
 		// Write it...
         y2milestone ("pars=%1, name=%2", parameters, module_name);
-		result = result && SCR::Write(.modules.options, parameters, module_name);
+//		result = result && SCR::Write(.modules.options, parameters, module_name);
+		result = result &&
+            SCR::Write( add (.modules.options, module_name), parameters);
 	    }
 	});
 
@@ -752,21 +757,25 @@ available kernel modules."));
     define boolean WriteSettings() ``{
 	// common settings
 	y2milestone ("Writing char-major-81 (videodev) to modules.conf");
-	SCR::Write (.modules.alias, "videodev", "char-major-81");
+//	SCR::Write (.modules.alias, "videodev", "char-major-81");
+	SCR::Write (.modules.alias.videodev, "char-major-81");
 
-	// fix of bug #18033:
-	SCR::Write (.modules.options, $["bit_test":"1"], "i2c-algo-bit");
+	// fix of bug #18033: (slow initialization on some machines)
+//	SCR::Write (.modules.options, $["bit_test":"1"], "i2c-algo-bit");
+	SCR::Write ( add (.modules.options, "i2c-algo-bit"), $["bit_test":"1"]);
 
 	// reset the old settings (all char-major-81-* aliases)
 	foreach (`alias, GetMajor81Aliases(), ``{
-	    SCR::Write (.modules.alias, nil, alias);
+//	    SCR::Write (.modules.alias, nil, alias);
+	    SCR::Write ( add (.modules.alias, alias) , nil);
 	});
 
     // fix of bug #19122:
     integer i = 0;
     while (i<4) {
         string alias = sformat ("char-major-81-%1", i);
-        SCR::Write (.modules.alias, "off", alias);
+//        SCR::Write (.modules.alias, "off", alias);
+        SCR::Write ( add (.modules.alias, alias), "off");
         i = i + 1;
     }
 
@@ -777,7 +786,8 @@ available kernel modules."));
 		{
 			y2milestone ("Deleting module %1 from /etc/modules.conf",module_name);
 			// ... deletes module's options from /etc/modules.conf...
-		    SCR::Write (.modules.options, nil, module_name);
+//		    SCR::Write (.modules.options, nil, module_name);
+		    SCR::Write ( add (.modules.options, module_name), nil);
         }
 		// ... and unloads the module from kernel
 		SCR::Execute(.target.bash, sformat("/sbin/rmmod -r %1", module_name), $[]);
@@ -811,7 +821,8 @@ available kernel modules."));
 		y2milestone ("Writing alias %2 %1 to modules.conf", module_name, alias);
 
 		// write alias
-		SCR::Write (.modules.alias, module_name, alias);
+//		SCR::Write (.modules.alias, module_name, alias);
+		SCR::Write ( add (.modules.alias, alias), module_name);
 
 		// store parameters to "modules_parameters"
 		list params_with_no = lookup (modules_parameters, module_name, []);
@@ -835,7 +846,7 @@ available kernel modules."));
              "# YaST2 configured TV card\n" )
             + ModulesComments::StoreToComment (card_name, unique_key);
 		y2debug ("Writing comment to alias %1 in modules.conf", alias);
-		SCR::Write (.modules.alias.comment, comment, alias);
+		SCR::Write ( add ( add (.modules.alias, alias), "comment"), comment);
 
 		// set the appropriate unique key as configured
 		probe_status[unique_key] = `yes;
@@ -1399,8 +1410,8 @@ to /etc/modules.conf."));
     /////////////////////////////////////////////////////////////////
 
     /**
-     * List of the kernel modules for TV cards acceptable by the Combo Box widget
-     * in the ManualDetailsDialog().
+     * List of the kernel modules for TV cards acceptable by the Combo Box
+     * widget in the ManualDetailsDialog().
      * @param selected_module The module which should be selected in the Combo Box.
      * @return list List of `item()s
      */
@@ -1417,7 +1428,12 @@ to /etc/modules.conf."));
 	    });
     }
 
-    //----------------------------
+    /**
+     * List of the kernel modules for radio cards acceptable by the Combo Box
+     * widget in the ManualDetailsDialog().
+     * @param selected_module The module which should be selected in the widget
+     * @return list List of `item()s
+     */
     global define list RadioModulesAsItems(string selected_module) ``{
 	return
 	    maplist(`key, `value, radio_modules, ``{
@@ -1463,7 +1479,13 @@ to /etc/modules.conf."));
 	return filter (`val, param_list, ``(val != nil));
     }
 
-    //----------------------------
+    /**
+     * List of the parameters for the selected kernel module acceptable by
+     * the Table widget in the ManualDetailsDialog().
+     * @param selected_module The module which is selected in the Combo Box.
+     * @param parameters The current values of the kernel module parameters.
+     * @return list List of `item()s.
+     */
     global define list RadioModuleParametersAsItems(string selected_module, map parameters) ``{
 	map kernel_module = lookup (radio_modules, selected_module, $[]);
 	if (kernel_module == nil)
