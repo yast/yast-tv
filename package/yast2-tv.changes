@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Mar 29 15:05:23 CEST 2004 - jsuchome@suse.cz
+
+- testsuite fix: check only Tv module related files
+- 2.9.7
+
+-------------------------------------------------------------------
 Tue Mar  9 12:35:14 CET 2004 - jsuchome@suse.cz
 
 - LIRC fixes for 2.6 kernel (use new modules)
