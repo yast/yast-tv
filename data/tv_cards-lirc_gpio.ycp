@@ -2,7 +2,7 @@
  * TV cards using lirc_gpio module for LIRC
  * data gathered from lirc_gpio.c and bttv.h
  *
- * $Id"
+ * $Id$
  */
 [
     //BTTV_UNKNOWN

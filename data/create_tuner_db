@@ -112,7 +112,6 @@ print "/* YaST2 TV tuners database\n";
 print " *\n";
 print " * Generated ".qx(date);
 print " * From: @ARGV\n";
-print "   Textdomain \"tv\"\n";
 print " */";
 print "\n";
 print "{\n";
