@@ -1,8 +1,6 @@
 TODO for yast2-tv
 -----------------
 
-- Drop yast2-config-tv, pack yast2-tv :-)
-
 - Better generation of databases:
   - data/CARDLIST.bttv is
       /usr/src/linux/Documentation/video4linux/bttv/CARDLIST from
@@ -13,9 +11,6 @@ TODO for yast2-tv
     /usr/src/kernel-modules/v4l2/bttv-*/bttv-cards.c and
     /usr/src/kernel-modules/v4l2/saa7134-*/saa7134-cards.c
     from km_v4l2.rpm package
-
-- fix neededforbuild in yast2-tv.spec.in: use yast2-sound instead of
-  yast2-config-sound when available, remove yast2-config-package-manager
 
 - the support for saa7134 sould work out of the box, but must be tested.
   Note: take care if it gets to libhd as well. More info:
