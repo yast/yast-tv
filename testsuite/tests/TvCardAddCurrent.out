@@ -5,11 +5,11 @@ Read	.probe.has_apm nil
 Read	.probe.has_pcmcia nil
 Read	.probe.has_smp nil
 Read	.probe.system nil
-Dump	[nil]
-Dump	[nil]
-Dump	[$["module":"bttv", "parameters":$["param1":"testvalue"], "sound_card_no":0, "unique_key":"hluk.HvsIesmXXX1"], nil]
-Dump	[$["module":"bttv", "parameters":$["param1":"testvalue"], "sound_card_no":0, "unique_key":"hluk.HvsIesmXXX1"], $["module":"bttv", "parameters":$["par_other":"testvalue2"], "sound_card_no":1, "unique_key":"j7F3.J8dhgs34fK2"], nil]
-Dump	[$["module":"bttv", "parameters":$["param1":"testvalue"], "sound_card_no":0, "unique_key":"hluk.HvsIesmXXX1"], nil, nil, $["module":"xyz", "parameters":$["par_other":"testvalue2"], "sound_card_no":1, "unique_key":"j7F3.J8dhgs34fK2"]]
+Dump	[$[]]
+Dump	[$[]]
+Dump	[$["module":"bttv", "parameters":$["param1":"testvalue"], "sound_card_no":0, "unique_key":"hluk.HvsIesmXXX1"], $[]]
+Dump	[$["module":"bttv", "parameters":$["param1":"testvalue"], "sound_card_no":0, "unique_key":"hluk.HvsIesmXXX1"], $["module":"bttv", "parameters":$["par_other":"testvalue2"], "sound_card_no":1, "unique_key":"j7F3.J8dhgs34fK2"], $[]]
+Dump	[$["module":"bttv", "parameters":$["param1":"testvalue"], "sound_card_no":0, "unique_key":"hluk.HvsIesmXXX1"], $[], nil, $["module":"xyz", "parameters":$["par_other":"testvalue2"], "sound_card_no":1, "unique_key":"j7F3.J8dhgs34fK2"]]
 Dump	[$[]]
 Dump	[$[]]
 Dump	[$["module":"bttv", "parameters":$["param1":"testvalue"], "sound_card_no":0, "unique_key":"hluk.HvsIesmXXX1"], $[]]

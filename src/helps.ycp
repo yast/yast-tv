@@ -17,7 +17,7 @@
      * Help for the ReadDialog () dialog.
      * @return The help text.
      */
-    global define string ReadDialogHelp () ``{
+    define string ReadDialogHelp () ``{
 	return
 	    // For translators: tv read dialog help, part 1 of 2
 _("<P><B><BIG>Initializing TV and Radio Card Configuration</BIG></B><BR>
@@ -36,7 +36,7 @@ now.
      * Help for the WriteDialog () dialog.
      * @return The help text.
      */
-    global define string WriteDialogHelp () ``{
+    define string WriteDialogHelp () ``{
 	return
 	    // For translators: tv write dialog help
 _("<P><B><BIG>Saving TV and Radio Configuration</BIG></B><BR>
@@ -49,7 +49,7 @@ Please wait...
      * Help texts for DetectedDialog()
      * @return The help text.
      */
-    global define string DetectedDialogHelp() ``{
+    define string DetectedDialogHelp() ``{
 	return
 	    // Help: Detected cards, part 1 of 3
 _("<P><B><BIG>TV and Radio Card Setup</BIG></B><BR>
@@ -74,7 +74,7 @@ can change the configuration) will open.
      * Help texts for OverviewDialog()
      * @return The help text.
      */
-    global define string OverviewDialogHelp() ``{
+    define string OverviewDialogHelp() ``{
 	return
 	    // Help: Overview of the installed cards, part 1 of 3
 _("<P><B><BIG>TV and Radio Card Overview</BIG></B><BR>
@@ -99,7 +99,7 @@ Then press the appropriate button: <B>Edit</B> or <B>Delete</B>.
      * Help texts for ManualDialog()
      * @return The help text.
      */
-    global define string ManualDialogHelp() ``{
+    define string ManualDialogHelp() ``{
 	return
 	    // Help: Manual addition of a card, part 1/4
 _("<P><B><BIG>Manual TV card selection</BIG></B><BR>
@@ -130,7 +130,7 @@ To configure the radio card, you must select the appropriate kernel module. To d
      * cards is added
      * @return The help text.
      */
-    global define string ManualDetailsDialogHelp(boolean allow_changeoftype) ``{
+    define string ManualDetailsDialogHelp(boolean allow_changeoftype) ``{
     string helptext =
 	    // Help: Manual addition of a card: Details, part 1/4
 _("<P><B><BIG>Manual Selection: Details</BIG></B><BR>
@@ -163,7 +163,7 @@ To select the module for your radio card, check <B>Radio Card Modules</B>.
      * Help texts for AudioDialog()
      * @return The help text.
      */
-    global define string AudioDialogHelp() ``{
+    define string AudioDialogHelp() ``{
 	return
 	    // Help: Setup the audio of the card, part 1/3
 _("<P><B><BIG>Audio for a TV or Radio Card</BIG></B><BR>
@@ -187,7 +187,7 @@ cards</B> button.
  * Help text for ChannelsDialog()
  * @return The help text.
  */
-global define string ChannelsDialogHelp () ``{
+define string ChannelsDialogHelp () ``{
 
     return
 _("stations are saved to /etc/X11/xawtvrc
@@ -200,7 +200,7 @@ helptext for TV stations scan/edit FIXME");
  * Help text for IRCDialog()
  * @return The help text.
  */
-global define string IRCDialogHelp () ``{
+define string IRCDialogHelp () ``{
 
     return
 _("helptext for IRC config FIXME");

@@ -9,7 +9,7 @@
     TESTSUITE_INIT([READ], nil);
     import "Tv";
 
-	define TEST_It_Now(string s_module, map params) ``{
+    define void TEST_It_Now(string s_module, map params) ``{
 	DUMP("---------------");
 
 	Tv::kernel_modules = nil;
@@ -28,7 +28,7 @@
 	items = Tv::KernelModuleParametersAsItems(s_module, params);
 	DUMP(items);
 
-	}
+    }
 
     TEST_It_Now("bttv", $[ "non_existing_parameter" : "its_value" ]);
 

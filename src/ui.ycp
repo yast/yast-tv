@@ -31,7 +31,7 @@ include "tv/irc_ui.ycp";
  * Read settings dialog
  * @return Symbol for next or abort dialog.
  */
-global define any ReadDialog () ``{
+define any ReadDialog () ``{
     // Set help text
     Wizard::RestoreHelp (ReadDialogHelp ());
 
@@ -50,7 +50,7 @@ global define any ReadDialog () ``{
  * Write settings dialog
  * @return Symbol for next or abort dialog.
  */
-global define any WriteDialog () ``{
+define any WriteDialog () ``{
     // Set help text
     Wizard::RestoreHelp (WriteDialogHelp ());
     Wizard::DisableAbortButton();
@@ -68,7 +68,7 @@ global define any WriteDialog () ``{
  * Just a wrapper for Tv::CardAddCurrent() to be used in the wizard sequencer.
  * @return Symbol for next dialog.
  */
-global define any CardAddCurrentWrapper() ``{
+define any CardAddCurrentWrapper() ``{
     Tv::CardAddCurrent ();
     return `next;
 }
@@ -77,7 +77,7 @@ global define any CardAddCurrentWrapper() ``{
  * Just a wrapper for Tv::CardReplaceWithCurrent() to be used in the wizard sequencer.
  * @return Symbol for next dialog.
  */
-global define any CardReplaceWithCurrentWrapper() ``{
+define any CardReplaceWithCurrentWrapper() ``{
     Tv::CardReplaceWithCurrent (Tv::current_card_no);
     return `next;
 }
@@ -86,7 +86,7 @@ global define any CardReplaceWithCurrentWrapper() ``{
  * A dialog showing the detected cards and allowing to configure them.
  * @return any The value of the resulting UserInput.
  */
-global define any DetectedDialog() ``{
+define any DetectedDialog() ``{
     // For translators: Caption of the dialog
     string caption = _("TV and Radio Card Setup");
 
@@ -165,7 +165,7 @@ global define any DetectedDialog() ``{
  * A dialog giving overview of all the configured cards.
  * @return any The value of the resulting UserInput.
  */
-global define any OverviewDialog() ``{
+define any OverviewDialog() ``{
     // For translators: Caption of the dialog
     string caption = _("TV and Radio Card Overview");
 
@@ -255,7 +255,7 @@ of \"%1\"?"), Tv::current_card["name"]:""));
  * @param mod kernel module for the selected card (nil for none/not known)
  * @return term The selection box.
  */
-global define term CardsSelectionBox ( list vendor_cards_db,
+define term CardsSelectionBox ( list vendor_cards_db,
 				       map  parameters, string mod ) ``{
     integer card_no = 0;
     boolean some_is_selected = false;
@@ -289,7 +289,7 @@ global define term CardsSelectionBox ( list vendor_cards_db,
  * @param selected_tuner The previously selected tuner (to be preselected again).
  * @return map The selected tuner or nil if cancelled.
  */
-global define map ChooseTuner(string kernel_module, map selected_tuner) ``{
+define map ChooseTuner(string kernel_module, map selected_tuner) ``{
     // Currently selected tuner
     map sel_tuner = $[];
 
@@ -348,7 +348,7 @@ global define map ChooseTuner(string kernel_module, map selected_tuner) ``{
  * @param warn Display warning, that the card was not fully detected.
  * @return any The value of the resulting UserInput.
  */
-global define any ManualDialog (boolean warn) ``{
+define any ManualDialog (boolean warn) ``{
     // For translators: Caption of the dialog
     string caption = _("Manual TV card selection");
 
@@ -573,7 +573,7 @@ for the selected card."));
  * radio card modules is shown
  * @return any The value of the resulting UserInput.
  */
-global define any ManualDetailsDialog(boolean allow_changeoftype) ``{
+define any ManualDetailsDialog(boolean allow_changeoftype) ``{
     if (Tv::kernel_modules == nil)
     {
 	UI::OpenDialog (
@@ -888,7 +888,7 @@ your want to edit first."));
  * A dialog asking if the card is connected to the sound card.
  * @return any The value of the resulting UserInput.
  */
-global define any AudioDialog() ``{
+define any AudioDialog() ``{
     // For translators: Caption of the dialog
     string caption = _("TV and Radio Card Audio");
 
@@ -1046,7 +1046,7 @@ global define any AudioDialog() ``{
  * @param xawtvrc map with contents of xawtvrc config file
  * @return item list
  */
-global define list GetStationsAsItems (map xawtvrc) ``{
+define list GetStationsAsItems (map xawtvrc) ``{
 
     list stations = [];
     foreach (string sect, map cont, xawtvrc, ``{
@@ -1065,7 +1065,7 @@ global define list GetStationsAsItems (map xawtvrc) ``{
  * @param freq frequency table (eourope-west/us-cable/...)
  * @return list [ new xawtv conf, new items for stations table ]
  */
-global define list ChannelsScanPopup (string norm, string freq) ``{
+define list ChannelsScanPopup (string norm, string freq) ``{
 
     UI::OpenDialog(`opt(`decorated), `HBox(`HSpacing(1.5),
     `VSpacing(18),
@@ -1152,7 +1152,7 @@ global define list ChannelsScanPopup (string norm, string freq) ``{
  * @param station current station name (empty when adding)
  * @param items list of current stations (to check duplicates)
  */
-global define term StationPopup (string channel, string station, list items) ``{
+define term StationPopup (string channel, string station, list items) ``{
 
     UI::OpenDialog( `opt(`decorated), `HBox(
 	`HSpacing(1),
@@ -1227,7 +1227,7 @@ global define term StationPopup (string channel, string station, list items) ``{
 /**
  * Dialogs for TV stations management
  */
-global define any ChannelsDialog () ``{
+define any ChannelsDialog () ``{
 
     // dialog caption
     string caption = _("TV channels configuration");
@@ -1414,7 +1414,7 @@ Install it now?")))
  * Main workflow of the tv configuration
  * @return Sequence result of WizardSequencer().
  */
-global define any MainSequence () ``{
+define any MainSequence () ``{
     map aliases =
 	$[
 	    "detected"	      : ``( DetectedDialog () ),
@@ -1582,7 +1582,7 @@ global define any MainSequence () ``{
  * Whole configuration of tv
  * @return Sequence result of WizardSequencer().
  */
-global define any TvSequence () ``{
+define any TvSequence () ``{
     map aliases =
 	$[
 	    "read"	: [ ``( ReadDialog () ), true ],
@@ -1620,7 +1620,7 @@ global define any TvSequence () ``{
  * It is needed for the proposal stuff.
  * @return Sequence result of MainSequence().
  */
-global define any TvSequenceNoIO () ``{
+define any TvSequenceNoIO () ``{
     string caption = _("Initializing TV and Radio Card Configuration");
     term contents = `Label (_("Initializing ..."));
 
