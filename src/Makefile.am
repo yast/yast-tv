@@ -21,6 +21,7 @@ config_DATA =			\
 	tv.y2cc
 
 module_DATA =			\
-	Tv.ycp
+	Tv.ycp			\
+	UniqueKeys.ycp
 
 EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(config_DATA) $(module_DATA)

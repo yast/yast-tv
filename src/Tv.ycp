@@ -381,9 +381,7 @@ It is currently not installed. Do you want to install it now?"),
 	}
 
 	// translate it
-	textdomain "tv_db";
 	cards_database = eval (cards_database);
-	textdomain "tv";
 
 	return true;
     }
@@ -405,9 +403,7 @@ It is currently not installed. Do you want to install it now?"),
 	}
 
 	// translate it
-	textdomain "tv_db";
 	tuners_database = eval (tuners_database);
-	textdomain "tv";
 
 	return true;
     }
