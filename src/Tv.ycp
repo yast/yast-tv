@@ -513,6 +513,24 @@ available kernel modules."));
     }
 
     /**
+     * Returns a list of all char-major-250-* in modprobe config file
+     * @param mod_path path to agent (using modprobe.conf or modprobe.d/tv)
+     * @return list List [ "char-major-250-3", "char-major-81-67" ] or so...
+     */
+    define list<string> GetMajor250Installs(path mod_path) ``{
+	// get the specified char-major-250-*
+	list tv_installs = SCR::Dir(add (mod_path, "install"));
+
+	if (tv_installs == nil)
+	    return [];
+
+	string major250 = "char-major-250";
+
+	return filter (string alias, (list<string>) tv_installs,
+	    ``(size(alias) > size(major250) && substring(alias, 0, size(major250)) == major250));
+    }
+
+    /**
      * Read parameters of one module.
      * @param mod_path path to agent (using modprobe.conf or modprobe.d/tv)
      * @param module_name Name of the module
@@ -554,6 +572,32 @@ available kernel modules."));
 	return options;
     }
 
+    define list<string> parse_module_string(string input) {
+	list<string> ret = [];
+
+	if (input == nil)
+	{
+	    return ret;
+	}
+
+	list<string> cmds = splitstring(input, ";");
+
+	foreach(string cmd, cmds, {
+		// TODO parse module parameters (in a separate function)
+		string mod_name = regexpsub(cmd, "/sbin/modprobe[ \t]+([^ \t]*)", "\\1");
+		if (mod_name == nil)
+		{
+		    // only module name present
+		    mod_name = cmd;
+		}
+
+		ret = add(ret, mod_name);
+	    }
+	);
+
+	return ret;
+    }
+
     /**
      * Reads saved TV cards data from given file
      * @param mod_path path to agent (using modprobe.conf or modprobe.d/tv)
@@ -575,6 +619,7 @@ available kernel modules."));
 
 	// get the specified char-major-81-*
 	list<string> tv_aliases = GetMajor81Aliases (mod_path);
+	list<string> tv_installs = GetMajor250Installs(mod_path);
 
 	// the parameters read from modprobe.d/tv
 	// $[ "module" :  $[ parameter_name: $[ 0: nil, 1: "3", 2: "2" ] ] ]
@@ -656,6 +701,96 @@ available kernel modules."));
 	}
 	y2milestone ("The previously saved configuration (using '%1' path): %2",
 	    mod_path, tv_cards);
+
+
+	// scan DVB devices (major 250 and minor 3, 65, ...)
+
+	path install_path = add (mod_path, "install");
+	card_no = 0;
+	while (card_no < 4)
+	{
+	    integer minor = (card_no * 64) + 3;
+	    string install = sformat("char-major-250-%1", minor);
+	    if (contains (tv_installs, install))
+	    {
+		string card_name = "";
+		string unique_key = nil;
+
+		// get the module name
+		string read_module_name = (string)SCR::Read (add(install_path, install));
+
+		list<string> module_names = parse_module_string(read_module_name);
+
+		y2debug("Reading install %1: module name is '%2'",
+		    install, module_names);
+		if (read_module_name !=nil && read_module_name!="")
+		{
+		    foreach(string module_name, module_names, {
+			    if (modules_parameters [module_name]:nil == nil)
+			    {
+				modules_parameters [module_name] =
+				    ReadModuleParameters (mod_path, module_name);
+
+				modules_counts [module_name]	= 0;
+			    }
+			}
+		    );
+
+		    // get the name and unique key
+		    string comment = (string) SCR::Read (
+			add (add (install_path, install), "comment"));
+		    map name_and_uk =
+			ModulesComments::ExtractFromComment (comment);
+
+		    if (name_and_uk != nil)
+		    {
+			card_name	= name_and_uk["name"]:"";
+			unique_key=(string)lookup(name_and_uk,"unique_key",nil);
+		    }
+
+		    map parameters = $[];
+
+		    foreach(string module_name, module_names, {
+			// read the parameters
+			parameters = modules_parameters[module_name]:$[];
+			integer param_no	= modules_counts[module_name]:0;
+			modules_counts [module_name]	= param_no + 1;
+			parameters = mapmap (string key, map value,
+			(map<string,map>) parameters, ``{
+			    return $[ key : value[param_no]:"" ];
+			});
+			parameters = filter (string key, string value,
+			(map<string,string>) parameters,
+			    ``( value != "" && value != nil));
+			}
+		    );
+
+		    // fill the spaces in the cards
+		    while (size(tv_cards) < card_no)
+		    {
+			tv_cards = add (tv_cards, $[]);
+		    }
+
+		    boolean radio = false;
+
+		    // add the card to the cards
+		    tv_cards = add (tv_cards, $[
+			"name"       : card_name,
+			"module"     : module_names,
+			// !!! TODO: parameters for each kernel module
+			"parameters" : parameters,
+			"dvb"        : true,
+			"unique_key" : unique_key,
+			"radio"      : radio ]
+		    );
+		}
+	    }
+	    card_no = card_no + 1;
+	}
+
+	y2milestone ("The previously saved configuration (using '%1' path): %2",
+	    mod_path, tv_cards);
+
 	return tv_cards;
     }
 
@@ -1071,7 +1206,7 @@ to %1."), "/etc/modprobe.d/tv."));
 					    }
 					);
 
-					y2internal("result: %1", result);
+					y2debug("result: %1", result);
 				    }
 				}
 			    );
@@ -1118,7 +1253,7 @@ to %1."), "/etc/modprobe.d/tv."));
 		];
 	}
 	y2milestone("Detected cards: %1", detected_cards);
-	y2internal("Cards: %1", cards);
+	y2milestone("Cards: %1", cards);
 	return true;
     }
 
@@ -1142,7 +1277,6 @@ to %1."), "/etc/modprobe.d/tv."));
 		{
 		    string installed_str = "";
 
-		    y2internal("card: %1", card);
 		    if (card["radio"]:false)
 			installed_str = sformat(
 			    // Summary text (%1 is number)
@@ -1959,6 +2093,8 @@ global define boolean InitializeStationsConfig() ``{
 
 	// increase the progress to "finish"
 	Progress::NextStage ();
+
+	y2milestone("All cards (read & detected): %1", cards);
 
 	return true;
     }
