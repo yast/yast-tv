@@ -13,15 +13,15 @@
 
 textdomain "tv";
 
-import "Wizard";
-import "Wizard_hw";
+import "Label";
+import "Popup";
 import "Progress";
+import "Sequencer";
 import "Summary";
 import "Tv";
+import "Wizard";
+import "Wizard_hw";
 
-import "Popup";
-import "Label";
-include "wizard/sequencer.ycp";
 
 include "tv/helps.ycp";
 include "tv/misc.ycp";
@@ -1605,7 +1605,7 @@ define any MainSequence () ``{
     ];
     // FIXME: better sequences with irc, channels
 
-    any ret = WizardSequencer (aliases, sequence);
+    any ret = Sequencer::Run (aliases, sequence);
 
     return ret;
 }
@@ -1642,7 +1642,7 @@ define any TvSequence () ``{
     ];
 
     Wizard::CreateDialog ();
-    any ret = WizardSequencer (aliases, sequence);
+    any ret = Sequencer::Run (aliases, sequence);
     UI::CloseDialog ();
 
     return ret;

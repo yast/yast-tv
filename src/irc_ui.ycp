@@ -12,16 +12,14 @@
 
 textdomain "tv";
 
+import "Label";
+import "Popup";
+import "Require";
+import "Service";
+import "Tv";
 import "Wizard";
 import "Wizard_hw";
-import "Popup";
-import "Label";
-import "Service";
-import "Require";
 
-import "Tv";
-
-include "wizard/sequencer.ycp";
 
 include "tv/helps.ycp";
 include "tv/misc.ycp";
