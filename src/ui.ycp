@@ -1016,9 +1016,12 @@ your want to edit first."));
 		parameters = add (parameters, selected_parameter, "");
 
 		// Redraw the table
-		UI::ChangeWidget ( `id(`parameters_table),
-				   `Items,
-				   Tv::KernelModuleParametersAsItems(selected_module, parameters));
+        if (!radio)
+		    UI::ChangeWidget ( `id(`parameters_table), `Items,
+			    Tv::KernelModuleParametersAsItems(selected_module, parameters));
+        else
+		    UI::ChangeWidget ( `id(`parameters_table), `Items,
+			    Tv::RadioModuleParametersAsItems(selected_module, parameters));
 		UI::ChangeWidget ( `id(`parameters_table), `CurrentItem, selected_parameter);
 	    }
 	}

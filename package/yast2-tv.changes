@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Mar  7 15:59:56 CET 2003 - jsuchome@suse.de
+
+- fix: bug with reset button for radio module values (#24850)
+
+-------------------------------------------------------------------
 Fri Feb 28 13:39:33 CET 2003 - jsuchome@suse.de
 
 - fixed testsuite (didn't build on s390)
