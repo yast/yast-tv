@@ -305,7 +305,7 @@
      */
     global define boolean ReadUserSettings () ``{
 
-	string file	= Directory::vardir + "tv.ycp";
+	string file	= Directory::vardir + "/tv.ycp";
 	if (SCR::Read (.target.size, file) == -1)
 	{
 	    SCR::Execute (.target.bash, sformat ("/bin/touch %1", file));
@@ -1861,7 +1861,7 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	}
 
 	// save not_ask status
-	SCR::Write (.target.ycp, Directory::vardir + "tv.ycp",
+	SCR::Write (.target.ycp, Directory::vardir + "/tv.ycp",
 	    $["dont_ask_for_application": not_ask]);
     }
 
@@ -1958,12 +1958,12 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	// list of the unique keys of the already installed cards
 	list installed_uk = add (maplist (map card, cards, ``{
 	    return card["unique_key"]:nil;
-	}), nil);
+	}), "none");
 
 	// list of the not configured tv cards
 	list detected_list = [];
 	foreach (map card, detected_cards, ``{
-	    if (!contains (installed_uk, (string)lookup(card,"unique_key",nil)))
+	    if (!contains (installed_uk, card["unique_key"]:"none"))
 	    {
 		detected_list = add (detected_list,
 		    Summary::Device (card["name"]:"",Summary::NotConfigured()));

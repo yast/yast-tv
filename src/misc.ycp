@@ -76,7 +76,8 @@ define any tvUserInput() ``{
     {
 	ret = UI::UserInput();
     } while ((ret == `cancel || ret == `abort) &&
-	     (Tv::IsDirty()? !Popup::ReallyAbort (true): false));
+	     !Popup::ReallyAbort (Tv::IsDirty()));
+//	     (Tv::IsDirty()? !Popup::ReallyAbort (true): false));
 
     return (ret == `cancel)? `abort: ret;
 }

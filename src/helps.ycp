@@ -190,10 +190,19 @@ cards</B> button.
 define string ChannelsDialogHelp () ``{
 
     return
-_("stations are saved to /etc/X11/xawtvrc
 
-<p>
-helptext for TV stations scan/edit FIXME");
+    // helptext for TV Stations Dialog 1/3
+_("<p>Here you can see the list of TV stations defined for your system.</p>") +
+
+    // helptext for TV Stations Dialog 2/3
+_("<p>You can edit directly the entries in the table using <b>Add</b>,
+<b>Edit</b> and <b>Delete</b> buttons. Alternatively, you can use
+<b>Scan the Channels</b> button to run the scan which could find the available
+TV stations for the given <b>TV norm</b> and <b>Frequency Table</b>.</b>") +
+
+    // helptext for TV Stations Dialog 3/3
+_("<p>The list of stations shown in this table is saved to <i>/etc/X11/xawtvrc</i> file.</p>");
+
 }
 
 /**

@@ -1105,6 +1105,12 @@ define list ChannelsScanPopup (string norm, string freq) ``{
     list stations = [];
     map xawtvrc = $[];
     list retlist = nil;
+    // label (with the meaning: there is no station for this channel)
+    // Keep it short! It is only note after channel + frequency data.
+    // Example of the output strings:
+    // E2   ( 48.25 MHz): no station
+    // E3   ( 55.25 MHz): no station etc.
+    string nostation	= _("no station");
     do
     {
 	ret = UI::PollInput();
@@ -1115,9 +1121,14 @@ define list ChannelsScanPopup (string norm, string freq) ``{
             test_output =
 		(string) select ((list)SCR::Read(.background.newout), 0, nil);
 	    if (test_output != nil)
+	    {
+		if (issubstring (test_output, "no station"))
+		{
+		    test_output = regexpsub (test_output, "(.*)no station(.*)",
+			sformat ("\\1%1\\2", nostation));
+		}
 		UI::ChangeWidget (`id(`scantv), `LastLine, test_output + "\n");
-	    // TODO: translate the output? ("no station")
-	    // FIXME: there is some mess in the scantv output...
+	    }
         }
 	else if (!(boolean)SCR::Read(.background.output_open))
 	{
@@ -1229,37 +1240,59 @@ define term StationPopup (string channel, string station, list items) ``{
  */
 define any ChannelsDialog () ``{
 
-    // dialog caption
-    string caption = _("TV channels configuration");
+    // dialog caption for TV Stations Dialog
+    string caption = _("TV stations configuration");
 
     list norms		= [
 	// TV norm
 	`item(`id("PAL"),	_("PAL")),
+	// TV norm
 	`item(`id("NTSC"),	_("NTSC")),
+	// TV norm
 	`item(`id("SECAM"),	_("SECAM")),
+	// TV norm
 	`item(`id("PAL-NC"),	_("PAL-NC")),
+	// TV norm
 	`item(`id("PAL-N"),	_("PAL-N")),
+	// TV norm
 	`item(`id("PAL-M"),	_("PAL-M")),
+	// TV norm
 	`item(`id("NTSC-JP"),	_("NTSC-JP")),
     ];
     list freqs_items	= [
-	// frequency table
+	// Tv frequency table
 	`item (`id("us-bcast"),		_("us-bcast")),
+	// Tv frequency table
 	`item (`id("us-cable"),		_("us-cable")),
+	// Tv frequency table
 	`item (`id("us-cable-hrc"),	_("us-cable-hrc")),
+	// Tv frequency table
 	`item (`id("japan-bcast"),	_("japan-bcast")),
+	// Tv frequency table
 	`item (`id("japan-cable"),	_("japan-cable")),
+	// Tv frequency table
 	`item (`id("europe-west"),	_("europe-west")),
+	// Tv frequency table
 	`item (`id("europe-east"),	_("europe-east")),
+	// Tv frequency table
 	`item (`id("italy"),		_("italy")),
+	// Tv frequency table
 	`item (`id("newzealand"),	_("newzealand")),
+	// Tv frequency table
 	`item (`id("australia"),	_("australia")),
+	// Tv frequency table
 	`item (`id("ireland"),		_("ireland")),
+	// Tv frequency table
 	`item (`id("france"),		_("france")),
+	// Tv frequency table
 	`item (`id("china-bcast"),	_("china-bcast")),
+	// Tv frequency table
 	`item (`id("southafrica"),	_("southafrica")),
+	// Tv frequency table
 	`item (`id("argentina"),	_("argentina")),
+	// Tv frequency table
 	`item (`id("australia-optus"),	_("australia-optus")),
+	// Tv frequency table
 	`item (`id("russia"),		_("russia")),
     ];
 
