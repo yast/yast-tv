@@ -54,6 +54,7 @@
 
     // Construct the dialogs
     Wizard::CreateDialog();
+    Wizard::SetDesktopIcon("tv");
     Wizard::SetContentsButtons ( caption,
 				 contents,
 				 "",
