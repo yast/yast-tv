@@ -195,7 +195,8 @@ map cmdline = $[
     ],
     "mappings"		: $[
 	"summary"	: [],
-	"add"		: [ "no", "tuner"],// "card", "module"],
+	"add"		: [ "no", "tuner"],// FIXME "card", "module"],
+	//FIXME "edit"
 	"remove"	: [ "no" ],
     ]
 ];

@@ -43,12 +43,12 @@
 	    ]
 	];
 
-    TEST(``(Tv::ReadModuleParameters ("bttv")), [ READ_nil, $[], $[] ], false);
+    TEST(``(Tv::ReadModuleParameters (.modules,"bttv")), [ READ_nil, $[], $[] ], false);
 
-    TEST(``(Tv::ReadModuleParameters ("bttv")), [ READ_empty , $[], $[] ], false);
+    TEST(``(Tv::ReadModuleParameters (.modules,"bttv")), [ READ_empty , $[], $[] ], false);
 
-    TEST(``(Tv::ReadModuleParameters ("bttv")), [ READ_one , $[], $[] ], false);
+    TEST(``(Tv::ReadModuleParameters (.modules,"bttv")), [ READ_one , $[], $[] ], false);
 
 //    TEST(``(Tv::ReadModuleParameters ("card")), [ READ_three , $[], $[] ], false);
-    TEST(``(Tv::ReadModuleParameters ("bttv")), [ READ_three , $[], $[] ], false);
+    TEST(``(Tv::ReadModuleParameters (.modules,"bttv")), [ READ_three , $[], $[] ], false);
 }
