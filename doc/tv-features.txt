@@ -1,7 +1,7 @@
 Fetures of a new YaST2 module
 =============================
 
-Name: WinTV configurator
+Name: YaST2 TV configurator
 ~~~~~
 Purpose:
 ~~~~~~~~
