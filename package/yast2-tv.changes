@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Aug 25 09:05:07 CEST 2004 - lslezak@suse.cz
+
+- DVB card database
+- read DVB kernel modules
+- edit DVB module parameters
+
+
+-------------------------------------------------------------------
 Mon Aug 23 16:42:20 CEST 2004 - lslezak@suse.cz
 
 - added DVB card detection

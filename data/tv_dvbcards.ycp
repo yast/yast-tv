@@ -1,0 +1,27 @@
+/*
+ * Yast2 DVB card database
+ *
+ * $Id$
+ */
+
+{
+textdomain "tv";
+
+return [
+    $[ "name" :  // Item text in the list of card vendors
+				_("Other vendors"),
+       "cards" :
+	[
+	    $[
+		"name" : "Technotrend-Budget / Hauppauge WinTV-NOVA-T DVB card",
+		"FWsource" : "ttlcdacc.dll",
+		// TODO: support also HTTP/FTP download?
+		"FWtarget" : "/usr/lib/hotplug/firmware/tda1004x.bin",
+		"module" : [ "budget-ci", "tda1004x" ]
+		// "parameters" : $[ "card" : "0" ]
+	    ]
+	]
+    ]
+];
+
+}

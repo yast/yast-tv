@@ -98,6 +98,7 @@
      *   ]
      */
     global list cards_database = nil;
+    global list dvb_cards_database = nil;
 
     /**
      * Database of the tuners for the manual configuration.
@@ -132,6 +133,7 @@
      */
     global map kernel_modules = nil;
     global map radio_modules = nil;
+    global map dvb_modules = nil;
 
     /**
      * Becomes true, when the module is initialized for proposal.
@@ -348,16 +350,24 @@
 	{
 	    cards_database = (list)eval(SCR::Read (.target.yast2, "tv_cards.ycp"));
 	}
-	if (cards_database == nil)
+	if (dvb_cards_database == nil)
+	{
+	    dvb_cards_database = (list)eval(SCR::Read (.target.yast2, "tv_dvbcards.ycp"));
+	}
+	if (cards_database == nil || dvb_cards_database == nil)
 	{
 	    // Error message popup:
 	    Report::Error(_("Unable to read the TV card database."));
 	    cards_database = [];
+	    dvb_cards_database = [];
 	    return false;
 	}
 
-	// translate it
+	// translate them
 	cards_database = (list) eval (cards_database);
+	dvb_cards_database = (list) eval (dvb_cards_database);
+
+	// TODO: merge DVB DB to analog DB
 
 	return true;
     }
@@ -464,8 +474,25 @@ available kernel modules."));
 	    map parm = (map) SCR::Read ( add (radio_path, mod));
 	    radio_modules = add (radio_modules, mod, parm);
 	});
-
 	y2debug ("All radio kernel modules: %1", radio_modules);
+
+	path dvb_path = .modinfo.kernel.drivers.media.dvb.frontends;
+
+	dvb_modules = $[];
+	modules_list = (list) SCR::Dir(dvb_path);
+	if (modules_list == nil)
+	{
+	    // Warning message popup:
+        Report::Warning(_("Unable to read the list of
+available kernel modules."));
+	    return true;
+	}
+	foreach(string mod, (list<string>) modules_list, ``{
+	    map parm = (map) SCR::Read ( add (radio_path, mod));
+	    dvb_modules = add(dvb_modules, mod, parm);
+	});
+	y2debug("All dvb modules: %1", dvb_modules);
+
 	return true;
     }
 
@@ -812,13 +839,16 @@ available kernel modules."));
 	foreach (map card, (list<map>) cards, ``{
 
 	    boolean radio	= card["radio"]:false;
-	    string module_name	= (string) lookup (card,"module",nil);
+
+//	    string module_name	= (string) lookup (card,"module",nil);
+	    list<string> module_names = card["module"]:[];
+
 	    string card_name	= card["name"]:"Manually added card";
 	    string unique_key	= card["unique_key"]:sformat ("tv.nouniqkey%1",
 		(radio ? radio_card_no : tv_card_no));
 	    boolean dvb = card["dvb"]:false;
 
-	    if (module_name != nil && module_name != "")
+	    if (module_names != nil && module_names != [])
 	    {
 		string alias = sformat ("char-major-81-%1",
 		    (radio ? radio_card_no: tv_card_no));
@@ -829,13 +859,36 @@ available kernel modules."));
 		}
 
 		y2milestone ("Writing alias %2 %1 to /etc/modprobe.d/tv",
-		    module_name, alias);
+		    module_names, alias);
 
-		// write alias
-		SCR::Write ( add (.modprobe_tv.alias, alias), module_name);
+		if (size(module_names) == 1)
+		{
+		    // write alias
+		    SCR::Write(add(.modprobe_tv.alias, alias), module_names[0]:"");
+		}
+		else if (size(module_names) > 1)
+		{
+		    string install_string = "";
+
+		    foreach(string m, module_names, {
+			    if (size(install_string) > 0)
+			    {
+				install_string = install_string + "; ";
+			    }
+
+			    install_string = install_string + "/sbin/modprobe " + m;
+			}
+		    );
+
+		    SCR::Write(add(.modprobe_tv.install, alias), install_string);
+		}
+		else
+		{
+		    y2warning("List of kernel modules is empty!");
+		}
 
 		// store parameters to "modules_parameters"
-		list params_with_no = modules_parameters[module_name]:[];
+		list params_with_no = modules_parameters["module_name"/*!!!FIXME!!!*/]:[];
 		integer parameter_counter = params_with_no[0]:0;
 		map parameters = params_with_no[1]:$[];
 
@@ -847,7 +900,7 @@ available kernel modules."));
 		    parameters [param_name]		= param_map;
 		});
 		parameter_counter			= parameter_counter + 1;
-		modules_parameters [module_name]	=
+		modules_parameters ["module_name"/*FIXME!!!*/]	=
 		    [ parameter_counter, parameters ];
 
 		// write comment with unique key and the card name
@@ -858,7 +911,9 @@ available kernel modules."));
 
 		y2debug ("Writing comment to alias %1 in /etc/modprobe.d/tv",
 		    alias);
-		SCR::Write (add(add(.modprobe_tv.alias, alias),"comment"),
+
+		path modpath = (size(module_names) > 1) ? .install : .alias;
+		SCR::Write (add(add(.modprobe_tv + modpath, alias),"comment"),
 		    comment);
 
 		// set the appropriate unique key as configured
@@ -964,9 +1019,9 @@ to %1."), "/etc/modprobe.d/tv."));
 	    return true;
 	}
 
-	// add DVB flag to each DVB TV card
+	// add DVB data to each DVB TV card
 	probe_dvb = maplist(map dvb_card, probe_dvb, ``{
-		dvb_card = add(dvb_card, "dvb", true);
+		dvb_card["dvb"] = true;
 
 		return dvb_card;
 	    }
@@ -993,28 +1048,57 @@ to %1."), "/etc/modprobe.d/tv."));
 		    result = add(result, "unique_key", unique_key);
 		}
 
+		// add DVB flag and info from DB
 		if (tv_card["dvb"]:false)
 		{
 		    result["dvb"] = true;
+
+		    foreach(map vendor, (list<map>) dvb_cards_database, ``{
+			    list<map> cards = (list<map>) vendor["cards"]:[];
+
+			    foreach(map card, cards, ``{
+				    string found_card = result["name"]:"";
+				    string db_card = (string) card["name"]:nil;
+
+				    if (found_card == db_card)
+				    {
+					// add card info without name
+					y2milestone("found card in DB: %1", card["name"]:nil);
+					card = remove(card, "name");
+
+					foreach(string key, any value, (map<string,any>)card, ``{
+						result[key] = value;
+					    }
+					);
+
+					y2internal("result: %1", result);
+				    }
+				}
+			    );
+			}
+		    );
 		}
 
 		// look for the module
 		list drivers = lookup(tv_card, "drivers", []);
-		if (size(drivers) > 0)
+
+		// don't override drivers data from DB
+		if (size(drivers) > 0 && !haskey(result, "module"))
 		{
+		    list modules_list = drivers[0,"modules"]:[];
+		    modules_list = filter(string mod, (list<string>) modules_list[0]:[], {
+			    return mod != nil && mod != "";
+			}
+		    );
 
-		    /* FIXME this should be improved. Just one of the modules is
-		     * taken in respect, which is currently sufficient, but
-		     * later, it could introduce problems...
-		     */
-		    list modules_list	= drivers[0,"modules"]:[];
-		    string module_name	= modules_list[0,0]:"";
+		    y2debug("modules_list: %1", modules_list);
 
-		    if (module_name != nil && module_name != "")
+		    if (size(modules_list) > 0)
 		    {
-			result = add(result, "module", module_name);
+			result = add(result, "module", modules_list);
 		    }
 		}
+
 		integer subdevice = tv_card["sub_device_id"]:-1;
 		integer subvendor = tv_card["sub_vendor_id"]:-1;
 		if (subdevice != -1 && subvendor != -1)
@@ -1034,6 +1118,7 @@ to %1."), "/etc/modprobe.d/tv."));
 		];
 	}
 	y2milestone("Detected cards: %1", detected_cards);
+	y2internal("Cards: %1", cards);
 	return true;
     }
 
@@ -1502,23 +1587,6 @@ to %1."), "/etc/modprobe.d/tv."));
     // Functions working with "kernel_modules"
     /////////////////////////////////////////////////////////////////
 
-    /**
-     * List of the kernel modules for TV cards acceptable by the Combo Box
-     * widget in the ManualDetailsDialog().
-     * @param selected_module The module which should be selected in the Combo Box.
-     * @return list List of `item()s
-     */
-    global define list KernelModulesAsItems(string selected_module) ``{
-	return maplist(string key, map value, (map<string,map>)kernel_modules, ``{
-	    string name = key;
-	    string desc = value["module_description"]:"";
-	    if (desc != "" && desc != "<none>")
-	    {
-		name = sformat("%1: %2", key, desc);
-	    }
-	    return `item(`id(key), name, (key == selected_module));
-	});
-    }
 
     /**
      * List of the kernel modules for radio cards acceptable by the Combo Box
@@ -1526,8 +1594,8 @@ to %1."), "/etc/modprobe.d/tv."));
      * @param selected_module The module which should be selected in the widget
      * @return list List of `item()s
      */
-    global define list RadioModulesAsItems(string selected_module) ``{
-	return maplist (string key, map value, (map<string,map>) radio_modules, ``{
+    global define list ModulesAsItems(map modules, string selected_module) ``{
+	return maplist (string key, map value, (map<string,map>) modules, ``{
 	    string name = key;
 	    string desc = value["module_description"]:"";
 	    if (desc != "" && desc != "<none>")
@@ -1545,39 +1613,9 @@ to %1."), "/etc/modprobe.d/tv."));
      * @param parameters The current values of the kernel module parameters.
      * @return list List of `item()s.
      */
-    global define list KernelModuleParametersAsItems(string selected_module,
+    global define list ModuleParametersAsItems (map modules, string selected_module,
 						     map parameters) ``{
-	map kernel_module = kernel_modules[selected_module]:$[];
-	if (kernel_module == nil)
-	{
-	    return [];
-	}
-
-	// convert the map with parameters to list.
-	// Filter out the "module_*" params
-	list param_list = maplist (string key, any value, (map<string,any>) kernel_module, ``{
-	    term result = nil;
-	    if (substring (key, 0, 7) != "module_")
-	    {
-		result = `item ( `id(key), key, parameters[key]:"", value);
-	    }
-	    return result;
-	});
-
-	// filter out nils
-	return filter (term val, (list<term>) param_list, ``(val != nil));
-    }
-
-    /**
-     * List of the parameters for the selected kernel module acceptable by
-     * the Table widget in the ManualDetailsDialog().
-     * @param selected_module The module which is selected in the Combo Box.
-     * @param parameters The current values of the kernel module parameters.
-     * @return list List of `item()s.
-     */
-    global define list RadioModuleParametersAsItems (string selected_module,
-						     map parameters) ``{
-	map kernel_module = radio_modules[selected_module]:$[];
+	map kernel_module = modules[selected_module]:$[];
 	if (kernel_module == nil)
 	{
 	    return [];
@@ -1595,7 +1633,6 @@ to %1."), "/etc/modprobe.d/tv."));
 	// filter out nils
 	return filter (term val, (list<term>) param_list, ``(val != nil));
     }
-
 ///////////////////////////////////////////////////////////////////////////
 //-------------------------------------------------- LIRC related functions
 
