@@ -49,7 +49,7 @@ define boolean IRCTestPopup (string config_file, string mod, boolean modified) `
 	{
 	    orig_config = Tv::tmpdir + "/lircd.conf";
 	    SCR::Execute (.target.bash,"/bin/cp /etc/lircd.conf "+orig_config);
-	    y2internal ("copy /etc/lirc.conf to %1", orig_config);
+	    y2milestone("copy /etc/lirc.conf to %1", orig_config);
 	}
 	// 1. copy new config file, update sysconfig value
 
@@ -82,7 +82,7 @@ define boolean IRCTestPopup (string config_file, string mod, boolean modified) `
 	    return true;
 	if (orig_config != "")
 	{
-	    y2internal ("copy %1 to /etc", orig_config);
+	    y2milestone("copy %1 to /etc", orig_config);
 	    SCR::Execute (.target.bash,
 		sformat ("/bin/cp %1 /etc/lircd.conf ", orig_config));
 	}

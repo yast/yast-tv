@@ -1,4 +1,5 @@
 Read	.target.yast2 "tv_cards.ycp" []
+Read	.target.yast2 "tv_dvbcards.ycp" []
 Return	true
 Return	true
 Read	.target.yast2 "tv_cards.ycp" [$["cards":[$["module":"bttv", "name":"Unknown bttv card", "parameters":$["card":"0"]], $["module":"bttv", "name":"TView99 CPH06X", "parameters":$["card":"38"]]], "name":"Other vendors"], $["cards":[$["module":"bttv", "name":"ATI TV-Wonder VE", "parameters":$["card":"64"]]], "name":"ATI"]]

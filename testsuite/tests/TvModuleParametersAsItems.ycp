@@ -14,19 +14,19 @@
 	DUMP("---------------");
 
 	Tv::kernel_modules = nil;
-	list items = Tv::KernelModuleParametersAsItems(s_module,params);
+	list items = Tv::ModuleParametersAsItems(Tv::kernel_modules,s_module,params);
 	DUMP(items);
 
 
 	Tv::kernel_modules = $[];
-	items = Tv::KernelModuleParametersAsItems(s_module, params);
+	items = Tv::ModuleParametersAsItems(Tv::kernel_modules,s_module, params);
 	DUMP(items);
 
 
 	Tv::kernel_modules = $[
 		"bttv":$["module_description":"bttv - v4l driver module for bt848/878 based cards", "tuner":"specify installed tuner type"],
 	];
-	items = Tv::KernelModuleParametersAsItems(s_module, params);
+	items = Tv::ModuleParametersAsItems(Tv::kernel_modules,s_module, params);
 	DUMP(items);
 
     }

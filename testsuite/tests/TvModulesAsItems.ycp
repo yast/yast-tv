@@ -15,12 +15,12 @@
 
 	// kernel_modules_database cannot be nil (see ReadKernelModules)
 	/*Tv::kernel_modules = nil;
-	list items = Tv::KernelModulesAsItems(s_module);
+	list items = Tv::ModulesAsItems(s_module);
 	DUMP(items);*/
 
 
 	Tv::kernel_modules = $[];
-	list items = Tv::KernelModulesAsItems(s_module);
+	list items = Tv::ModulesAsItems(Tv::kernel_modules,s_module);
 	DUMP(items);
 
 
@@ -28,7 +28,7 @@
 		"bttv" : $["module_description":"bttv - v4l driver module for bt848/878 based cards"],
 		"zoran": $["module_description":"Zoran ZR36120 based framegrabber"]
 	];
-	items = Tv::KernelModulesAsItems(s_module);
+	items = Tv::ModulesAsItems(Tv::kernel_modules,s_module);
 	DUMP(items);
 
     }

@@ -14,9 +14,10 @@ return [
 	[
 	    $[
 		"name" : "Technotrend-Budget / Hauppauge WinTV-NOVA-T DVB card",
-		"FWsource" : "ttlcdacc.dll",
-		// TODO: support also HTTP/FTP download?
-		"FWtarget" : "/usr/lib/hotplug/firmware/tda1004x.bin",
+		"firmware" : [
+		    // source : target firmware file
+		    $["ttlcdacc.dll" : "/usr/lib/hotplug/firmware/tda1004x.bin"]
+		],
 		"module" : [ "budget-ci", "tda1004x" ]
 		// "parameters" : $[ "card" : "0" ]
 	    ]

@@ -25,6 +25,7 @@
     import "Confirm";
     import "Service";
     import "Label";
+    import "Message";
 
     textdomain "tv";
 
@@ -349,25 +350,81 @@
 	if (cards_database == nil)
 	{
 	    cards_database = (list)eval(SCR::Read (.target.yast2, "tv_cards.ycp"));
+	    if (cards_database == nil)
+	    {
+		// Error message popup:
+		Report::Error(_("Unable to read the TV card database."));
+		cards_database = [];
+		return false;
+	    }
 	}
+
 	if (dvb_cards_database == nil)
 	{
 	    dvb_cards_database = (list)eval(SCR::Read (.target.yast2, "tv_dvbcards.ycp"));
-	}
-	if (cards_database == nil || dvb_cards_database == nil)
-	{
-	    // Error message popup:
-	    Report::Error(_("Unable to read the TV card database."));
-	    cards_database = [];
-	    dvb_cards_database = [];
-	    return false;
+
+	    if (dvb_cards_database == nil)
+	    {
+		// Error message popup:
+		Report::Error(_("Unable to read the TV card database."));
+		dvb_cards_database = [];
+		return false;
+	    }
+
+	    y2debug("DVB db: %1", dvb_cards_database);
+
+	    // add DVB flag to each card
+	    foreach(map vendor, (list<map>) dvb_cards_database, {
+		    list<map> cards = (list<map>) vendor["cards"]:[];
+		    string dvbvendor = vendor["name"]:"";
+
+		    cards = maplist(map card, cards, {
+			    card["dvb"] = true;
+
+			    return card;
+			}
+		    );
+
+		    // merge digital cards to analog
+		    boolean found = false;
+
+		    // search vendor in analog card database
+		    cards_database = maplist(map Avendor, (list<map>) cards_database, {
+			    list<map> Acards = (list<map>) Avendor["cards"]:[];
+			    string vendorname = Avendor["name"]:"";
+
+			    if (vendorname == dvbvendor)
+			    {
+				y2debug("found vendor in analog DB: %1", vendorname);
+
+				Acards = (list<map>)merge(Acards, cards);
+				Avendor["cards"] = Acards;
+				found = true;
+			    }
+
+			    return Avendor;
+			}
+		    );
+
+		    if (!found)
+		    {
+			map newvendor = $[
+			    "name" : dvbvendor,
+			    "cards" : cards
+			];
+			// add vendor and card
+			cards_database = add(cards_database, newvendor);
+			y2debug("new vendor: %1", dvbvendor);
+		    }
+
+		}
+	    );
+
+	    y2debug("DVB db: %1", dvb_cards_database);
 	}
 
 	// translate them
 	cards_database = (list) eval (cards_database);
-	dvb_cards_database = (list) eval (dvb_cards_database);
-
-	// TODO: merge DVB DB to analog DB
 
 	return true;
     }
@@ -818,75 +875,130 @@ available kernel modules."));
 	return tv_cards;
     }
 
-
-    define boolean InstallFWCard(string card, string source, string target) {
-	boolean ret = true;
+    global define boolean IsFWInstalled(string FWpath) {
+	boolean ret = false;
 
 	// is the firmware already installed?
-	if (SCR::Read(.target.size, target) > 0)
+	if (SCR::Read(.target.size, FWpath) > 0)
 	{
-	    y2milestone("Required firmware (%1) is already installed", target);
+	    y2milestone("Required firmware (%1) is already installed", FWpath);
 	    return true;
 	}
 
+	return ret;
+    }
 
-	// popup dialog - ask user for driver CD
-	if (Popup::ContinueCancel(sformat(_("TV card '%1'\nrequires firmware installtion to work.\n\nPlease insert driver CD for this card."), card)) == true)
+    define string AskForFirmware(string card, string filename)
+    {
+	if (filename == nil || filename == "")
 	{
-	    // detect CD-ROM devices
-	    list<map> cdroms = (list<map>) SCR::Read(.probe.cdrom);
+	    return nil;
+	}
 
-	    // create mount point
-	    string mpoint = tmpdir + "/mpoint";
+	term content = `VBox(
+	    `Label(sformat(_("TV card '%1'\nrequires installed firmware to work.\n\nEnter location of the firmware file then\npress Continue to install the firmware."), card)),
+	    `VSpacing(1),
+	    `HBox(
+		`HSpacing(2),
+		`Frame(`id(`fr), _("Install firmware"),
+		    `HBox(
+			`TextEntry(`id(`firmware), _("&File"), filename),
+			`VBox(
+			    `Label(""),
+			    `PushButton(`id(`browse), _("Browse..."))
+			)
+		    )
+		),
+		`HSpacing(2)
+	    ),
+	    `VSpacing(1.5),
+	    `HBox(
+		`HStretch(),
+		`HWeight(1, `PushButton(`id(`cont), `opt(`default), Label::ContinueButton())),
+		`HSpacing(2),
+		`HWeight(1, `PushButton(`id(`cancel), Label::CancelButton())),
+		`HStretch()
+	    ),
+	    `VSpacing(0.5)
+	);
 
-	    SCR::Execute(.target.mkdir, mpoint);
+	UI::OpenDialog(content);
 
-	    boolean firmware_found = false;
+	symbol ui = nil;
+	string file = filename;
 
-	    foreach(map cdrom, cdroms, {
-		    string cddevice = cdrom["dev_name"]:"";
+	while (ui != `cont && ui != `cancel)
+	{
+	    ui = (symbol) UI::UserInput();
 
-		    if (!firmware_found && cddevice != "" && cddevice != nil)
-		    {
-			// mount the CD-ROM device
-			boolean result = (boolean) SCR::Execute(.target.mount, [cddevice, mpoint], "-o ro");
+	    if (ui == `browse)
+	    {
+		string currentfile = (string) UI::QueryWidget(`id(`firmware), `Value);
+		string newfile = (string) UI::AskForExistingFile(currentfile, "*", _("Select Firmware File"));
 
-			// start search
-			string search = sformat("/usr/bin/find '%1' -name '%2'", mpoint, source);
-			map out = (map) SCR::Execute(.target.bash_output, search);
-
-			// check results
-			if (out["exit"]:-1 == 0)
-			{
-			    string output = out["stdout"]:"";
-
-			    list<string> foundfiles = splitstring(output, "\n");
-
-			    if (size(foundfiles) > 1)
-			    {
-				y2warning("Found firmwares: %1, using: %2", foundfiles, foundfiles[0]:"");
-			    }
-
-			    string firmware = foundfiles[0]:"";
-
-			    if (firmware != "")
-			    {
-				// copy the firmware
-				string copy = sformat("/bin/cp '%1' '%2'", firmware, target);
-				y2milestone("copying firmware %1 -> %2", firmware, target);
-
-				integer result = (integer) SCR::Execute(.target.bash, copy);
-				ret = (result == 0);
-
-				firmware_found = true;
-			    }
-			}
-
-			// unmount the device
-			SCR::Execute(.target.umount, mpoint);
-		    }
+		if (newfile != nil)
+		{
+		    UI::ChangeWidget(`id(`firmware), `Value, file);
+		    file = newfile;
 		}
-	    );
+	    }
+	    else if (ui == `cont)
+	    {
+		file = (string) UI::QueryWidget(`id(`firmware), `Value);
+		// check whether file exists
+		integer sz = (integer) SCR::Read(.target.size, file);
+
+		if (sz < 0)
+		{
+		    Report::Error(Message::CannotOpenFile(file));
+		    ui = `dummy;
+		}
+	    }
+	}
+
+	UI::CloseDialog();
+	return (ui != `cont) ? nil : file;
+    }
+
+
+    define boolean InstallFWCard(string card, string source, string target) {
+	boolean ret = false;
+
+	if (IsFWInstalled(target))
+	{
+	    // the firmware is already instralled
+	    return true;
+	}
+
+	boolean firmware_found = false;
+	boolean install = true;
+
+	// install firmware until it succeeds or user cancels the installation
+	while (install)
+	{
+	    string firmware = AskForFirmware(card,source);
+
+	    if (firmware != "" && firmware != nil)
+	    {
+		// copy the firmware
+		string copy = sformat("/bin/cp '%1' '%2'", firmware, target);
+		integer result = (integer) SCR::Execute(.target.bash, copy);
+
+		ret = (result == 0);
+		y2milestone("copying firmware %1 -> %2 exit: %3", firmware, target, result);
+
+		firmware_found = true;
+	    }
+
+	    if (ret == false)
+	    {
+		// try installation of the firmware again?
+		install = Popup::YesNo(_("Installation of the firmware has failed.\nTry the installation again?"));
+	    }
+	    else
+	    {
+		install = false;
+	    }
 	}
 
 	if (ret == false)
@@ -898,16 +1010,29 @@ available kernel modules."));
 	return ret;
     }
 
+    /**
+     * Install firmware for all configured cards
+     * @return boolean True on success
+     */
     define boolean InstallFW() {
 	boolean ret = true;
 
-	foreach (map card, (list<map>) cards, {
-		if (card["FWsource"]:"" != "" && card["FWtarget"]:"" != "")
+	foreach(map card, (list<map>) cards, {
+		list<map<string,string> > firmware = card["firmware"]:[];
+
+		// is a firmware needed?
+		if (size(firmware) > 0)
 		{
-		    if (!InstallFWCard(card["name"]:"TV", card["FWsource"]:"", card["FWtarget"]:""))
-		    {
-			ret = false;
-		    }
+		    foreach(map<string,string> fw, firmware, {
+			    foreach(string source, string target, fw, {
+				    if (!InstallFWCard(card["name"]:"TV", source, target))
+				    {
+					ret = false;
+				    }
+				}
+			    );
+			}
+		    );
 		}
 	    }
 	);
@@ -1078,10 +1203,10 @@ available kernel modules."));
 		}
 	    );
 
-	    if (size(module_names) > 1)
-	    {
-		// remove install line
-	    }
+//	    if (size(module_names) > 1)
+//	    {
+//		// TODO:remove install line
+//	    }
 	});
 
 	// FIXME remove DVB cards
@@ -2254,17 +2379,21 @@ global define boolean InitializeStationsConfig() ``{
 	//   1: Write the settings
 	//   2: Write the sound volume
 	//   3: Install necessary software
-	integer no_of_steps = 2;
+	integer no_of_steps = 3;
 
 	list<string> stages = [
             // Progress stage
             _("Write the settings"),
+            // Progress stage
+            _("Install firmware"),
             // Progress stage
 	    _("Update sound volume")];
 
 	list steps = [
             // Progress step
             _("Writing the settings..."),
+            // Progress step
+            _("Installing firmware..."),
             // Progress step
 	    _("Updating the sound volume...")];
 
@@ -2296,7 +2425,7 @@ global define boolean InitializeStationsConfig() ``{
 	// no "eval (abort)" is currently called. May need
 	// improvement when the writing sequence gets longer.
 
-	y2internal("cards: %1", cards);
+	y2debug("cards: %1", cards);
 
 	// Write the settings
 	Progress::NextStage ();
@@ -2305,6 +2434,7 @@ global define boolean InitializeStationsConfig() ``{
 	    return false;
 	}
 
+	Progress::NextStage ();
 	if (cards_dirty && !InstallFW())
 	{
 	    return false;
