@@ -1,0 +1,15 @@
+{
+
+    include "testsuite.ycp";
+
+    include "tv/misc.ycp";
+
+
+	TEST(``(CmpParameters($[],$[])), [], []);
+
+	TEST(``(CmpParameters($[ "card":"0" ],$[ "card":"0" ])), [], []);
+
+	TEST(``(CmpParameters($[ "card":"0", "tuner":"0" ],$[ "card":"0", "tuner": "1" ])), [], []);
+
+	TEST(``(CmpParameters($[ "card":"0", "tuner":nil ],$[ "card":"0" ])), [], []);
+}
