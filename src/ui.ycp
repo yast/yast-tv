@@ -279,8 +279,7 @@ define term CardsSelectionBox ( list vendor_cards_db,
 
     y2debug("vendor_cards_db: %1", vendor_cards_db);
     y2debug("parameters: %1", parameters);
-    y2debug("mod: %1", mod);
-
+    y2debug("modules: %1", modules);
 
     integer card_no = 0;
     boolean some_is_selected = false;
@@ -296,7 +295,7 @@ define term CardsSelectionBox ( list vendor_cards_db,
 	    select_this = card["parameters"]:$[] == parameters;
 	    if (select_this)
 	    {
-		y2debug("card: %1", card["parameters",current_module]:$[]);
+		y2debug("card params: %1", card["parameters"]:$[]);
 		y2debug("parameters: %1", parameters);
 	    }
 	}
@@ -421,6 +420,8 @@ define any ManualDialog (boolean warn) ``{
 
     all_vendors		= vendors_and_selected[0]:[];
     selected_vendor	= (integer) select (vendors_and_selected, 1, nil);
+
+    y2debug("Selected vendor: %1", selected_vendor);
 
     if (selected_vendor != nil)
     {

@@ -1578,7 +1578,7 @@ to %1."), "/etc/modprobe.d/tv."));
 		result = add(result, "name", card_name);
 
 		// look for the unique id
-		string unique_key = lookup(tv_card, "unique_key", nil);
+		string unique_key = (string)lookup(tv_card, "unique_key", nil);
 		if (unique_key != nil)
 		{
 		    result = add(result, "unique_key", unique_key);
@@ -1655,7 +1655,7 @@ to %1."), "/etc/modprobe.d/tv."));
 		detected_cards = add(detected_cards, result);
 	    });
 
-	if (Mode::test)
+	if (Mode::test())
 	{
 	    detected_cards =
 		[ $["name":"Bt848 TV with DMA push", "unique_key":"qluk.HvsIesmJqQ4"],
@@ -2026,7 +2026,7 @@ to %1."), "/etc/modprobe.d/tv."));
 	list detected_list = maplist(map card, (list<map<string,any> >) detected_cards, ``{
 	    term ret = nil;
 
-	    string uk = lookup(card, "unique_key", nil);
+	    string uk = (string)lookup(card, "unique_key", nil);
 	    if (uk != nil && !contains(installed_uk, uk))
 	    {
 		ret = `item(`id(card_no), lookup(card, "name", ""), is_first);

@@ -42,7 +42,7 @@
 	}
 	else if (WFM::Args (i) == .test)
 	{
-	    Mode::test = true;
+	    Mode::SetTest("test");
 	}
 	i = i + 1;
     }
