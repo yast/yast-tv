@@ -26,25 +26,30 @@
     // Read() returns options for one card
     map READ_one =
 	$[ "modules" :
-	    $[ "options" : $[ "card" : "2",
+	    $[ "options" : $[
+            "bttv": $[ "card" : "2",
 			      "tuner" : "5" ]
+                  ]
 	    ]
 	];
 
     // Read() returns options for three cards
     map READ_three =
 	$[ "modules" :
-	    $[ "options" : $[ "card" :  ",,3",
+	    $[ "options" :
+            $[ "bttv": $[ "card" :  ",,3",
 			      "tuner" : "a,b,c",
 			      "blah":   ",y," ]
+            ]
 	    ]
 	];
 
-    TEST(``(Tv::ReadModuleParameters ("card")), [ READ_nil, $[], $[] ], false);
+    TEST(``(Tv::ReadModuleParameters ("bttv")), [ READ_nil, $[], $[] ], false);
 
-    TEST(``(Tv::ReadModuleParameters ("card")), [ READ_empty , $[], $[] ], false);
+    TEST(``(Tv::ReadModuleParameters ("bttv")), [ READ_empty , $[], $[] ], false);
 
-    TEST(``(Tv::ReadModuleParameters ("card")), [ READ_one , $[], $[] ], false);
+    TEST(``(Tv::ReadModuleParameters ("bttv")), [ READ_one , $[], $[] ], false);
 
-    TEST(``(Tv::ReadModuleParameters ("card")), [ READ_three , $[], $[] ], false);
+//    TEST(``(Tv::ReadModuleParameters ("card")), [ READ_three , $[], $[] ], false);
+    TEST(``(Tv::ReadModuleParameters ("bttv")), [ READ_three , $[], $[] ], false);
 }

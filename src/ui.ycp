@@ -754,6 +754,8 @@ for the selected card."));
 
 /**
  * A dialog allowing the manual selection of the card.
+ * @parameter allow_changeoftype if true, additional checkbutton for selecting
+ * radio card modules is shown
  * @return any The value of the resulting UserInput.
  */
 global define any ManualDetailsDialog(boolean allow_changeoftype) ``{

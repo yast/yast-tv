@@ -133,6 +133,8 @@ If you want to configure the radio card, you have to choose appropriate kernel m
 
     /**
      * Help texts for ManualDetailsDialog()
+     * @parameter allow_changeoftype if true, additional helptext about radio
+     * cards is added
      * @return The help text.
      */
     global define string ManualDetailsDialogHelp(boolean allow_changeoftype) ``{
