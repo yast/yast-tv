@@ -26,6 +26,19 @@
 	    $[ "lib" :
 		$[ "yast" :
 		    $[ "unique" :
+			[ $[ "contents" : [ $[ "state":"configured;0", "unique" : "ooo.ppp"],
+					    $[ "state":"configured", "unique" : "xyz.12345678"] ],
+			     "section":"network"],
+			  $[ "contents" : [ $[ "state":"configured", "unique" : "j4n8.dny4jt7n78C"] ],
+			     "section":"tv"] ]
+     ]]]];
+	
+    // two tv cards
+    map READ_two_tv_cards =
+	$[ "var" :
+	    $[ "lib" :
+		$[ "yast" :
+		    $[ "unique" :
 			[ $[ "contents" : [ $[ "state":"configured;0", "unique" : "ooo.ppp"] ],
 			     "section":"network"],
 			  $[ "contents" : [ $[ "state":"configured", "unique" : "j4n8.dny4jt7n78C"],
@@ -39,6 +52,8 @@
     TEST(``(UniqueKeys::ReadSection ("tv")), [ READ_none_tv_card, $[], $[] ], false);
 
     TEST(``(UniqueKeys::ReadSection ("tv")), [ READ_one_tv_card, $[], $[] ], false);
+	
+    TEST(``(UniqueKeys::ReadSection ("tv")), [ READ_two_tv_cards, $[], $[] ], false);
 }
 
 

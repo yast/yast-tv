@@ -37,6 +37,7 @@ include "tv/misc.ycp";
 /**
  * Enhanced version of UserInput which asks if really abort after
  * pressing [Abort].
+ * @return any The value of the resulting UserInput.
  */
 global define any tvUserInput() ``{
     any ret = nil;
@@ -52,8 +53,9 @@ global define any tvUserInput() ``{
 
 /**
  * Whole configuration of tv
+ * @return Sequence result of WizardSequencer().
  */
-global define TvSequence () ``{
+global define any TvSequence () ``{
     map aliases =
 	$[
 	    "read"	: [ ``( ReadDialog () ), true ],
@@ -98,8 +100,9 @@ global define TvSequence () ``{
 /**
  * Whole configuration of TV without reading and writing.
  * It is needed for the proposal stuff.
+ * @return Sequence result of MainSequence().
  */
-global define TvSequenceNoIO () ``{
+global define any TvSequenceNoIO () ``{
     string caption = _("Initializing TV card configuration");
     term contents = `Label (_("Initializing ..."));
 
@@ -118,24 +121,27 @@ global define TvSequenceNoIO () ``{
 
 /**
  * Just a wrapper for Tv::CardAddCurrent() to be used in the wizard sequencer.
+ * @return Symbol for next dialog.
  */
-global define CardAddCurrentWrapper() ``{
+global define any CardAddCurrentWrapper() ``{
     Tv::CardAddCurrent ();
     return `next;
 }
 
 /**
  * Just a wrapper for Tv::CardReplaceWithCurrent() to be used in the wizard sequencer.
+ * @return Symbol for next dialog.
  */
-global define CardReplaceWithCurrentWrapper() ``{
+global define any CardReplaceWithCurrentWrapper() ``{
     Tv::CardReplaceWithCurrent (Tv::current_card_no);
     return `next;
 }
 
 /**
  * Main workflow of the tv configuration
+ * @return Sequence result of WizardSequencer().
  */
-global define MainSequence () ``{
+global define any MainSequence () ``{
     map aliases =
 	$[
 	    "detected"	      : ``( DetectedDialog () ),
@@ -252,8 +258,9 @@ global define MainSequence () ``{
 
 /**
  * Read settings dialog
+ * @return Symbol for next or abort dialog.
  */
-global define ReadDialog () ``{
+global define any ReadDialog () ``{
     // Set help text
     Wizard::RestoreHelp (ReadDialogHelp ());
 
@@ -272,8 +279,9 @@ global define ReadDialog () ``{
 
 /**
  * Write settings dialog
+ * @return Symbol for next or abort dialog.
  */
-global define WriteDialog () ``{
+global define any WriteDialog () ``{
     // Set help text
     Wizard::RestoreHelp (WriteDialogHelp ());
 
@@ -454,7 +462,7 @@ of \"%1\"?"), lookup(Tv::current_card, "name", "")));
  * Constructs the cards selection box for the selected vendor.
  * @param vendor_cards_db List of cards provided by the selected vendor.
  * @param parameters The current parameters to preselect the right model.
- * @return term The selection box
+ * @return term The selection box.
  */
 global define term CardsSelectionBox ( list vendor_cards_db,
 				       map  parameters ) ``{
@@ -769,6 +777,8 @@ of available kernel modules...")),
 
     // For translators: Label for the TextEntry. %1 means name of the kernel module's parameter.
     string parameter_label = _("&Parameter \"%1\":");
+    // For translators: Label for the TextEntry, when kernel module has no parameters.
+    string parameter_label_nil = _("(no parameters)");
 
     term contents =
 	`HBox(`HSpacing(1.5),
@@ -841,6 +851,21 @@ of available kernel modules...")),
 	    UI::ChangeWidget ( `id(`parameters_table),
 			       `Items,
 			       Tv::KernelModuleParametersAsItems(selected_module, parameters));
+	    selected_parameter = UI::QueryWidget (`id(`parameters_table), `CurrentItem);
+		string value = lookup (parameters, selected_parameter, "");
+		if (selected_parameter!=nil) {
+			UI::ChangeWidget (`id(`parameter_entry), `Label, sformat(parameter_label, selected_parameter));
+		    UI::ChangeWidget (`id(`parameter_entry), `Value, value);
+            UI::ChangeWidget (`id(`parameter_entry), `Enabled, true);
+            UI::ChangeWidget (`id(`set_button), `Enabled, true);
+            UI::ChangeWidget (`id(`reset_button), `Enabled, true);
+		}
+		else {
+			UI::ChangeWidget (`id(`parameter_entry), `Label, sformat(parameter_label_nil));
+            UI::ChangeWidget (`id(`parameter_entry), `Enabled, false);
+            UI::ChangeWidget (`id(`set_button), `Enabled, false);
+            UI::ChangeWidget (`id(`reset_button), `Enabled, false);
+		}
 	}
 	// The user selects a parameter in the Table
 	if (ret == `parameters_table)
@@ -858,7 +883,7 @@ of available kernel modules...")),
 	{
 	    if (selected_parameter == nil || selected_parameter == "")
 	    {
-		// For translators: The user chose [Set] but did select a parameter she wants to set
+		// For translators: The user chose [Set] but did not select a parameter she wants to set
 		UI::MessagePopup (_("Please select the parameter
 your want to edit first."));
 	    }
