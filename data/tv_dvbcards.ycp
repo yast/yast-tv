@@ -15,6 +15,10 @@ return [
 	    $[
 		"name" : "Technotrend-Budget / Hauppauge WinTV-NOVA-T DVB card",
 		"module" : [ "budget-ci", "tda1004x" ]
+	    ],
+	    $[
+		"name" : "B2C2 FlexCopII DVB chip / Technisat SkyStar2 DVB card",
+		"module" : [ "skystar2", "mt312" ]
 	    ]
 	]
     ]
