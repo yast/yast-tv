@@ -806,8 +806,6 @@ of available kernel modules...")),
 	`HBox(`HSpacing(1.5),
 	      `VBox(
 		  `VSpacing(1.0),
-//          `Right(`CheckBox(`id(`radio_ch), `opt(`notify), _("R&adio card"), radio)),
-	//	  `VSpacing(0.2),
           `ReplacePoint(`id(`modules_rp),
                 `ComboBox(`id(`module_combo),
 			    `opt(`hstretch, `notify),
@@ -819,11 +817,11 @@ of available kernel modules...")),
 			       `VBox(`VSpacing(0.2),
 				     `VBox(`Table(`id(`parameters_table),
 						  `opt(`notify, `immediate),
-				     // For tanslators: Header of a table with kernel module params.
+				     // Header of a table with kernel module params.
 						  `header(_("Paramater"),
-				     // For tanslators: Header of a table with kernel module params.
+				     // Header of a table with kernel module params.
 							  _("Value"),
-				     // For tanslators: Header of a table with kernel module params.
+				     // Header of a table with kernel module params.
 							  _("Description")),
                               []
 //						  Tv::KernelModuleParametersAsItems(selected_module,
@@ -850,7 +848,7 @@ of available kernel modules...")),
 		  `VSpacing(0.5),
           (allow_changeoftype ? `Left(`CheckBox(`id(`radio_ch), `opt(`notify),
             // checkbox label
-            `opt (`key_F7),  _("R&adio card modules"), radio)) : `VSpacing(0)),
+            _("R&adio card modules"), radio)) : `VSpacing(0)),
 		  `VSpacing(0.5)
 	      ),
 	      `HSpacing(1.5)
