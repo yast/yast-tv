@@ -1241,7 +1241,7 @@ define term StationPopup (string channel, string station, list items) ``{
 define any ChannelsDialog () ``{
 
     // dialog caption for TV Stations Dialog
-    string caption = _("TV stations configuration");
+    string caption = _("TV Station Configuration");
 
     list norms		= [
 	// TV norm
