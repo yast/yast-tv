@@ -17,6 +17,7 @@ import "Wizard_hw";
 import "Popup";
 import "Label";
 import "Runlevel";
+import "Require";
 
 import "Tv";
 
@@ -24,6 +25,163 @@ include "wizard/sequencer.ycp";
 
 include "tv/helps.ycp";
 include "tv/misc.ycp";
+
+/**
+ * Dialog for testing IRC
+ * @return boolean false when Abort was pressed or some problems occured
+ */
+global define boolean IRCTestPopup (string config_file, string mod, boolean modified) ``{
+
+    string orig_module	= "";
+    string orig_config	= "";
+    boolean orig_start	= false;
+
+    /**
+     * internal function
+     * start with temporary LIRC configuration to enable the test
+     * @return empty string on success, error message otherwise
+     */
+    define string lirc_tmp_start () ``{
+
+	if (!modified)
+	    return "";
+	// store old configuration
+	orig_module = (string) SCR::Read (.sysconfig.lirc.LIRC_MODULE);
+	if (SCR::Read (.target.size, "/etc/lircd.conf") != -1)
+	{
+	    orig_config = Tv::tmpdir + "/lircd.conf";
+	    SCR::Execute (.target.bash,"/bin/cp /etc/lircd.conf "+orig_config);
+	    y2internal ("copy /etc/lirc.conf to %1", orig_config);
+	}
+	// 1. copy new config file, update sysconfig value
+
+	SCR::Write (.sysconfig.lirc.LIRC_MODULE, mod);
+	SCR::Write (.sysconfig.lirc, nil);
+
+	if (config_file != "/etc/lircd.conf")
+	    SCR::Execute (.target.bash,
+		sformat ("/bin/cp %1 /etc/lircd.conf", config_file));
+
+        // 2. start service (what if it is running?)
+	orig_start = (Runlevel::ServiceStatus ("lirc") == 0);
+
+	map out = $[];
+	//when module cannot be loaded, Runlevel returns 0 -> use target.bash
+	if (orig_start)
+	    out = (map) SCR::Execute (.target.bash_output, "rclirc restart");
+	else
+	    out = (map) SCR::Execute (.target.bash_output, "rclirc start");
+y2internal ("out: %1", out);
+	return out["stderr"]:"";
+    }
+
+    /**
+     * internal function
+     * return LIRC configuration to original state after testing
+     */
+    define boolean lirc_tmp_stop () ``{
+
+	if (!modified)
+	    return true;
+	if (orig_config != "")
+	{
+	    y2internal ("copy %1 to /etc", orig_config);
+	    SCR::Execute (.target.bash,
+		sformat ("/bin/cp %1 /etc/lircd.conf ", orig_config));
+	}
+	SCR::Write (.sysconfig.lirc.LIRC_MODULE, orig_module);
+	SCR::Write (.sysconfig.lirc, nil);
+	if (orig_start)
+	    Runlevel::RunInitScript ("lirc", "restart");
+	else
+	    Runlevel::RunInitScript ("lirc", "stop");
+	return true;
+    }
+
+    UI::OpenDialog(`opt(`decorated), `HBox(`HSpacing(1.5),
+    `VBox(
+        `VSpacing(1),
+        // Wait text label
+        `Label(_("Initializing -- please wait...")),
+        `VSpacing(1),
+        `PushButton(`id(`done), `opt(`default), Label::AbortButton()),
+        `VSpacing(1)),
+    `HSpacing(1.5)
+    ));
+
+    string start = lirc_tmp_start ();
+    if (start != "")
+    {
+	// error popup text
+	ErrorWithDetails (_("Starting the 'lirc' service failed."), start);
+	UI::CloseDialog();
+	lirc_tmp_stop ();
+	return false;
+    }
+
+    // test if IRC device is present
+    if (SCR::Execute(.target.bash, "echo 2>/dev/null < /dev/lirc") != 0)
+    {
+	// error popup text
+	Popup::Error (_("No IRC device is present.
+(Maybe wrong module was loaded.)"));
+	UI::CloseDialog();
+	lirc_tmp_stop ();
+	return false;
+    }
+
+    // 3. run irw -> test
+    SCR::Execute (.background.run_output, "/usr/bin/irw");
+
+    UI::CloseDialog();
+    // construct the dialog
+    UI::OpenDialog(`opt(`decorated), `HBox(`HSpacing(1.5),
+    `VSpacing(18),
+    `VBox(
+        `HSpacing(60),
+        `VSpacing(0.5),
+	// Popup label (heading)
+        `Label(_("IRC Test")),
+	// Popup label (info text), please keep translation
+        `Label(_("Push the buttons of your IR controler to test its functionality.")),
+        `VSpacing(0.5),
+        `LogView (`id (`irw), "", 10, 0),
+        `VSpacing(0.5),
+        `PushButton(`id(`done), `opt(`default), Label::OKButton()),
+        `VSpacing(0.5)),
+    `HSpacing(1.5)
+    ));
+
+    // read the irw output
+    string test_output = "";
+    any ret = nil;
+    do
+    {
+	ret = UI::PollInput();
+        if ((boolean) SCR::Read(.background.output_open) &&
+	    (integer) SCR::Read(.background.newlines)>0)
+        {
+            // read the output line from irw:
+            test_output = (string)
+		select ((list)SCR::Read(.background.newout), 0, nil);
+	    if (test_output != nil)
+		UI::ChangeWidget (`id(`irw), `LastLine, test_output + "\n");
+        }
+	else if (!(boolean)SCR::Read(.background.output_open))
+	{
+	    // error text
+	    Popup::Error(_("Testing application is not responding."));
+	    ret = `ok;
+	}
+    }
+    while (ret == nil);
+
+    SCR::Execute(.background.kill, nil);
+    lirc_tmp_stop ();
+    UI::CloseDialog();
+
+    return true;
+}
 
 
 /**
@@ -48,7 +206,7 @@ global define any IRCDialog (boolean alone) ``{
     list remotes_items = [];
     foreach (string control, Tv::remotes, ``{
 	list aslist = splitstring (control, "/");
-	string last = select (aslist, size(aslist)-1, "");
+	string last = aslist [ size(aslist)-1 ]:"";
 	if (issubstring (last, "lircd.conf."))
 	    last = substring (last, size ("lircd.conf."));
 	if (last != "")
@@ -124,18 +282,18 @@ global define any IRCDialog (boolean alone) ``{
     {
 	ret = tvUserInput();
 
-	irc_config = UI::QueryWidget (`id(`config),  `Value);
+	irc_config = (string) UI::QueryWidget (`id(`config),  `Value);
 
-	if (irc_module != UI::QueryWidget (`id(`mods),  `Value))
+	if (irc_module != (string) UI::QueryWidget (`id(`mods),  `Value))
 	{
-	    irc_module = UI::QueryWidget (`id(`mods),  `Value);
-	    if (UI::QueryWidget (`id(`desc_ch), `Value))
+	    irc_module = (string) UI::QueryWidget (`id(`mods),  `Value);
+	    if ((boolean) UI::QueryWidget (`id(`desc_ch), `Value))
 		UI::ChangeWidget (`id(`desc),`Value,
 		    Tv::irc_modules [irc_module]:"");
 	}
 	if (ret == `desc_ch)
 	{
-	    if (UI::QueryWidget (`id(`desc_ch), `Value))
+	    if ((boolean) UI::QueryWidget (`id(`desc_ch), `Value))
 	    {
 		if (Tv::irc_modules == $[])
 		{
@@ -209,162 +367,6 @@ Install it now?")))
 	Tv::irc_config = irc_config;
     }
     return ret;
-}
-
-/**
- * Dialog for testing IRC
- * @return boolean false when Abort was pressed or some problems occured
- */
-global define boolean IRCTestPopup (string config_file, string mod, boolean modified) ``{
-
-    /**
-     * internal function
-     * start with temporary LIRC configuration to enable the test
-     * @return empty string on success, error message otherwise
-     */
-    define string lirc_tmp_start () ``{
-
-	if (!modified)
-	    return "";
-	// store old configuration
-	orig_module = SCR::Read (.sysconfig.lirc.LIRC_MODULE);
-	if (SCR::Read (.target.size, "/etc/lircd.conf") != -1)
-	{
-	    orig_config = Tv::tmpdir + "/lircd.conf";
-	    SCR::Execute (.target.bash,"/bin/cp /etc/lircd.conf "+orig_config);
-	    y2internal ("copy /etc/lirc.conf to %1", orig_config);
-	}
-	// 1. copy new config file, update sysconfig value
-
-	SCR::Write (.sysconfig.lirc.LIRC_MODULE, mod);
-	SCR::Write (.sysconfig.lirc, nil);
-
-	if (config_file != "/etc/lircd.conf")
-	    SCR::Execute (.target.bash,
-		sformat ("/bin/cp %1 /etc/lircd.conf", config_file));
-
-        // 2. start service (what if it is running?)
-	orig_start = (Runlevel::ServiceStatus ("lirc") == 0);
-
-	map out = $[];
-	//when module cannot be loaded, Runlevel returns 0 -> use target.bash
-	if (orig_start)
-	    out = SCR::Execute (.target.bash_output, "rclirc restart");
-	else
-	    out = SCR::Execute (.target.bash_output, "rclirc start");
-y2internal ("out: %1", out);
-	return out["stderr"]:"";
-    }
-
-    /**
-     * internal function
-     * return LIRC configuration to original state after testing
-     */
-    define boolean lirc_tmp_stop () ``{
-
-	if (!modified)
-	    return true;
-	if (orig_config != "")
-	{
-	    y2internal ("copy %1 to /etc", orig_config);
-	    SCR::Execute (.target.bash,
-		sformat ("/bin/cp %1 /etc/lircd.conf ", orig_config));
-	}
-	SCR::Write (.sysconfig.lirc.LIRC_MODULE, orig_module);
-	SCR::Write (.sysconfig.lirc, nil);
-	if (orig_start)
-	    Runlevel::RunInitScript ("lirc", "restart");
-	else
-	    Runlevel::RunInitScript ("lirc", "stop");
-	return true;
-    }
-
-    UI::OpenDialog(`opt(`decorated), `HBox(`HSpacing(1.5),
-    `VBox(
-        `VSpacing(1),
-        // Wait text label
-        `Label(_("Initializing -- please wait...")),
-        `VSpacing(1),
-        `PushButton(`id(`done), `opt(`default), Label::AbortButton()),
-        `VSpacing(1)),
-    `HSpacing(1.5)
-    ));
-
-    string orig_module	= "";
-    string orig_config	= "";
-    boolean orig_start	= false;
-
-    string start = lirc_tmp_start ();
-    if (start != "")
-    {
-	// error popup text
-	ErrorWithDetails (_("Starting the 'lirc' service failed."), start);
-	UI::CloseDialog();
-	lirc_tmp_stop ();
-	return false;
-    }
-
-    // test if IRC device is present
-    if (SCR::Execute(.target.bash, "echo 2>/dev/null < /dev/lirc") != 0)
-    {
-	// error popup text
-	Popup::Error (_("No IRC device is present.
-(Maybe wrong module was loaded.)"));
-	UI::CloseDialog();
-	lirc_tmp_stop ();
-	return false;
-    }
-
-    // 3. run irw -> test
-    SCR::Execute (.background.run_output, "/usr/bin/irw");
-
-    UI::CloseDialog();
-    // construct the dialog
-    UI::OpenDialog(`opt(`decorated), `HBox(`HSpacing(1.5),
-    `VSpacing(18),
-    `VBox(
-        `HSpacing(60),
-        `VSpacing(0.5),
-	// Popup label (heading)
-        `Label(_("IRC Test")),
-	// Popup label (info text), please keep translation
-        `Label(_("Push the buttons of your IR controler to test its functionality.")),
-        `VSpacing(0.5),
-        `LogView (`id (`irw), "", 10, 0),
-        `VSpacing(0.5),
-        `PushButton(`id(`done), `opt(`default), Label::OKButton()),
-        `VSpacing(0.5)),
-    `HSpacing(1.5)
-    ));
-
-    // read the irw output
-    string test_output = "";
-    any ret = nil;
-    do
-    {
-	ret = UI::PollInput();
-        if (SCR::Read(.background.output_open) &&
-	    SCR::Read(.background.newlines)>0)
-        {
-            // read the output line from irw:
-            test_output = select (SCR::Read(.background.newout), 0, nil);
-	    if (test_output != nil)
-		UI::ChangeWidget (`id(`irw), `LastLine, test_output + "\n");
-        }
-	else if (!SCR::Read(.background.output_open))
-	{
-	    // error text
-	    Popup::Error(_("Testing application is not responding."));
-	    ret = `ok;
-	}
-    }
-    while (ret == nil);
-
-    SCR::Execute(.background.kill, nil);
-    lirc_tmp_stop ();
-    UI::CloseDialog();
-
-    return true;
 }
 
 

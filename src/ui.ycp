@@ -27,64 +27,41 @@ include "tv/helps.ycp";
 include "tv/misc.ycp";
 include "tv/irc_ui.ycp";
 
-
 /**
- * Whole configuration of tv
- * @return Sequence result of WizardSequencer().
+ * Read settings dialog
+ * @return Symbol for next or abort dialog.
  */
-global define any TvSequence () ``{
-    map aliases =
-	$[
-	    "read"	: [ ``( ReadDialog () ), true ],
-	    "main"	:   ``( MainSequence () ),
-	    "write"	: [ ``( WriteDialog () ), true ]
-	];
+global define any ReadDialog () ``{
+    // Set help text
+    Wizard::RestoreHelp (ReadDialogHelp ());
 
-    map sequence = $[
-	"ws_start" : "read",
-	"read" :
-	$[
-	    `abort	: `abort,
-	    `next	: "main"
-	],
-	"main" :
-	$[
-	    `abort	: `abort,
-	    `next	: "write"
-	],
-	"write" : $[
-	    `abort	: `abort,
-	    `next	: `next
-	]
-    ];
+    // A callback function for abort
+    block<boolean> callback = ``{
+	return UI::PollInput () == `abort;
+    };
 
-    Wizard::CreateDialog ();
-    any ret = WizardSequencer (aliases, sequence);
-    UI::CloseDialog ();
+    // Read the configuration
+    boolean was_ok = Tv::Read ( callback );
 
-    return ret;
+    return ( was_ok? `next : `abort );
 }
 
 /**
- * Whole configuration of TV without reading and writing.
- * It is needed for the proposal stuff.
- * @return Sequence result of MainSequence().
+ * Write settings dialog
+ * @return Symbol for next or abort dialog.
  */
-global define any TvSequenceNoIO () ``{
-    string caption = _("Initializing TV and Radio Card Configuration");
-    term contents = `Label (_("Initializing ..."));
+global define any WriteDialog () ``{
+    // Set help text
+    Wizard::RestoreHelp (WriteDialogHelp ());
+    Wizard::DisableAbortButton();
 
-    Wizard::CreateDialog ();
-    Wizard::SetContentsButtons ( caption,
-				 contents,
-				 "",
-				 Label::BackButton (),
-				 Label::NextButton ());
+    block<boolean> callback = ``{
+	return UI::PollInput () == `abort;
+    };
+    // Write the configuration
+    boolean was_ok = Tv::Write (callback);
 
-    any ret = MainSequence ();
-
-    UI::CloseDialog ();
-    return ret;
+    return ( was_ok? `next : `abort );
 }
 
 /**
@@ -104,6 +81,1334 @@ global define any CardReplaceWithCurrentWrapper() ``{
     Tv::CardReplaceWithCurrent (Tv::current_card_no);
     return `next;
 }
+
+/**
+ * A dialog showing the detected cards and allowing to configure them.
+ * @return any The value of the resulting UserInput.
+ */
+global define any DetectedDialog() ``{
+    // For translators: Caption of the dialog
+    string caption = _("TV and Radio Card Setup");
+
+    term contents =
+	// Caption of the detected cards list
+	Wizard_hw::DetectedContent(_("TV and Radio Cards to Configure"),
+				   Tv::DetectedCardsAsItems(), false, "");
+
+    Wizard::SetContentsButtons ( caption,
+				 contents,
+				 DetectedDialogHelp (),
+				 Label::BackButton (),
+				 Label::FinishButton () );
+
+    any ret = nil;
+    do
+    {
+	string installed_overview =
+	    // Update the content to the current values
+	    _("<P><B>No TV or radio card installed yet.</B></P>");
+
+	list installed_list = Tv::InstalledCardsSummary ();
+	if (size(installed_list) > 0)
+	{
+	    installed_overview = sformat (
+		// For translators: Overview of the installed cards
+		_("<P><B>Installed TV and Radio Cards:</B>%1</P>"),
+		Summary::DevicesList (installed_list));
+	}
+	UI::ChangeWidget (`id(`configured_richtext), `Value,installed_overview);
+
+	ret = tvUserInput();
+
+	// Configure the autodetected card
+	if (ret == `configure_button)
+	{
+	    integer detected_no =
+		(integer)UI::QueryWidget(`id(`detected_selbox), `CurrentItem);
+
+	    if (detected_no == nil)
+	    {
+		// The user chose [Configure...] but did not select a card
+		Popup::Message(_("Please select a card to configure first."));
+		continue;
+	    }
+
+	    if (detected_no < 0)
+	    {
+		Tv::current_card = $[];
+		Tv::current_card_no = nil;
+		ret = `add_manually;
+	    }
+	    else
+	    {
+		Tv::current_card = Tv::DetectedCardGet(detected_no);
+		Tv::current_card_no = nil;
+		if (Tv::current_card["module"]:"" == "")
+		{
+		    ret = `add_manually_warn;
+		}
+		else
+		{
+		    ret = `add_detected;
+		}
+	    }
+	}
+    } while (ret != `back && ret != `abort && ret != `next &&
+	     ret != `add_manually && ret != `add_manually_warn &&
+	     ret != `add_detected &&
+	     ret != `edit_button);
+
+    return ret;
+}
+
+/**
+ * A dialog giving overview of all the configured cards.
+ * @return any The value of the resulting UserInput.
+ */
+global define any OverviewDialog() ``{
+    // For translators: Caption of the dialog
+    string caption = _("TV and Radio Card Overview");
+
+    // A list of the configured cards in the form allowed by the Table widet
+    //list configured_cards = tvConfiguredCardsTableItems();
+
+    term contents = Wizard_hw::ConfiguredContent(`header(
+        // For translators: Header of the table with installed cards
+	_("Number"),
+	// For translators: Header of the table with installed cards
+	_("Card name")),
+	[], nil, nil, nil, nil);
+
+    contents = Wizard_hw::SpacingAround (contents, 1.5, 1.5, 1.0, 1.0);
+
+    any ret = nil;
+    do
+    {
+	Wizard::SetContentsButtons ( caption, contents, OverviewDialogHelp (),
+	    Label::BackButton (), Label::FinishButton () );
+
+	UI::ChangeWidget(`id(`table), `Items, Tv::CardsAsItems());
+
+	UI::SetFocus (`id (`table));
+
+	ret = tvUserInput();
+
+	integer sel_no = (integer) UI::QueryWidget (`id(`table), `CurrentItem);
+
+	// Edit the selected card
+	if (ret == `table)
+	    ret = `edit_button;
+	if (ret == `edit_button)
+	{
+	    if (sel_no != nil)
+	    {
+		Tv::current_card = (map) Tv::CardGet(sel_no);
+		Tv::current_card_no = sel_no;
+		if (sel_no > 63)
+		    ret = `edit_button_radio;
+	    }
+	    else
+	    {
+		// The user chose [Edit...] but did not select a card
+		Popup::Message(_("Please select a card to edit first."));
+		ret = nil;
+	    }
+	}
+	// Add a card manually
+	if (ret == `add_button)
+	{
+	    Tv::current_card = $[];
+	    Tv::current_card_no = nil;
+	}
+	// Delete the selected card
+	if (ret == `delete_button)
+	{
+	    if (sel_no != nil)
+	    {
+		Tv::current_card = (map) Tv::CardGet(sel_no);
+		Tv::current_card_no = sel_no;
+		// The user chose [Delete] in the overview dialog
+		boolean really_del = Popup::YesNo(sformat(_("Do you really want to
+remove the configuration
+of \"%1\"?"), Tv::current_card["name"]:""));
+
+		if (really_del)
+		{
+		    Tv::CardRemove(sel_no);
+		}
+	    }
+	    else
+	    {
+		// The user chose [Delete] but did not select a card
+		Popup::Message(_("Please select a card to delete first."));
+	    }
+	}
+    } while (!contains ([`back, `abort, `cancel, `next, `add_button,
+			 `edit_button, `edit_button_radio], ret));
+    return ret;
+}
+
+/**
+ * Constructs the cards selection box for the selected vendor.
+ * @param vendor_cards_db List of cards provided by the selected vendor.
+ * @param parameters The current parameters to preselect the right model.
+ * @param mod kernel module for the selected card (nil for none/not known)
+ * @return term The selection box.
+ */
+global define term CardsSelectionBox ( list vendor_cards_db,
+				       map  parameters, string mod ) ``{
+    integer card_no = 0;
+    boolean some_is_selected = false;
+    list vendor_cards_items = maplist (map card, vendor_cards_db, ``{
+
+	boolean select_this = false;
+	if (!some_is_selected && (mod == nil || mod == card["module"]:""))
+	{
+	    select_this = CmpParameters (card["parameters"]:$[],parameters);
+	}
+
+	term ret = `item ( `id (card_no), card["name"]:"",
+	    select_this && !some_is_selected );
+
+	if (select_this)
+	{
+	    some_is_selected = true;
+	}
+	card_no = card_no + 1;
+	return ret;
+    });
+
+    // SelectionBox label:
+    return `SelectionBox ( `id (`cards_selbox), `opt (`notify), _("&Cards:"),
+	vendor_cards_items );
+}
+
+/**
+ * A popup allowing to choose the tuner type.
+ * @param kernel_module Name of the kernel module for the selected TV card.
+ * @param selected_tuner The previously selected tuner (to be preselected again).
+ * @return map The selected tuner or nil if cancelled.
+ */
+global define map ChooseTuner(string kernel_module, map selected_tuner) ``{
+    // Currently selected tuner
+    map sel_tuner = $[];
+
+    term contents =
+	`VBox(`SelectionBox(`id(`tuners_selbox),
+                // SelectionBox label:
+			    _("C&hoose your tuner:"),
+			    Tv::TunersDBAsItems (kernel_module, selected_tuner)),
+	      `VSpacing(0.3),
+	      `HBox(`HStretch(),
+		    `PushButton(`id(`ok), Label::OKButton()),
+		    `HSpacing(2),
+		    `PushButton(`id(`cancel), Label::CancelButton()),
+		    `HStretch()
+	      )
+	);
+
+    UI::OpenDialog (
+	Wizard_hw::SizeAtLeast (contents, 40.0, 10.0)
+    );
+
+    any ret = nil;
+    do
+    {
+	ret = UI::UserInput ();
+
+	if (ret == `ok)
+	{
+	    integer sel_no =
+		(integer) UI::QueryWidget(`id(`tuners_selbox), `CurrentItem);
+	    if (sel_no != nil)
+	    {
+		sel_tuner = Tv::TunersDBSelectTuner (kernel_module, sel_no);
+	    }
+	    else
+	    {
+		// For translators: The user chose [OK] but did not select a tuner
+		Popup::Message (_("Please select your tuner first."));
+		ret = nil;
+	    }
+	}
+    } while (ret != `ok && ret != `cancel);
+
+    UI::CloseDialog ();
+
+    if (ret == `ok)
+    {
+    y2debug ("selected tuner: %1", sel_tuner);
+	return sel_tuner;
+    }
+    return nil;
+}
+
+/**
+ * A dialog allowing the manual selection of the card.
+ * @param warn Display warning, that the card was not fully detected.
+ * @return any The value of the resulting UserInput.
+ */
+global define any ManualDialog (boolean warn) ``{
+    // For translators: Caption of the dialog
+    string caption = _("Manual TV card selection");
+
+    // The selected card
+    map selected_card = Tv::current_card;
+
+    // Parameters and module name of the current card
+    map current_card_parameters = Tv::current_card["parameters"]:$[];
+    string module_name_tmp	= Tv::current_card["module"]:nil;
+    // The selected tuner
+    map	selected_tuner = Tv::GetTuner (module_name_tmp, current_card_parameters["tuner"]:"-1");
+
+    // We must remember the current card if it was autodetected
+    map autodetected_card = $[];
+    if ( module_name_tmp != nil && module_name_tmp != "" &&
+         (current_card_parameters["card"]:"-1" == "-1"))
+    {
+	autodetected_card = Tv::current_card;
+    }
+    // The currently selected vendor
+    integer selected_vendor = nil;
+
+    // A list of all the vendors and all the cards for the SelectionBox widgets
+    list all_vendors = [];
+
+    // A list of the cards of the selected vendor
+    list vendor_cards_db = [];
+
+    // Initialize all_vendors and selected_vendor
+    list vendors_and_selected = Tv::CardsDBVendorsAsItems (autodetected_card,
+	current_card_parameters, module_name_tmp);
+
+    all_vendors		= vendors_and_selected[0]:[];
+    selected_vendor	= vendors_and_selected[1]:nil;
+
+    if (selected_vendor != nil)
+    {
+	vendor_cards_db =
+	    Tv::CardsDBVendorGetCards (autodetected_card, selected_vendor);
+    }
+
+    term tuner_button = `Right(`PushButton(`id(`tuner_button),`opt (`key_F3),
+        // PushButton label:
+	_("&Select tuner")));
+
+    term contents = `HBox(`HSpacing(1.5),
+	`VBox(
+	    `VSpacing(1.0),
+	    // Frame label
+	    `Frame(_("Select the type of your card:"),
+	      `HBox(
+	        `HSpacing(0.5),
+		`VBox(
+		    `VSpacing(0.2),
+		    `VBox(
+			`HBox(
+			    `SelectionBox(`id(`vendors_selbox),
+				// SelectioBox label:
+				`opt(`notify), _("&Vendors:"), all_vendors),
+			    `ReplacePoint(`id(`cards_rep),
+				CardsSelectionBox ( vendor_cards_db,
+				    current_card_parameters, module_name_tmp))
+			),
+			`ReplacePoint(`id(`tuners_rep), tuner_button)
+		    ),
+		    `VSpacing(0.2)
+		),
+		`HSpacing(0.5)
+	      )
+	    ),
+	    `VSpacing(0.5),
+	    `HCenter(
+	      `HBox(
+		`PushButton(`id(`details_button), `opt(`key_F7),
+		    // PushButton label:
+		    _("&Expert settings...")),
+		// PushButton label:
+		`PushButton (`id(`channels), `opt(`key_F8), _("TV channels..."))
+	      )
+	    )
+	),
+	`HSpacing(1.5)
+    );
+
+    Wizard::SetContentsButtons ( caption,
+				 contents,
+				 ManualDialogHelp (),
+				 Label::BackButton (),
+				 Label::NextButton () );
+
+    if (warn && lookup (Tv::current_card, "module", nil) == nil)
+    {
+	// For translators: A warning popup
+	Popup::Message(_("The selected card does not provide full
+information for the automatic detection.
+
+Please, select the exact type from
+the list in the following dialog."));
+    }
+
+    any ret = nil;
+
+    UI::SetFocus (`id (`vendors_selbox));
+
+    do
+    {
+	// Disable/enable the [Select tuner] button
+	string module_name = lookup (selected_card, "module", "");
+
+	boolean has_tuners = Tv::TunersDBHasTunersFor (module_name);
+	if (!has_tuners)
+	{
+	    selected_tuner = $[];
+	}
+	if (selected_tuner != $[])
+		UI::ReplaceWidget (`id(`tuners_rep), `HBox(
+		  `HSpacing (0.5),
+		  // label, %1 is tuner type
+		  `Label( sformat (_("Tuner: %1"), selected_tuner["name"]:"")),
+			tuner_button));
+	else
+		UI::ReplaceWidget (`id(`tuners_rep), `HBox(tuner_button));
+
+	// User input
+	ret = tvUserInput();
+
+	// Update the list of the cards
+	if (ret == `vendors_selbox)
+	{
+	    integer current_vendor = selected_vendor;
+	    selected_vendor = (integer)
+		UI::QueryWidget(`id(`vendors_selbox),`CurrentItem);
+	    if (selected_vendor != current_vendor)
+	    {
+		vendor_cards_db = Tv::CardsDBVendorGetCards (autodetected_card,
+		    selected_vendor);
+	        UI::ReplaceWidget(`id(`cards_rep),
+		    CardsSelectionBox (vendor_cards_db, nil, nil));
+	        selected_tuner = $[];
+	    }
+	}
+
+	integer sel_no = (integer)
+	    UI::QueryWidget(`id(`cards_selbox), `CurrentItem);
+
+	if (ret == `next && sel_no == nil)
+	{
+	    // For translators: The user chose [Next] but did not select a card
+	    Popup::Message (_("Please select your card first."));
+	    ret = nil;
+	}
+
+	// Update the selection
+	if (ret == `cards_selbox)
+	{
+	    map new_card = $[];
+	    if (sel_no != nil)
+		new_card = vendor_cards_db[sel_no]:$[];
+
+	    if (new_card["parameters", "card"]:"" !=
+		    selected_card["parameters","card"]:"" ||
+		new_card["module"]:"" != selected_card["module"]:"")
+	    {
+		selected_card = new_card;
+		selected_tuner = $[];
+		y2debug("Selected card: %1", selected_card);
+	    }
+	}
+
+	// Show a popup with the selection of the tuner
+	if (ret == `tuner_button)
+	{
+	  if (sel_no == nil)
+	  {
+		// message popup
+		Popup::Message (_("Please select your card first."));
+	  }
+          else
+          {
+	        if (has_tuners)
+	        {
+		  map new_tuner = ChooseTuner (module_name, selected_tuner);
+		  if (new_tuner != nil)
+			selected_tuner = new_tuner;
+	        }
+	        else
+	        {
+		  // message popup
+		  Popup::Message (_("There is no tuner available
+for the selected card."));
+	        }
+          }
+	}
+    } while (ret != `details_button && ret != `channels &&
+	     ret != `back && ret != `abort && ret != `next);
+
+    // hack for ncurses selection (first card is selected as a default):
+    if (ret == `next && selected_card == $[])
+	selected_card = vendor_cards_db[0]:$[];
+
+    // Overwrite the Tv::current_card
+    if (ret != `back && ret != `abort)
+    {
+	// add the card
+	Tv::current_card	= union (Tv::current_card, selected_card);
+
+	map card_parameters	= selected_card["parameters"]:$[];
+	map tuner_parameters	= selected_tuner["parameters"]:$[];
+
+	Tv::current_card	= add (Tv::current_card, "parameters",
+				union (card_parameters, tuner_parameters));
+
+	y2milestone("Tv::current_card was updated to %1", Tv::current_card);
+    }
+
+    return ret;
+}
+
+/**
+ * A dialog allowing the manual selection of the card.
+ * @parameter allow_changeoftype if true, additional checkbutton for selecting
+ * radio card modules is shown
+ * @return any The value of the resulting UserInput.
+ */
+global define any ManualDetailsDialog(boolean allow_changeoftype) ``{
+    if (Tv::kernel_modules == nil)
+    {
+	UI::OpenDialog (
+	    Wizard_hw::SpacingAround (
+        // Popup label (waiting for other action):
+		`Label(_("Please wait while getting list
+of available kernel modules...")),
+		1.5, 1.5, 0.5, 0.5
+	    )
+	);
+
+	Tv::ReadKernelModules ();
+
+	UI::CloseDialog ();
+    }
+
+    // For translators: Caption of the dialog
+    string caption = _("Manual TV and Radio Card Selection: Details");
+
+    // Currently selected module. None => select bttv
+    string selected_module = lookup (Tv::current_card, "module", nil);
+    if (selected_module == nil)
+    {
+	selected_module = "bttv";
+    }
+
+    // And its parameters.
+    map parameters = lookup (Tv::current_card, "parameters", $[]);
+
+    // A list of all the (media/video) kernel modules for the ComboBox widget
+    list all_modules = Tv::KernelModulesAsItems (selected_module);
+    list all_radio_modules = Tv::RadioModulesAsItems (selected_module);
+
+    // The currently selected parameter
+    string selected_parameter = "";
+
+    // For translators: Label for the TextEntry. %1 means name of the kernel module's parameter.
+    string parameter_label = _("&Parameter \"%1\":");
+    // For translators: Label for the TextEntry, when kernel module has no parameters.
+    string parameter_label_nil = _("&Parameter: (none)");
+
+    boolean radio = lookup (Tv::current_card, "radio", false);
+
+    term contents =
+	`HBox(`HSpacing(1.5),
+	      `VBox(
+		  `VSpacing(1.0),
+          `ReplacePoint(`id(`modules_rp),
+                `ComboBox(`id(`module_combo),
+			    `opt(`hstretch, `notify),
+                // ComboBox label:
+			    _("&Kernel module"), [])),
+          // Frame label:
+		  `Frame(_("Parameters of the module:"),
+			 `HBox(`HSpacing(0.5),
+			       `VBox(`VSpacing(0.2),
+				     `VBox(`Table(`id(`parameters_table),
+						  `opt(`notify, `immediate),
+				     // Header of a table with kernel module params.
+						  `header(_("Paramater"),
+				     // Header of a table with kernel module params.
+							  _("Value"),
+				     // Header of a table with kernel module params.
+							  _("Description")),
+                              []
+//						  Tv::KernelModuleParametersAsItems(selected_module,
+//										    parameters)
+					   ),
+					   `VSquash(
+						`HBox(`TextEntry(`id(`parameter_entry),
+								 sformat(parameter_label,
+									 selected_parameter)),
+						      `Bottom(`PushButton(`id(`set_button),
+                                      // PushButton label
+									  _("&Set"))),
+						      `Bottom(`PushButton(`id(`reset_button),
+                                      // PushButton label
+									  _("R&eset")))
+						)
+					   )
+				     ),
+				     `VSpacing(0.2)
+			       ),
+			       `HSpacing(0.5)
+			 )
+		  ),
+		  `VSpacing(0.5),
+          (allow_changeoftype ? `Left(`CheckBox(`id(`radio_ch), `opt(`notify),
+            // checkbox label
+            _("R&adio Card Modules"), radio)) : `VSpacing(0)),
+		  `VSpacing(0.5)
+	      ),
+	      `HSpacing(1.5)
+	);
+
+    Wizard::SetContentsButtons ( caption,
+				 contents,
+				 ManualDetailsDialogHelp (allow_changeoftype),
+				 Label::BackButton (),
+				 Label::NextButton ());
+
+    if (!radio)
+    {
+        UI::ReplaceWidget(`id(`modules_rp),
+            `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
+			    _("&Kernel module"), all_modules));
+        selected_module = (string) UI::QueryWidget (`id(`module_combo), `Value);
+        UI::ChangeWidget (`id(`parameters_table), `Items,
+            Tv::KernelModuleParametersAsItems(selected_module, parameters));
+    }
+    else
+    {
+        UI::ReplaceWidget(`id(`modules_rp),
+            `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
+			    _("&Kernel module"), all_radio_modules));
+        selected_module = (string) UI::QueryWidget (`id(`module_combo), `Value);
+        UI::ChangeWidget (`id(`parameters_table), `Items,
+            Tv::RadioModuleParametersAsItems(selected_module, parameters));
+    }
+
+    // Initialize the "Parameter: xyz" label and its value
+    selected_parameter =
+	(string) UI::QueryWidget (`id(`parameters_table), `CurrentItem);
+    string value = parameters[selected_parameter]:"";
+	if (selected_parameter != nil) {
+	    UI::ChangeWidget (`id(`parameter_entry), `Label,
+		sformat (parameter_label, selected_parameter));
+	    UI::ChangeWidget (`id(`parameter_entry), `Value, value);
+	}
+	else {
+	    UI::ChangeWidget (`id(`parameter_entry), `Label,
+		sformat(parameter_label_nil));
+	    UI::ChangeWidget (`id(`parameter_entry), `Enabled, false);
+	    UI::ChangeWidget (`id(`set_button), `Enabled, false);
+	    UI::ChangeWidget (`id(`reset_button), `Enabled, false);
+	}
+
+    any ret = nil;
+    do
+    {
+	ret = tvUserInput();
+	if (ret == `radio_ch)
+	{
+	    if (!radio)
+	    {
+		UI::ReplaceWidget(`id(`modules_rp),
+		    `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
+			    // combo label
+			    _("&Kernel module"), all_radio_modules));
+		selected_module =
+		    (string) UI::QueryWidget (`id(`module_combo), `Value);
+		UI::ChangeWidget (`id(`parameters_table), `Items,
+		    Tv::RadioModuleParametersAsItems (
+			selected_module, parameters));
+		radio = true;
+	    }
+	    else
+	    {
+		UI::ReplaceWidget(`id(`modules_rp),
+		    `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
+			    _("&Kernel module"), all_modules));
+                selected_module =
+		    (string) UI::QueryWidget (`id(`module_combo), `Value);
+		UI::ChangeWidget (`id(`parameters_table), `Items,
+		    Tv::KernelModuleParametersAsItems (
+			selected_module, parameters));
+		radio = false;
+	    }
+	    selected_parameter =
+		(string) UI::QueryWidget (`id(`parameters_table), `CurrentItem);
+	    UI::ChangeWidget (`id(`parameter_entry), `Label,
+		sformat(parameter_label, selected_parameter));
+	}
+
+	// The user changes the module in the Combo Box
+	if (ret == `module_combo)
+	{
+	    selected_module =
+		(string) UI::QueryWidget (`id(`module_combo), `Value);
+	    parameters = $[];
+
+	    // Redraw the table
+	    if (!radio)
+		UI::ChangeWidget ( `id(`parameters_table), `Items,
+		Tv::KernelModuleParametersAsItems(selected_module, parameters));
+	    else
+		UI::ChangeWidget ( `id(`parameters_table), `Items,
+		Tv::RadioModuleParametersAsItems(selected_module, parameters));
+
+	    selected_parameter =
+		(string) UI::QueryWidget (`id(`parameters_table), `CurrentItem);
+
+	    string value = parameters[selected_parameter]:"";
+	    if (selected_parameter != nil)
+	    {
+		UI::ChangeWidget (`id(`parameter_entry), `Label,
+		    sformat(parameter_label, selected_parameter));
+		UI::ChangeWidget (`id(`parameter_entry), `Value, value);
+		UI::ChangeWidget (`id(`parameter_entry), `Enabled, true);
+		UI::ChangeWidget (`id(`set_button), `Enabled, true);
+		UI::ChangeWidget (`id(`reset_button), `Enabled, true);
+	    }
+	    else
+	    {
+		UI::ChangeWidget (`id(`parameter_entry), `Label,
+		    sformat(parameter_label_nil));
+		UI::ChangeWidget (`id(`parameter_entry), `Enabled, false);
+		UI::ChangeWidget (`id(`set_button), `Enabled, false);
+		UI::ChangeWidget (`id(`reset_button), `Enabled, false);
+	    }
+	}
+	// The user selects a parameter in the Table
+	if (ret == `parameters_table)
+	{
+	    selected_parameter =
+		(string) UI::QueryWidget (`id(`parameters_table), `CurrentItem);
+	    string value = parameters[selected_parameter]:"";
+
+	    // Change the Text Entry widget
+	    UI::ChangeWidget (`id(`parameter_entry), `Label,
+		sformat(parameter_label, selected_parameter));
+	    UI::ChangeWidget (`id(`parameter_entry), `Value, value);
+	}
+
+	// Set the value in the table
+	if (ret == `set_button)
+	{
+	    if (selected_parameter == nil || selected_parameter == "")
+	    {
+		// User chose [Set] but did not select a parameter to set
+		Popup::Message (_("Please select the parameter
+your want to edit first."));
+	    }
+	    else
+	    {
+		string value =
+		    (string) UI::QueryWidget (`id(`parameter_entry), `Value);
+
+		if (value != filterchars (value, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-+0123456789"))
+		{
+		    // User wants to set kernel parameters but string is wrong
+		    Popup::Message (_("Please do not use other characters
+than a-z, A-Z, _, -, + and 0-9."));
+		}
+		else
+		{
+		    parameters = add (parameters, selected_parameter, value);
+
+		    // Redraw the table
+		    if (!radio)
+			UI::ChangeWidget (`id(`parameters_table), `Items,
+			    Tv::KernelModuleParametersAsItems (
+				selected_module, parameters));
+		    else
+			UI::ChangeWidget (`id(`parameters_table), `Items,
+			    Tv::RadioModuleParametersAsItems (
+				selected_module, parameters));
+
+		    UI::ChangeWidget (`id(`parameters_table), `CurrentItem,
+			selected_parameter);
+		}
+	    }
+	}
+	// Reset the value in the table
+	if (ret == `reset_button)
+	{
+	    if (selected_parameter == nil || selected_parameter == "")
+	    {
+		// User chose [Set] but did select a parameter she wants to set
+		Popup::Message (_("Please select the parameter
+your want to edit first."));
+	    }
+	    else
+	    {
+		parameters = add (parameters, selected_parameter, "");
+
+		// Redraw the table
+		if (!radio)
+		    UI::ChangeWidget ( `id(`parameters_table), `Items,
+			Tv::KernelModuleParametersAsItems (
+			    selected_module, parameters));
+		else
+		    UI::ChangeWidget ( `id(`parameters_table), `Items,
+			Tv::RadioModuleParametersAsItems (
+			    selected_module, parameters));
+		UI::ChangeWidget ( `id(`parameters_table), `CurrentItem,
+		    selected_parameter);
+	    }
+	}
+    } while (ret != `back && ret != `abort && ret != `next);
+
+    // Store the values to Tv::current_card
+    if (ret != `back && ret != `abort)
+    {
+	if (radio)
+	    // For translators: The name of the card is set to "User defined",
+	    // because the user changed kernel module parameters and so we
+	    // do not have a good name...
+	    Tv::current_card ["name"]	= _("User-Defined Radio Card");
+	else
+	    // For translators: The name of the card is set to "User defined"...
+	    Tv::current_card ["name"]	= _("User-Defined TV Card");
+
+	Tv::current_card ["module"]	= selected_module;
+	Tv::current_card ["parameters"]	= parameters;
+	Tv::current_card ["radio"]	= radio;
+    }
+    return ret;
+}
+
+/**
+ * A dialog asking if the card is connected to the sound card.
+ * @return any The value of the resulting UserInput.
+ */
+global define any AudioDialog() ``{
+    // For translators: Caption of the dialog
+    string caption = _("TV and Radio Card Audio");
+
+    // Name of the TV card being currently configured
+    string current_card_name = lookup(Tv::current_card, "name", "");
+    if (current_card_name == nil)
+    {
+	current_card_name = "";
+    }
+
+    // A list of the sound cards in the form allowed by the Table widet
+    list sound_cards = SoundCardsAsItems();
+
+    // Try to read already stored values
+    integer current_sound_card = lookup(Tv::current_card, "sound_card_no", -1);
+    symbol current_rb = `rb_yes;
+    if (current_sound_card == nil || size(sound_cards) == 0)
+    {
+	current_rb = `rb_no;
+    }
+    // We used -1 to get known, that we did not set the sound_card_no yet...
+    // Let's clean it up!
+    if (current_sound_card < 0 || current_sound_card == nil)
+    {
+	current_sound_card = 0;
+    }
+
+    term contents =
+	`HBox(`HSpacing(1.5),
+	      `VBox(
+		  `VSpacing(1.2),
+          // Label text:
+		  `Left(`HBox(`Label(_("TV or Radio Card:")),
+			      `Label(`opt(`outputField), current_card_name)
+		  )),
+		  `VSpacing(0.7),
+          // Frame label:
+		  `Frame(_("Is the audio output connected to a sound card?"),
+			 `HBox(`HSpacing(0.5),
+			       `VBox(`VSpacing(0.2),
+				     `RadioButtonGroup(
+					 `id(`rb_group),
+					 `VBox(`Left(`RadioButton(`id(`rb_no),
+								  `opt(`notify),
+                                  // PushButton label:
+								  _("N&o"),
+								  current_rb != `rb_yes)),
+					       `Left(`RadioButton(`id(`rb_yes),
+								  `opt(`notify),
+								  Label::YesButton(),
+								  current_rb == `rb_yes))
+					 )
+				     ),
+				     `VBox(`HBox(`HSpacing(3.0),
+						 `Table(`id(`sound_card_table),
+							`header(
+                                // Header of table with sound card list 1/2
+                                _("Number"),
+                                // Header of table with sound card list 2/2
+								_("Sound card name")),
+							sound_cards)
+					   ),
+					   `Right(`PushButton(`id(`configure_button), `opt(`key_F4),
+                                  // PushButton label:
+							      _("&Configure sound cards...")))
+				     ),
+				     `VSpacing(0.2)
+			       ),
+			       `HSpacing(0.5)
+			 )
+		  ),
+		  `VSpacing(1.2)
+	      ),
+	      `HSpacing(1.5)
+	);
+
+    Wizard::SetContentsButtons ( caption,
+				 contents,
+				 AudioDialogHelp (),
+				 Label::BackButton (),
+				 Label::NextButton ());
+
+    // Select the previously selected card
+    if (current_rb == `rb_yes)
+    {
+	UI::ChangeWidget(`id(`sound_card_table), `CurrentItem, current_sound_card);
+    }
+
+    any ret = nil;
+    do
+    {
+	symbol current_rb =
+	    (symbol) UI::QueryWidget(`id(`rb_group), `CurrentButton);
+	UI::ChangeWidget(`id(`sound_card_table), `Enabled,
+	    (current_rb == `rb_yes));
+
+	ret = tvUserInput();
+
+	// Configure a sound card
+	if (ret == `configure_button)
+	{
+	    current_sound_card =
+		(integer) UI::QueryWidget(`id(`sound_card_table), `CurrentItem);
+
+	    WFM::CallFunction("sound", []);
+
+	    // Reread the list of the cards
+	    sound_cards = SoundCardsAsItems();
+	    UI::ChangeWidget(`id(`sound_card_table), `Items, sound_cards);
+	    if (current_sound_card > size(sound_cards))
+	    {
+		current_sound_card = 0;
+	    }
+	    UI::ChangeWidget(`id(`sound_card_table), `CurrentItem, current_sound_card);
+	    if (size(sound_cards) > 0)
+	    {
+		UI::ChangeWidget(`id(`rb_group), `CurrentButton, `rb_yes);
+	    }
+	}
+
+	// Check for selected soundcard
+	if (ret == `next &&
+	    UI::QueryWidget(`id(`rb_group), `CurrentButton) == `rb_yes &&
+	    UI::QueryWidget(`id(`sound_card_table), `CurrentItem) == nil)
+	{
+	    // For translators: The user chose [Next] but did not select a sound card
+	    Popup::Message(_("Please select a sound card first."));
+	    ret = nil;
+	}
+    } while (ret != `back && ret != `abort && ret != `next);
+
+    // Store the values to Tv::current_card
+    if (ret != `back && ret != `abort)
+    {
+	symbol current_rb =
+	    (symbol) UI::QueryWidget(`id(`rb_group), `CurrentButton);
+	integer sel_no =
+	    (integer) UI::QueryWidget(`id(`sound_card_table), `CurrentItem);
+
+	if (current_rb == `rb_yes && sel_no != nil && sel_no != -1)
+	{
+	    Tv::current_card = add (Tv::current_card, "sound_card_no", sel_no);
+	}
+	else
+	{
+	    Tv::current_card = add (Tv::current_card, "sound_card_no", nil);
+	}
+    }
+
+    return ret;
+}
+
+/**
+ * Returns a list of TV stations as table items
+ * @param xawtvrc map with contents of xawtvrc config file
+ * @return item list
+ */
+global define list GetStationsAsItems (map xawtvrc) ``{
+
+    list stations = [];
+    foreach (string sect, map cont, xawtvrc, ``{
+	if (sect != "defaults" && sect != "global")
+	{
+	    stations = add (stations,
+		`item (`id(sect), xawtvrc[sect,"channel"]:"", sect));
+	}
+    });
+    return stations;
+}
+
+/**
+ * Popup with TV stations scan
+ * @param norm TV norm (PAL/NTSC/...)
+ * @param freq frequency table (eourope-west/us-cable/...)
+ * @return list [ new xawtv conf, new items for stations table ]
+ */
+global define list ChannelsScanPopup (string norm, string freq) ``{
+
+    UI::OpenDialog(`opt(`decorated), `HBox(`HSpacing(1.5),
+    `VSpacing(18),
+    `VBox(
+        `HSpacing(60),
+        `VSpacing(0.5),
+	// Popup label (heading)
+        `Label(_("TV Channels Scan")),
+        `VSpacing(0.5),
+        `LogView (`id (`scantv), "", 10, 0),
+        `VSpacing(0.5),
+	`HBox (
+	    `PushButton(`id(`ok), Label::OKButton()),
+	    `PushButton(`id(`cancel), Label::CancelButton())
+	),
+        `VSpacing(0.5)),
+    `HSpacing(1.5)
+    ));
+    UI::ChangeWidget (`id(`ok), `Enabled, false);
+
+    // before scan, tv module has to be loaded (maybe TV is not configured yet)
+    string start = Tv::tv_tmp_start ();
+    if (start != "")
+    {
+	// error message
+	ErrorWithDetails (_("The kernel module for TV support could not be loaded."), start);
+	UI::CloseDialog();
+	return nil;
+    }
+
+    SCR::Execute (.background.run_output,
+	sformat("/usr/X11R6/bin/scantv -n %1 -f %2 2>&1 -o %3/xawtvrc",
+	    norm, freq, Tv::tmpdir));
+
+    string test_output = "";
+    any ret = nil;
+    list stations = [];
+    map xawtvrc = $[];
+    list retlist = nil;
+    do
+    {
+	ret = UI::PollInput();
+        if ((boolean)SCR::Read(.background.output_open) &&
+	    (integer)SCR::Read(.background.newlines)>0)
+        {
+            // read the output line from scantv
+            test_output =
+		(string) select ((list)SCR::Read(.background.newout), 0, nil);
+	    if (test_output != nil)
+		UI::ChangeWidget (`id(`scantv), `LastLine, test_output + "\n");
+	    // TODO: translate the output? ("no station")
+	    // FIXME: there is some mess in the scantv output...
+        }
+	else if (!(boolean)SCR::Read(.background.output_open))
+	{
+	    ret = `done;
+	}
+    }
+    while (ret == nil);
+
+    SCR::Execute(.background.kill, nil);
+
+    if (ret == `done)
+    {
+	UI::ChangeWidget (`id(`ok), `Enabled, true);
+	xawtvrc = Tv::ReadStationsConfig (.tmp.xawtvrc);
+	stations = GetStationsAsItems (xawtvrc);
+	retlist = [ xawtvrc, stations ];
+	UI::ChangeWidget (`id(`scantv), `LastLine,
+	    // label: summary of scanning for stations
+	    sformat(_("Number of TV stations found: %1."), size (stations)));
+
+	ret = UI::UserInput();
+    }
+    UI::CloseDialog();
+
+    // TODO unload the modules?
+    return retlist;
+}
+
+/**
+ * Popup for adding/editing TV station
+ * @param channel current channel (empty when adding)
+ * @param station current station name (empty when adding)
+ * @param items list of current stations (to check duplicates)
+ */
+global define term StationPopup (string channel, string station, list items) ``{
+
+    UI::OpenDialog( `opt(`decorated), `HBox(
+	`HSpacing(1),
+	`VBox(
+	    `HSpacing (50),
+	    `VSpacing(0.5),
+	    `HBox (
+		// textentry label
+		`TextEntry (`id (`channel), _("Channel"), channel),
+		`HSpacing(0.5),
+		// textentry label
+		`TextEntry (`id (`station), _("Station Name"), station)
+	    ),
+	    `VSpacing(0.5),
+	    `HBox(
+		`PushButton(`id(`ok),`opt(`default),Label::OKButton()),
+		`PushButton(`id(`cancel), Label::CancelButton())
+	    ),
+	    `VSpacing(0.5)),
+	`HSpacing(1)
+    ));
+    any result = nil;
+    term ret = nil;
+    UI::SetFocus (`id(`channel));
+    while (true)
+    {
+	result = UI::UserInput ();
+	if (result == `cancel)
+	    break;
+	if (result == `ok)
+	{
+	    string new_channel =(string)UI::QueryWidget (`id(`channel), `Value);
+	    string new_station =(string)UI::QueryWidget (`id(`station), `Value);
+	    if (new_channel == "")
+	    {
+		// message popup
+		Popup::Message (_("Enter a TV channel."));
+		UI::SetFocus (`id(`channel));
+		continue;
+	    }
+	    if (new_station == "")
+	    {
+		// message popup
+		Popup::Message (_("Enter a station name."));
+		UI::SetFocus (`id(`station));
+		continue;
+	    }
+	    string msg = "";
+	    foreach (term it, items, ``{
+		if (select (it, 1, "") == new_channel && new_channel != channel)
+		    // error message
+		    msg = _("There already exist such channel in the table.");
+		if (select (it, 2, "") == new_station && new_station != station)
+		    // error message
+		    msg = _("There already exist such station name in the table.");
+	    });
+	    if (msg != "")
+	    {
+		Popup::Message (msg);
+		continue;
+	    }
+	    if (channel != new_channel || station != new_station)
+		ret = `item (`id(new_station), new_channel, new_station);
+	    break;
+	}
+    }
+    UI::CloseDialog();
+    return ret;
+}
+
+
+/**
+ * Dialogs for TV stations management
+ */
+global define any ChannelsDialog () ``{
+
+    // dialog caption
+    string caption = _("TV channels configuration");
+
+    list norms		= [
+	// TV norm
+	`item(`id("PAL"),	_("PAL")),
+	`item(`id("NTSC"),	_("NTSC")),
+	`item(`id("SECAM"),	_("SECAM")),
+	`item(`id("PAL-NC"),	_("PAL-NC")),
+	`item(`id("PAL-N"),	_("PAL-N")),
+	`item(`id("PAL-M"),	_("PAL-M")),
+	`item(`id("NTSC-JP"),	_("NTSC-JP")),
+    ];
+    list freqs_items	= [
+	// frequency table
+	`item (`id("us-bcast"),		_("us-bcast")),
+	`item (`id("us-cable"),		_("us-cable")),
+	`item (`id("us-cable-hrc"),	_("us-cable-hrc")),
+	`item (`id("japan-bcast"),	_("japan-bcast")),
+	`item (`id("japan-cable"),	_("japan-cable")),
+	`item (`id("europe-west"),	_("europe-west")),
+	`item (`id("europe-east"),	_("europe-east")),
+	`item (`id("italy"),		_("italy")),
+	`item (`id("newzealand"),	_("newzealand")),
+	`item (`id("australia"),	_("australia")),
+	`item (`id("ireland"),		_("ireland")),
+	`item (`id("france"),		_("france")),
+	`item (`id("china-bcast"),	_("china-bcast")),
+	`item (`id("southafrica"),	_("southafrica")),
+	`item (`id("argentina"),	_("argentina")),
+	`item (`id("australia-optus"),	_("australia-optus")),
+	`item (`id("russia"),		_("russia")),
+    ];
+
+    map channels_config = Tv::channels_config;
+    list tv_channels	= GetStationsAsItems (channels_config);
+    boolean modified	= false;
+
+    // TODO propose freq table from locale...
+    term contents = `HBox (`HSpacing (3), `VBox (
+        `VSpacing (2),
+	`HBox (
+	    // combobox label
+	    `ComboBox (`id(`norms), _("Tv Norm"), norms),
+	    // combobox label
+	    `ComboBox (`id(`freq), _("Frequency Table"), freqs_items),
+	    `HStretch (),
+	    `VBox(
+		`Label (""),
+		// button label
+		`PushButton (`id(`scan), _("Scan the Channels"))
+	    )
+	),
+        `VSpacing (0.5),
+	// frame label
+	`Frame (_("TV Stations"), `HBox(`HSpacing (0.5),
+	    `VBox(
+		`Table (`id(`channels),`opt(`notify), `header(
+		    // table header 1/2
+		    _("Channel"),
+		    // table header 2/2
+		    _("Station Name")), tv_channels),
+		`HBox (
+		    `PushButton(`id(`add), `opt(`key_F3), Label::AddButton()),
+		    `PushButton(`id(`edit), `opt(`key_F4), Label::EditButton()),
+		    `PushButton(`id(`del),`opt(`key_F5), Label::DeleteButton()),
+		    `HStretch()
+		)
+	    ),
+	    `HSpacing (0.5)
+	)),
+        `VSpacing (2)
+    ), `HSpacing(3));
+
+    Wizard::SetContentsButtons ( caption, contents, ChannelsDialogHelp (),
+	// TODO Next for detected sequence...
+	Label::BackButton (), Label::OKButton () );
+
+    // set the starting configuation
+    string tv_norm = toupper (channels_config["defaults", "norm"]:"pal");
+    string tv_freqtab = channels_config["global", "freqtab"]:"europe-west";
+    UI::ChangeWidget (`id(`norms), `Value, tv_norm);
+    UI::ChangeWidget (`id(`freq), `Value, tv_freqtab);
+
+    map new_config = $[];
+    any ret = nil;
+    do
+    {
+	ret = tvUserInput();
+	tv_norm		= (string) UI::QueryWidget (`id(`norms), `Value);
+	tv_freqtab	= (string) UI::QueryWidget (`id(`freq), `Value);
+
+	if (ret == `scan && Require::RequireAndConflictTarget(["v4l-tools"],[],
+	    // popup label (install required application?)
+	    _("For scanning the TV channels, package '%1' is required.
+Install it now?")))
+	{
+	    list scanned = ChannelsScanPopup (tv_norm, tv_freqtab);
+	    if (scanned != nil)
+	    {
+		new_config	= (map) eval (scanned [0]:$[]);
+		tv_channels	= (list)eval (scanned [1]:[]);
+		UI::ChangeWidget (`id(`channels), `Items, tv_channels);
+		modified = true;
+	    }
+	}
+	string current = (string)UI::QueryWidget (`id(`channels), `CurrentItem);
+	if (ret == `del && current != nil)
+	{
+	    tv_channels = filter (term it, tv_channels, ``(
+		select (it, 2, "") != current));
+	    UI::ChangeWidget (`id(`channels), `Items, tv_channels);
+	    modified = true;
+	}
+	if (ret == `add)
+	{
+	    term new = StationPopup ("","", tv_channels);
+	    if (new != nil)
+	    {
+		tv_channels = add (tv_channels, new);
+		UI::ChangeWidget (`id(`channels), `Items, tv_channels);
+		UI::ChangeWidget (`id(`channels), `CurrentItem,
+		    select (new,2,nil));
+		modified = true;
+	    }
+	}
+	if (ret == `edit || ret == `channels)
+	{
+	    term it = (term) UI::QueryWidget (`id(`channels), `Item (current));
+	    term new = StationPopup (select (it,1,""), current, tv_channels);
+	    if (new != nil)
+	    {
+		tv_channels = filter (term i, tv_channels, ``(
+		    select (i, 2, "") != current));
+		tv_channels = add (tv_channels, new);
+		UI::ChangeWidget (`id(`channels), `Items, tv_channels);
+		UI::ChangeWidget (`id(`channels), `CurrentItem,
+		    select (new,2,nil));
+		modified = true;
+	    }
+	}
+
+    } while (!contains ([`back, `abort, `cancel, `next, `ok], ret));
+
+    if (tv_norm != channels_config["defaults","norm"]:"" ||
+	    tv_freqtab != channels_config["global","freqtab"]:"")
+	modified = true;
+
+    if (ret == `next && modified)
+    {
+	// save configuration to global values
+	/*
+	channels_config["defaults","norm"] = tv_norm;
+	channels_config["global","freqtab"] = tv_freqtab;
+	*/
+
+	// use updated configuration after scan:
+	channels_config["defaults"] = union (channels_config["defaults"]:$[],
+	    new_config["defaults"]:$[]);
+	channels_config["global"] = union (channels_config["global"]:$[],
+	    new_config["global"]:$[]);
+
+	// save channels
+	map xawtvrc = $[
+	    "defaults": channels_config["defaults"]:$[],
+	    "global":	channels_config["global"]:$[]
+	];
+	foreach (term i, tv_channels, ``{
+	    string name = select (i,2,"");
+	    // preserve station settings that yast doesn't configure
+	    map station = (map) eval (channels_config[name]:$[]);
+	    station["channel"] = select (i,1,"");
+	    xawtvrc = add (xawtvrc, name, station);
+	});
+	Tv::channels_config = (map) eval (xawtvrc);
+	Tv::stations_modified = modified;
+    }
+    return ret;
+}
+
 
 /**
  * Main workflow of the tv configuration
@@ -272,1334 +1577,66 @@ global define any MainSequence () ``{
     return ret;
 }
 
-/**
- * Read settings dialog
- * @return Symbol for next or abort dialog.
- */
-global define any ReadDialog () ``{
-    // Set help text
-    Wizard::RestoreHelp (ReadDialogHelp ());
-
-    // A callback function for abort
-    block callback = ``{
-	return UI::PollInput () == `abort;
-    };
-
-    // Read the configuration
-    boolean was_ok = Tv::Read ( callback );
-
-    return ( was_ok? `next : `abort );
-}
 
 /**
- * Write settings dialog
- * @return Symbol for next or abort dialog.
+ * Whole configuration of tv
+ * @return Sequence result of WizardSequencer().
  */
-global define any WriteDialog () ``{
-    // Set help text
-    Wizard::RestoreHelp (WriteDialogHelp ());
-    Wizard::DisableAbortButton();
+global define any TvSequence () ``{
+    map aliases =
+	$[
+	    "read"	: [ ``( ReadDialog () ), true ],
+	    "main"	:   ``( MainSequence () ),
+	    "write"	: [ ``( WriteDialog () ), true ]
+	];
 
-    // Write the configuration
-    boolean was_ok = Tv::Write ( ``{ return false;} );
+    map sequence = $[
+	"ws_start" : "read",
+	"read" :
+	$[
+	    `abort	: `abort,
+	    `next	: "main"
+	],
+	"main" :
+	$[
+	    `abort	: `abort,
+	    `next	: "write"
+	],
+	"write" : $[
+	    `abort	: `abort,
+	    `next	: `next
+	]
+    ];
 
-    return ( was_ok? `next : `abort );
-}
-
-/**
- * A dialog showing the detected cards and allowing to configure them.
- * @return any The value of the resulting UserInput.
- */
-global define any DetectedDialog() ``{
-    // For translators: Caption of the dialog
-    string caption = _("TV and Radio Card Setup");
-
-    term contents =
-	// Caption of the detected cards list
-	Wizard_hw::DetectedContent(_("TV and Radio Cards to Configure"),
-				   Tv::DetectedCardsAsItems(), false, "");
-
-    Wizard::SetContentsButtons ( caption,
-				 contents,
-				 DetectedDialogHelp (),
-				 Label::BackButton (),
-				 Label::FinishButton () );
-
-    any ret = nil;
-    do
-    {
-	string installed_overview =
-	    // Update the content to the current values
-	    _("<P><B>No TV or radio card installed yet.</B></P>");
-
-	list installed_list = Tv::InstalledCardsSummary ();
-	if (size(installed_list) > 0)
-	{
-	    installed_overview = sformat (
-		// For translators: Overview of the installed cards
-		_("<P><B>Installed TV and Radio Cards:</B>%1</P>"),
-		Summary::DevicesList (installed_list));
-	}
-	UI::ChangeWidget (`id(`configured_richtext), `Value,installed_overview);
-
-	ret = tvUserInput();
-
-	// Configure the autodetected card
-	if (ret == `configure_button)
-	{
-	    integer detected_no = UI::QueryWidget(`id(`detected_selbox), `CurrentItem);
-
-	    if (detected_no == nil)
-	    {
-		// The user chose [Configure...] but did not select a card
-		Popup::Message(_("Please select a card to configure first."));
-		continue;
-	    }
-
-	    if (detected_no < 0)
-	    {
-		Tv::current_card = $[];
-		Tv::current_card_no = nil;
-		ret = `add_manually;
-	    }
-	    else
-	    {
-		Tv::current_card = Tv::DetectedCardGet(detected_no);
-		Tv::current_card_no = nil;
-		if (Tv::current_card["module"]:"" == "")
-		{
-		    ret = `add_manually_warn;
-		}
-		else
-		{
-		    ret = `add_detected;
-		}
-	    }
-	}
-    } while (ret != `back && ret != `abort && ret != `next &&
-	     ret != `add_manually && ret != `add_manually_warn &&
-	     ret != `add_detected &&
-	     ret != `edit_button);
-
-    return ret;
-}
-
-/**
- * A dialog giving overview of all the configured cards.
- * @return any The value of the resulting UserInput.
- */
-global define any OverviewDialog() ``{
-    // For translators: Caption of the dialog
-    string caption = _("TV and Radio Card Overview");
-
-    // A list of the configured cards in the form allowed by the Table widet
-    //list configured_cards = tvConfiguredCardsTableItems();
-
-    term contents = Wizard_hw::ConfiguredContent(`header(
-        // For translators: Header of the table with installed cards
-	_("Number"),
-	// For translators: Header of the table with installed cards
-	_("Card name")),
-	[], nil, nil, nil, nil);
-
-    contents = Wizard_hw::SpacingAround (contents, 1.5, 1.5, 1.0, 1.0);
-
-    any ret = nil;
-    do
-    {
-	Wizard::SetContentsButtons ( caption, contents, OverviewDialogHelp (),
-	    Label::BackButton (), Label::FinishButton () );
-
-	UI::ChangeWidget(`id(`table), `Items, Tv::CardsAsItems());
-
-	UI::SetFocus (`id (`table));
-
-	ret = tvUserInput();
-
-	integer sel_no = UI::QueryWidget (`id(`table), `CurrentItem);
-
-	// Edit the selected card
-	if (ret == `table)
-	    ret = `edit_button;
-	if (ret == `edit_button)
-	{
-	    if (sel_no != nil)
-	    {
-		Tv::current_card = Tv::CardGet(sel_no);
-		Tv::current_card_no = sel_no;
-		if (sel_no > 63)
-		    ret = `edit_button_radio;
-	    }
-	    else
-	    {
-		// The user chose [Edit...] but did not select a card
-		Popup::Message(_("Please select a card to edit first."));
-		ret = nil;
-	    }
-	}
-	// Add a card manually
-	if (ret == `add_button)
-	{
-	    Tv::current_card = $[];
-	    Tv::current_card_no = nil;
-	}
-	// Delete the selected card
-	if (ret == `delete_button)
-	{
-	    if (sel_no != nil)
-	    {
-		Tv::current_card = Tv::CardGet(sel_no);
-		Tv::current_card_no = sel_no;
-		// The user chose [Delete] in the overview dialog
-		boolean really_del = Popup::YesNo(sformat(_("Do you really want to
-remove the configuration
-of \"%1\"?"), lookup(Tv::current_card, "name", "")));
-
-		if (really_del)
-		{
-		    Tv::CardRemove(sel_no);
-		}
-	    }
-	    else
-	    {
-		// The user chose [Delete] but did not select a card
-		Popup::Message(_("Please select a card to delete first."));
-	    }
-	}
-    } while (!contains ([`back, `abort, `cancel, `next, `add_button,
-			 `edit_button, `edit_button_radio], ret));
-	/*
-    } while (ret != `back && ret != `abort && ret != `next &&
-	     ret != `add_button && ret != `edit_button &&
-	     ret != `edit_button_radio);
-    */
-
-    return ret;
-}
-
-/**
- * Constructs the cards selection box for the selected vendor.
- * @param vendor_cards_db List of cards provided by the selected vendor.
- * @param parameters The current parameters to preselect the right model.
- * @param mod kernel module for the selected card (nil for none/not known)
- * @return term The selection box.
- */
-global define term CardsSelectionBox ( list vendor_cards_db,
-				       map  parameters, string mod ) ``{
-    integer card_no = 0;
-    boolean some_is_selected = false;
-    list vendor_cards_items = maplist (map card, vendor_cards_db, ``{
-
-	boolean select_this = false;
-	if (!some_is_selected && (mod == nil || mod == card["module"]:""))
-	{
-	    select_this = CmpParameters (card["parameters"]:$[],parameters);
-	}
-
-	term ret = `item ( `id (card_no), card["name"]:"",
-	    select_this && !some_is_selected );
-
-	if (select_this)
-	{
-	    some_is_selected = true;
-	}
-	card_no = card_no + 1;
-	return ret;
-    });
-
-    // SelectionBox label:
-    return `SelectionBox ( `id (`cards_selbox), `opt (`notify), _("&Cards:"),
-	vendor_cards_items );
-}
-
-/**
- * A popup allowing to choose the tuner type.
- * @param kernel_module Name of the kernel module for the selected TV card.
- * @param selected_tuner The previously selected tuner (to be preselected again).
- * @return map The selected tuner or nil if cancelled.
- */
-global define map ChooseTuner(string kernel_module, map selected_tuner) ``{
-    // Currently selected tuner
-    map sel_tuner = $[];
-
-    term contents =
-	`VBox(`SelectionBox(`id(`tuners_selbox),
-                // SelectionBox label:
-			    _("C&hoose your tuner:"),
-			    Tv::TunersDBAsItems (kernel_module, selected_tuner)),
-	      `VSpacing(0.3),
-	      `HBox(`HStretch(),
-		    `PushButton(`id(`ok), Label::OKButton()),
-		    `HSpacing(2),
-		    `PushButton(`id(`cancel), Label::CancelButton()),
-		    `HStretch()
-	      )
-	);
-
-    UI::OpenDialog (
-	Wizard_hw::SizeAtLeast (contents, 40.0, 10.0)
-    );
-
-    any ret = nil;
-    do
-    {
-	ret = UI::UserInput ();
-
-	if (ret == `ok)
-	{
-	    integer sel_no = UI::QueryWidget(`id(`tuners_selbox), `CurrentItem);
-	    if (sel_no != nil)
-	    {
-		sel_tuner = Tv::TunersDBSelectTuner (kernel_module, sel_no);
-	    }
-	    else
-	    {
-		// For translators: The user chose [OK] but did not select a tuner
-		Popup::Message (_("Please select your tuner first."));
-		ret = nil;
-	    }
-	}
-    } while (ret != `ok && ret != `cancel);
-
+    Wizard::CreateDialog ();
+    any ret = WizardSequencer (aliases, sequence);
     UI::CloseDialog ();
 
-    if (ret == `ok)
-    {
-    y2debug ("selected tuner: %1", sel_tuner);
-	return sel_tuner;
-    }
-    return nil;
-}
-
-/**
- * A dialog allowing the manual selection of the card.
- * @param warn Display warning, that the card was not fully detected.
- * @return any The value of the resulting UserInput.
- */
-global define any ManualDialog (boolean warn) ``{
-    // For translators: Caption of the dialog
-    string caption = _("Manual TV card selection");
-
-    // The selected card
-    map selected_card = Tv::current_card;
-
-    // Parameters and module name of the current card
-    map current_card_parameters = Tv::current_card["parameters"]:$[];
-    string module_name_tmp	= Tv::current_card["module"]:nil;
-    // The selected tuner
-    map	selected_tuner = Tv::GetTuner (module_name_tmp, current_card_parameters["tuner"]:"-1");
-
-    // We must remember the current card if it was autodetected
-    map autodetected_card = $[];
-    if ( module_name_tmp != nil && module_name_tmp != "" &&
-         (current_card_parameters["card"]:"-1" == "-1"))
-    {
-	autodetected_card = Tv::current_card;
-    }
-    // The currently selected vendor
-    integer selected_vendor = nil;
-
-    // A list of all the vendors and all the cards for the SelectionBox widgets
-    list all_vendors = [];
-
-    // A list of the cards of the selected vendor
-    list vendor_cards_db = [];
-
-    // Initialize all_vendors and selected_vendor
-    list vendors_and_selected = Tv::CardsDBVendorsAsItems (autodetected_card,
-	current_card_parameters, module_name_tmp);
-
-    all_vendors = select(vendors_and_selected, 0, []);
-    selected_vendor = select(vendors_and_selected, 1, nil);
-
-    if (selected_vendor != nil)
-    {
-	vendor_cards_db = Tv::CardsDBVendorGetCards(autodetected_card, selected_vendor);
-    }
-
-    term tuner_button = `Right(`PushButton(`id(`tuner_button),`opt (`key_F3),
-        // PushButton label:
-	_("&Select tuner")));
-
-    term contents = `HBox(`HSpacing(1.5),
-	`VBox(
-	    `VSpacing(1.0),
-	    // Frame label
-	    `Frame(_("Select the type of your card:"),
-	      `HBox(
-	        `HSpacing(0.5),
-		`VBox(
-		    `VSpacing(0.2),
-		    `VBox(
-			`HBox(
-			    `SelectionBox(`id(`vendors_selbox),
-				// SelectioBox label:
-				`opt(`notify), _("&Vendors:"), all_vendors),
-			    `ReplacePoint(`id(`cards_rep),
-				CardsSelectionBox ( vendor_cards_db,
-				    current_card_parameters, module_name_tmp))
-			),
-			`ReplacePoint(`id(`tuners_rep), tuner_button)
-		    ),
-		    `VSpacing(0.2)
-		),
-		`HSpacing(0.5)
-	      )
-	    ),
-	    `VSpacing(0.5),
-	    `HCenter(
-	      `HBox(
-		`PushButton(`id(`details_button), `opt(`key_F7),
-		    // PushButton label:
-		    _("&Expert settings...")),
-		// PushButton label:
-		`PushButton (`id(`channels), `opt(`key_F8), _("TV channels..."))
-	      )
-	    )
-	),
-	`HSpacing(1.5)
-    );
-
-    Wizard::SetContentsButtons ( caption,
-				 contents,
-				 ManualDialogHelp (),
-				 Label::BackButton (),
-				 Label::NextButton () );
-
-    if (warn && lookup (Tv::current_card, "module", nil) == nil)
-    {
-	// For translators: A warning popup
-	Popup::Message(_("The selected card does not provide full
-information for the automatic detection.
-
-Please, select the exact type from
-the list in the following dialog."));
-    }
-
-    any ret = nil;
-
-    UI::SetFocus (`id (`vendors_selbox));
-
-    do
-    {
-	// Disable/enable the [Select tuner] button
-	string module_name = lookup (selected_card, "module", "");
-
-	boolean has_tuners = Tv::TunersDBHasTunersFor (module_name);
-	if (!has_tuners)
-	{
-	    selected_tuner = $[];
-	}
-	if (selected_tuner != $[])
-		UI::ReplaceWidget (`id(`tuners_rep), `HBox(
-		  `HSpacing (0.5),
-		  // label, %1 is tuner type
-		  `Label( sformat (_("Tuner: %1"), selected_tuner["name"]:"")),
-			tuner_button));
-	else
-		UI::ReplaceWidget (`id(`tuners_rep), `HBox(tuner_button));
-
-	// User input
-	ret = tvUserInput();
-
-	// Update the list of the cards
-	if (ret == `vendors_selbox)
-	{
-	    integer current_vendor = selected_vendor;
-	    selected_vendor= UI::QueryWidget(`id(`vendors_selbox),`CurrentItem);
-	    if (selected_vendor != current_vendor)
-	    {
-		vendor_cards_db = Tv::CardsDBVendorGetCards (autodetected_card,
-		    selected_vendor);
-	        UI::ReplaceWidget(`id(`cards_rep),
-		    CardsSelectionBox (vendor_cards_db, nil, nil));
-	        selected_tuner = $[];
-	    }
-	}
-
-	integer sel_no = UI::QueryWidget(`id(`cards_selbox), `CurrentItem);
-
-	if (ret == `next && sel_no == nil)
-	{
-	    // For translators: The user chose [Next] but did not select a card
-	    Popup::Message (_("Please select your card first."));
-	    ret = nil;
-	}
-
-	// Update the selection
-	if (ret == `cards_selbox)
-	{
-	    map new_card = $[];
-	    if (sel_no != nil)
-		new_card = select(vendor_cards_db, sel_no, $[]);
-
-	    if (new_card["parameters", "card"]:"" != selected_card["parameters","card"]:"" ||
-		new_card["module"]:"" != selected_card["module"]:"")
-	    {
-		selected_card = new_card;
-		selected_tuner = $[];
-		y2debug("Selected card: %1", selected_card);
-	    }
-	}
-
-	// Show a popup with the selection of the tuner
-	if (ret == `tuner_button)
-	{
-	  if (sel_no == nil)
-	  {
-		// message popup
-		Popup::Message (_("Please select your card first."));
-	  }
-          else
-          {
-	        if (has_tuners)
-	        {
-		  map new_tuner = ChooseTuner (module_name, selected_tuner);
-		  if (new_tuner != nil)
-			selected_tuner = new_tuner;
-	        }
-	        else
-	        {
-		  // message popup
-		  Popup::Message (_("There is no tuner available
-for the selected card."));
-	        }
-          }
-	}
-    } while (ret != `details_button && ret != `channels &&
-	     ret != `back && ret != `abort && ret != `next);
-
-    // hack for ncurses selection (first card is selected as a default):
-    if (ret == `next && selected_card == $[])
-		selected_card = select(vendor_cards_db, 0, $[]);
-
-    // Overwrite the Tv::current_card
-    if (ret != `back && ret != `abort)
-    {
-	// add the card
-	Tv::current_card	= union (Tv::current_card, selected_card);
-
-	map card_parameters	= selected_card["parameters"]:$[];
-	map tuner_parameters	= selected_tuner["parameters"]:$[];
-
-	Tv::current_card	= add (Tv::current_card, "parameters",
-				union (card_parameters, tuner_parameters));
-
-	y2milestone("Tv::current_card was updated to %1", Tv::current_card);
-    }
-
     return ret;
 }
 
 /**
- * A dialog allowing the manual selection of the card.
- * @parameter allow_changeoftype if true, additional checkbutton for selecting
- * radio card modules is shown
- * @return any The value of the resulting UserInput.
+ * Whole configuration of TV without reading and writing.
+ * It is needed for the proposal stuff.
+ * @return Sequence result of MainSequence().
  */
-global define any ManualDetailsDialog(boolean allow_changeoftype) ``{
-    if (Tv::kernel_modules == nil)
-    {
-	UI::OpenDialog (
-	    Wizard_hw::SpacingAround (
-        // Popup label (waiting for other action):
-		`Label(_("Please wait while getting list
-of available kernel modules...")),
-		1.5, 1.5, 0.5, 0.5
-	    )
-	);
+global define any TvSequenceNoIO () ``{
+    string caption = _("Initializing TV and Radio Card Configuration");
+    term contents = `Label (_("Initializing ..."));
 
-	Tv::ReadKernelModules ();
-
-	UI::CloseDialog ();
-    }
-
-    // For translators: Caption of the dialog
-    string caption = _("Manual TV and Radio Card Selection: Details");
-
-    // Currently selected module. None => select bttv
-    string selected_module = lookup (Tv::current_card, "module", nil);
-    if (selected_module == nil)
-    {
-	selected_module = "bttv";
-    }
-
-    // And its parameters.
-    map parameters = lookup (Tv::current_card, "parameters", $[]);
-
-    // A list of all the (media/video) kernel modules for the ComboBox widget
-    list all_modules = Tv::KernelModulesAsItems (selected_module);
-    list all_radio_modules = Tv::RadioModulesAsItems (selected_module);
-
-    // The currently selected parameter
-    string selected_parameter = "";
-
-    // For translators: Label for the TextEntry. %1 means name of the kernel module's parameter.
-    string parameter_label = _("&Parameter \"%1\":");
-    // For translators: Label for the TextEntry, when kernel module has no parameters.
-    string parameter_label_nil = _("&Parameter: (none)");
-
-    boolean radio = lookup (Tv::current_card, "radio", false);
-
-    term contents =
-	`HBox(`HSpacing(1.5),
-	      `VBox(
-		  `VSpacing(1.0),
-          `ReplacePoint(`id(`modules_rp),
-                `ComboBox(`id(`module_combo),
-			    `opt(`hstretch, `notify),
-                // ComboBox label:
-			    _("&Kernel module"), [])),
-          // Frame label:
-		  `Frame(_("Parameters of the module:"),
-			 `HBox(`HSpacing(0.5),
-			       `VBox(`VSpacing(0.2),
-				     `VBox(`Table(`id(`parameters_table),
-						  `opt(`notify, `immediate),
-				     // Header of a table with kernel module params.
-						  `header(_("Paramater"),
-				     // Header of a table with kernel module params.
-							  _("Value"),
-				     // Header of a table with kernel module params.
-							  _("Description")),
-                              []
-//						  Tv::KernelModuleParametersAsItems(selected_module,
-//										    parameters)
-					   ),
-					   `VSquash(
-						`HBox(`TextEntry(`id(`parameter_entry),
-								 sformat(parameter_label,
-									 selected_parameter)),
-						      `Bottom(`PushButton(`id(`set_button),
-                                      // PushButton label
-									  _("&Set"))),
-						      `Bottom(`PushButton(`id(`reset_button),
-                                      // PushButton label
-									  _("R&eset")))
-						)
-					   )
-				     ),
-				     `VSpacing(0.2)
-			       ),
-			       `HSpacing(0.5)
-			 )
-		  ),
-		  `VSpacing(0.5),
-          (allow_changeoftype ? `Left(`CheckBox(`id(`radio_ch), `opt(`notify),
-            // checkbox label
-            _("R&adio Card Modules"), radio)) : `VSpacing(0)),
-		  `VSpacing(0.5)
-	      ),
-	      `HSpacing(1.5)
-	);
-
+    Wizard::CreateDialog ();
     Wizard::SetContentsButtons ( caption,
 				 contents,
-				 ManualDetailsDialogHelp (allow_changeoftype),
+				 "",
 				 Label::BackButton (),
 				 Label::NextButton ());
 
-    if (!radio)
-    {
-        UI::ReplaceWidget(`id(`modules_rp),
-            `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
-			    _("&Kernel module"), all_modules));
-        selected_module = UI::QueryWidget (`id(`module_combo), `Value);
-        UI::ChangeWidget (`id(`parameters_table), `Items,
-            Tv::KernelModuleParametersAsItems(selected_module, parameters));
-    }
-    else
-    {
-        UI::ReplaceWidget(`id(`modules_rp),
-            `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
-			    _("&Kernel module"), all_radio_modules));
-        selected_module = UI::QueryWidget (`id(`module_combo), `Value);
-        UI::ChangeWidget (`id(`parameters_table), `Items,
-            Tv::RadioModuleParametersAsItems(selected_module, parameters));
-    }
+    any ret = MainSequence ();
 
-    // Initialize the "Parameter: xyz" label and its value
-    selected_parameter = UI::QueryWidget (`id(`parameters_table), `CurrentItem);
-    string value = lookup (parameters, selected_parameter, "");
-	if (selected_parameter!=nil) {
-		UI::ChangeWidget (`id(`parameter_entry), `Label, sformat(parameter_label, selected_parameter));
-	    UI::ChangeWidget (`id(`parameter_entry), `Value, value);
-	}
-	else {
-		UI::ChangeWidget (`id(`parameter_entry), `Label, sformat(parameter_label_nil));
-        UI::ChangeWidget (`id(`parameter_entry), `Enabled, false);
-        UI::ChangeWidget (`id(`set_button), `Enabled, false);
-        UI::ChangeWidget (`id(`reset_button), `Enabled, false);
-	}
-
-    any ret = nil;
-    do
-    {
-	ret = tvUserInput();
-    if (ret == `radio_ch)
-    {
-        if (!radio)
-        {
-            UI::ReplaceWidget(`id(`modules_rp),
-                `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
-			    _("&Kernel module"), all_radio_modules));
-            selected_module = UI::QueryWidget (`id(`module_combo), `Value);
-            UI::ChangeWidget (`id(`parameters_table), `Items,
-                Tv::RadioModuleParametersAsItems(selected_module, parameters));
-         radio = true;
-        }
-        else
-        {
-            UI::ReplaceWidget(`id(`modules_rp),
-                `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
-			    _("&Kernel module"), all_modules));
-            selected_module = UI::QueryWidget (`id(`module_combo), `Value);
-            UI::ChangeWidget (`id(`parameters_table), `Items,
-                Tv::KernelModuleParametersAsItems(selected_module, parameters));
-            radio = false;
-        }
-	    selected_parameter = UI::QueryWidget (`id(`parameters_table), `CurrentItem);
-        // testnout neprazdost
-		UI::ChangeWidget (`id(`parameter_entry), `Label, sformat(parameter_label, selected_parameter));
-    }
-
-	// The user changes the module in the Combo Box
-	if (ret == `module_combo)
-	{
-	    selected_module = UI::QueryWidget (`id(`module_combo), `Value);
-	    parameters = $[];
-
-	    // Redraw the table
-        if (!radio)
-	    UI::ChangeWidget ( `id(`parameters_table),
-			       `Items,
-			       Tv::KernelModuleParametersAsItems(selected_module, parameters));
-        else
-	    UI::ChangeWidget ( `id(`parameters_table),
-			       `Items,
-			       Tv::RadioModuleParametersAsItems(selected_module, parameters));
-	    selected_parameter = UI::QueryWidget (`id(`parameters_table), `CurrentItem);
-		string value = lookup (parameters, selected_parameter, "");
-		if (selected_parameter!=nil) {
-			UI::ChangeWidget (`id(`parameter_entry), `Label, sformat(parameter_label, selected_parameter));
-		    UI::ChangeWidget (`id(`parameter_entry), `Value, value);
-            UI::ChangeWidget (`id(`parameter_entry), `Enabled, true);
-            UI::ChangeWidget (`id(`set_button), `Enabled, true);
-            UI::ChangeWidget (`id(`reset_button), `Enabled, true);
-		}
-		else {
-			UI::ChangeWidget (`id(`parameter_entry), `Label, sformat(parameter_label_nil));
-            UI::ChangeWidget (`id(`parameter_entry), `Enabled, false);
-            UI::ChangeWidget (`id(`set_button), `Enabled, false);
-            UI::ChangeWidget (`id(`reset_button), `Enabled, false);
-		}
-	}
-	// The user selects a parameter in the Table
-	if (ret == `parameters_table)
-	{
-	    selected_parameter = UI::QueryWidget (`id(`parameters_table), `CurrentItem);
-	    string value = lookup (parameters, selected_parameter, "");
-
-	    // Change the Text Entry widget
-	    UI::ChangeWidget (`id(`parameter_entry), `Label, sformat(parameter_label, selected_parameter));
-	    UI::ChangeWidget (`id(`parameter_entry), `Value, value);
-	}
-
-	// Set the value in the table
-	if (ret == `set_button)
-	{
-	    if (selected_parameter == nil || selected_parameter == "")
-	    {
-		// For translators: The user chose [Set] but did not select a parameter she wants to set
-		Popup::Message (_("Please select the parameter
-your want to edit first."));
-	    }
-	    else
-	    {
-		string value = UI::QueryWidget (`id(`parameter_entry), `Value);
-		if (value != filterchars (value, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-+0123456789"))
-		{
-		    // For translators: The user wants to set kernel parameters, but the string is wrong
-		    Popup::Message (_("Please do not use other characters
-than a-z, A-Z, _, -, + and 0-9."));
-		}
-		else
-		{
-		    parameters = add (parameters, selected_parameter, value);
-
-		    // Redraw the table
-            if (!radio)
-		    UI::ChangeWidget (`id(`parameters_table),
-				      `Items,
-				      Tv::KernelModuleParametersAsItems(selected_module, parameters));
-            else
-		    UI::ChangeWidget (`id(`parameters_table),
-				      `Items,
-				      Tv::RadioModuleParametersAsItems(selected_module, parameters));
-
-		    UI::ChangeWidget (`id(`parameters_table), `CurrentItem, selected_parameter);
-		}
-	    }
-	}
-	// Reset the value in the table
-	if (ret == `reset_button)
-	{
-	    if (selected_parameter == nil || selected_parameter == "")
-	    {
-		// For translators: The user chose [Set] but did select a parameter she wants to set
-		Popup::Message (_("Please select the parameter
-your want to edit first."));
-	    }
-	    else
-	    {
-		parameters = add (parameters, selected_parameter, "");
-
-		// Redraw the table
-        if (!radio)
-		    UI::ChangeWidget ( `id(`parameters_table), `Items,
-			    Tv::KernelModuleParametersAsItems(selected_module, parameters));
-        else
-		    UI::ChangeWidget ( `id(`parameters_table), `Items,
-			    Tv::RadioModuleParametersAsItems(selected_module, parameters));
-		UI::ChangeWidget ( `id(`parameters_table), `CurrentItem, selected_parameter);
-	    }
-	}
-    } while (ret != `back && ret != `abort && ret != `next);
-
-    // Store the values to Tv::current_card
-    if (ret != `back && ret != `abort)
-    {
-    if (radio)
-	// For translators: The name of the card is set to "User defined", because
-	// the user changed kernel module parameters and so we do not have a good name...
-	    Tv::current_card = add (Tv::current_card, "name", _("User-Defined Radio Card"));
-    else
-	    Tv::current_card = add (Tv::current_card, "name", _("User-Defined TV Card"));
-	Tv::current_card = add (Tv::current_card, "module", selected_module);
-	Tv::current_card = add (Tv::current_card, "parameters", parameters);
-	Tv::current_card = add (Tv::current_card, "radio", radio);
-    }
-
+    UI::CloseDialog ();
     return ret;
 }
 
-/**
- * A dialog asking if the card is connected to the sound card.
- * @return any The value of the resulting UserInput.
- */
-global define any AudioDialog() ``{
-    // For translators: Caption of the dialog
-    string caption = _("TV and Radio Card Audio");
-
-    // Name of the TV card being currently configured
-    string current_card_name = lookup(Tv::current_card, "name", "");
-    if (current_card_name == nil)
-    {
-	current_card_name = "";
-    }
-
-    // A list of the sound cards in the form allowed by the Table widet
-    list sound_cards = SoundCardsAsItems();
-
-    // Try to read already stored values
-    integer current_sound_card = lookup(Tv::current_card, "sound_card_no", -1);
-    symbol current_rb = `rb_yes;
-    if (current_sound_card == nil || size(sound_cards) == 0)
-    {
-	current_rb = `rb_no;
-    }
-    // We used -1 to get known, that we did not set the sound_card_no yet...
-    // Let's clean it up!
-    if (current_sound_card < 0 || current_sound_card == nil)
-    {
-	current_sound_card = 0;
-    }
-
-    term contents =
-	`HBox(`HSpacing(1.5),
-	      `VBox(
-		  `VSpacing(1.2),
-          // Label text:
-		  `Left(`HBox(`Label(_("TV or Radio Card:")),
-			      `Label(`opt(`outputField), current_card_name)
-		  )),
-		  `VSpacing(0.7),
-          // Frame label:
-		  `Frame(_("Is the audio output connected to a sound card?"),
-			 `HBox(`HSpacing(0.5),
-			       `VBox(`VSpacing(0.2),
-				     `RadioButtonGroup(
-					 `id(`rb_group),
-					 `VBox(`Left(`RadioButton(`id(`rb_no),
-								  `opt(`notify),
-                                  // PushButton label:
-								  _("N&o"),
-								  current_rb != `rb_yes)),
-					       `Left(`RadioButton(`id(`rb_yes),
-								  `opt(`notify),
-								  Label::YesButton(),
-								  current_rb == `rb_yes))
-					 )
-				     ),
-				     `VBox(`HBox(`HSpacing(3.0),
-						 `Table(`id(`sound_card_table),
-							`header(
-                                // Header of table with sound card list 1/2
-                                _("Number"),
-                                // Header of table with sound card list 2/2
-								_("Sound card name")),
-							sound_cards)
-					   ),
-					   `Right(`PushButton(`id(`configure_button), `opt(`key_F4),
-                                  // PushButton label:
-							      _("&Configure sound cards...")))
-				     ),
-				     `VSpacing(0.2)
-			       ),
-			       `HSpacing(0.5)
-			 )
-		  ),
-		  `VSpacing(1.2)
-	      ),
-	      `HSpacing(1.5)
-	);
-
-    Wizard::SetContentsButtons ( caption,
-				 contents,
-				 AudioDialogHelp (),
-				 Label::BackButton (),
-				 Label::NextButton ());
-
-    // Select the previously selected card
-    if (current_rb == `rb_yes)
-    {
-	UI::ChangeWidget(`id(`sound_card_table), `CurrentItem, current_sound_card);
-    }
-
-    any ret = nil;
-    do
-    {
-	symbol current_rb = UI::QueryWidget(`id(`rb_group), `CurrentButton);
-	UI::ChangeWidget(`id(`sound_card_table), `Enabled, (current_rb == `rb_yes));
-
-	ret = tvUserInput();
-
-	// Configure a sound card
-	if (ret == `configure_button)
-	{
-	    current_sound_card = UI::QueryWidget(`id(`sound_card_table), `CurrentItem);
-	    WFM::CallModule("sound", []);
-
-	    // Reread the list of the cards
-	    sound_cards = SoundCardsAsItems();
-	    UI::ChangeWidget(`id(`sound_card_table), `Items, sound_cards);
-	    if (current_sound_card > size(sound_cards))
-	    {
-		current_sound_card = 0;
-	    }
-	    UI::ChangeWidget(`id(`sound_card_table), `CurrentItem, current_sound_card);
-	    if (size(sound_cards) > 0)
-	    {
-		UI::ChangeWidget(`id(`rb_group), `CurrentButton, `rb_yes);
-	    }
-	}
-
-	// Check for selected soundcard
-	if (ret == `next &&
-	    UI::QueryWidget(`id(`rb_group), `CurrentButton) == `rb_yes &&
-	    UI::QueryWidget(`id(`sound_card_table), `CurrentItem) == nil)
-	{
-	    // For translators: The user chose [Next] but did not select a sound card
-	    Popup::Message(_("Please select a sound card first."));
-	    ret = nil;
-	}
-    } while (ret != `back && ret != `abort && ret != `next);
-
-    // Store the values to Tv::current_card
-    if (ret != `back && ret != `abort)
-    {
-	symbol current_rb = UI::QueryWidget(`id(`rb_group), `CurrentButton);
-	integer sel_no = UI::QueryWidget(`id(`sound_card_table), `CurrentItem);
-
-	if (current_rb == `rb_yes && sel_no != nil && sel_no != -1)
-	{
-	    Tv::current_card = add (Tv::current_card, "sound_card_no", sel_no);
-	}
-	else
-	{
-	    Tv::current_card = add (Tv::current_card, "sound_card_no", nil);
-	}
-    }
-
-    return ret;
-}
-
-/**
- * Dialogs for TV stations management
- */
-global define any ChannelsDialog () ``{
-
-    // dialog caption
-    string caption = _("TV channels configuration");
-
-    list norms		= [
-	// TV norm
-	`item(`id("PAL"),	_("PAL")),
-	`item(`id("NTSC"),	_("NTSC")),
-	`item(`id("SECAM"),	_("SECAM")),
-	`item(`id("PAL-NC"),	_("PAL-NC")),
-	`item(`id("PAL-N"),	_("PAL-N")),
-	`item(`id("PAL-M"),	_("PAL-M")),
-	`item(`id("NTSC-JP"),	_("NTSC-JP")),
-    ];
-    list freqs_items	= [
-	// frequency table
-	`item (`id("us-bcast"),		_("us-bcast")),
-	`item (`id("us-cable"),		_("us-cable")),
-	`item (`id("us-cable-hrc"),	_("us-cable-hrc")),
-	`item (`id("japan-bcast"),	_("japan-bcast")),
-	`item (`id("japan-cable"),	_("japan-cable")),
-	`item (`id("europe-west"),	_("europe-west")),
-	`item (`id("europe-east"),	_("europe-east")),
-	`item (`id("italy"),		_("italy")),
-	`item (`id("newzealand"),	_("newzealand")),
-	`item (`id("australia"),	_("australia")),
-	`item (`id("ireland"),		_("ireland")),
-	`item (`id("france"),		_("france")),
-	`item (`id("china-bcast"),	_("china-bcast")),
-	`item (`id("southafrica"),	_("southafrica")),
-	`item (`id("argentina"),	_("argentina")),
-	`item (`id("australia-optus"),	_("australia-optus")),
-	`item (`id("russia"),		_("russia")),
-    ];
-
-    map channels_config = Tv::channels_config;
-    list tv_channels	= GetStationsAsItems (channels_config);
-    boolean modified	= false;
-
-    // TODO propose freq table from locale...
-    term contents = `HBox (`HSpacing (3), `VBox (
-        `VSpacing (2),
-	`HBox (
-	    // combobox label
-	    `ComboBox (`id(`norms), _("Tv Norm"), norms),
-	    // combobox label
-	    `ComboBox (`id(`freq), _("Frequency Table"), freqs_items),
-	    `HStretch (),
-	    `VBox(
-		`Label (""),
-		// button label
-		`PushButton (`id(`scan), _("Scan the Channels"))
-	    )
-	),
-        `VSpacing (0.5),
-	// frame label
-	`Frame (_("TV Stations"), `HBox(`HSpacing (0.5),
-	    `VBox(
-		`Table (`id(`channels),`opt(`notify), `header(
-		    // table header 1/2
-		    _("Channel"),
-		    // table header 2/2
-		    _("Station Name")), tv_channels),
-		`HBox (
-		    `PushButton(`id(`add), `opt(`key_F3), Label::AddButton()),
-		    `PushButton(`id(`edit), `opt(`key_F4), Label::EditButton()),
-		    `PushButton(`id(`del),`opt(`key_F5), Label::DeleteButton()),
-		    `HStretch()
-		)
-	    ),
-	    `HSpacing (0.5)
-	)),
-        `VSpacing (2)
-    ), `HSpacing(3));
-
-    Wizard::SetContentsButtons ( caption, contents, ChannelsDialogHelp (),
-	// TODO Next for detected sequence...
-	Label::BackButton (), Label::OKButton () );
-
-    // set the starting configuation
-    string tv_norm = toupper (channels_config["defaults", "norm"]:"pal");
-    string tv_freqtab = channels_config["global", "freqtab"]:"europe-west";
-    UI::ChangeWidget (`id(`norms), `Value, tv_norm);
-    UI::ChangeWidget (`id(`freq), `Value, tv_freqtab);
-
-    map new_config = $[];
-    any ret = nil;
-    do
-    {
-	ret = tvUserInput();
-	tv_norm = UI::QueryWidget (`id(`norms), `Value);
-	tv_freqtab = UI::QueryWidget (`id(`freq), `Value);
-
-	if (ret == `scan && Require::RequireAndConflictTarget(["v4l-tools"],[],
-	    // popup label (install required application?)
-	    _("For scanning the TV channels, package '%1' is required.
-Install it now?")))
-	{
-	    list scanned = ChannelsScanPopup (tv_norm, tv_freqtab);
-	    if (scanned != nil)
-	    {
-		new_config = eval (scanned [0]:[]);
-		tv_channels = eval (scanned [1]:[]);
-		UI::ChangeWidget (`id(`channels), `Items, tv_channels);
-		modified = true;
-	    }
-	}
-	string current = UI::QueryWidget (`id(`channels), `CurrentItem);
-	if (ret == `del && current != nil)
-	{
-	    tv_channels = filter (`it, tv_channels, ``(
-		select (it, 2, "") != current));
-	    UI::ChangeWidget (`id(`channels), `Items, tv_channels);
-	    modified = true;
-	}
-	if (ret == `add)
-	{
-	    term new = StationPopup ("","", tv_channels);
-	    if (new != nil)
-	    {
-		tv_channels = add (tv_channels, new);
-		UI::ChangeWidget (`id(`channels), `Items, tv_channels);
-		UI::ChangeWidget (`id(`channels), `CurrentItem,
-		    select (new,2,nil));
-		modified = true;
-	    }
-	}
-	if (ret == `edit || ret == `channels)
-	{
-	    term it = UI::QueryWidget (`id(`channels), `Item (current));
-	    term new = StationPopup (select (it,1,""), current, tv_channels);
-	    if (new != nil)
-	    {
-		tv_channels = filter (`i, tv_channels, ``(
-		    select (i, 2, "") != current));
-		tv_channels = add (tv_channels, new);
-		UI::ChangeWidget (`id(`channels), `Items, tv_channels);
-		UI::ChangeWidget (`id(`channels), `CurrentItem,
-		    select (new,2,nil));
-		modified = true;
-	    }
-	}
-
-    } while (!contains ([`back, `abort, `cancel, `next, `ok], ret));
-
-    if (tv_norm != channels_config["defaults","norm"]:"" ||
-	    tv_freqtab != channels_config["global","freqtab"]:"")
-	modified = true;
-
-    if (ret == `next && modified)
-    {
-	// save configuration to global values
-	/*
-	channels_config["defaults","norm"] = tv_norm;
-	channels_config["global","freqtab"] = tv_freqtab;
-	*/
-
-	// use updated configuration after scan:
-	channels_config["defaults"] = union (channels_config["defaults"]:$[],
-	    new_config["defaults"]:$[]);
-	channels_config["global"] = union (channels_config["global"]:$[],
-	    new_config["global"]:$[]);
-
-	// save channels
-	map xawtvrc = $[
-	    "defaults": channels_config["defaults"]:$[],
-	    "global":	channels_config["global"]:$[]
-	];
-	foreach (term i, tv_channels, ``{
-	    string name = select (i,2,"");
-	    // preserve station settings that yast doesn't configure
-	    map station = eval (channels_config[name]:$[]);
-	    station["channel"] = select (i,1,"");
-	    xawtvrc = add (xawtvrc, name, station);
-	});
-	Tv::channels_config = eval (xawtvrc);
-	Tv::stations_modified = modified;
-    }
-    return ret;
-}
-
-/**
- * Popup for adding/editing TV station
- * @param channel current channel (empty when adding)
- * @param station current station name (empty when adding)
- * @param items list of current stations (to check duplicates)
- */
-global define term StationPopup (string channel, string station, list items) ``{
-
-    UI::OpenDialog( `opt(`decorated), `HBox(
-	`HSpacing(1),
-	`VBox(
-	    `HSpacing (50),
-	    `VSpacing(0.5),
-	    `HBox (
-		// textentry label
-		`TextEntry (`id (`channel), _("Channel"), channel),
-		`HSpacing(0.5),
-		// textentry label
-		`TextEntry (`id (`station), _("Station Name"), station)
-	    ),
-	    `VSpacing(0.5),
-	    `HBox(
-		`PushButton(`id(`ok),`opt(`default),Label::OKButton()),
-		`PushButton(`id(`cancel), Label::CancelButton())
-	    ),
-	    `VSpacing(0.5)),
-	`HSpacing(1)
-    ));
-    any result = nil;
-    term ret = nil;
-    UI::SetFocus (`id(`channel));
-    while (true)
-    {
-	result = UI::UserInput ();
-	if (result == `cancel)
-	    break;
-	if (result == `ok)
-	{
-	    string new_channel	= UI::QueryWidget (`id(`channel), `Value);
-	    string new_station	= UI::QueryWidget (`id(`station), `Value);
-	    if (new_channel == "")
-	    {
-		// message popup
-		Popup::Message (_("Enter a TV channel."));
-		UI::SetFocus (`id(`channel));
-		continue;
-	    }
-	    if (new_station == "")
-	    {
-		// message popup
-		Popup::Message (_("Enter a station name."));
-		UI::SetFocus (`id(`station));
-		continue;
-	    }
-	    string msg = "";
-	    foreach (`it, items, ``{
-		if (select (it, 1, "") == new_channel && new_channel != channel)
-		    // error message
-		    msg = _("There already exist such channel in the table.");
-		if (select (it, 2, "") == new_station && new_station != station)
-		    // error message
-		    msg = _("There already exist such station name in the table.");
-	    });
-	    if (msg != "")
-	    {
-		Popup::Message (msg);
-		continue;
-	    }
-	    if (channel != new_channel || station != new_station)
-		ret = `item (`id(new_station), new_channel, new_station);
-	    break;
-	}
-    }
-    UI::CloseDialog();
-    return ret;
-}
-
-
-/**
- * Popup with TV stations scan
- * @param norm TV norm (PAL/NTSC/...)
- * @param freq frequency table (eourope-west/us-cable/...)
- * @return list [ new xawtv conf, new items for stations table ]
- */
-global define list ChannelsScanPopup (string norm, string freq) ``{
-
-    UI::OpenDialog(`opt(`decorated), `HBox(`HSpacing(1.5),
-    `VSpacing(18),
-    `VBox(
-        `HSpacing(60),
-        `VSpacing(0.5),
-	// Popup label (heading)
-        `Label(_("TV Channels Scan")),
-        `VSpacing(0.5),
-        `LogView (`id (`scantv), "", 10, 0),
-        `VSpacing(0.5),
-	`HBox (
-	    `PushButton(`id(`ok), Label::OKButton()),
-	    `PushButton(`id(`cancel), Label::CancelButton())
-	),
-        `VSpacing(0.5)),
-    `HSpacing(1.5)
-    ));
-    UI::ChangeWidget (`id(`ok), `Enabled, false);
-
-    // before scan, tv module has to be loaded (maybe TV is not configured yet)
-    string start = Tv::tv_tmp_start ();
-    if (start != "")
-    {
-	// error message
-	ErrorWithDetails (_("The kernel module for TV support could not be loaded."), start);
-	UI::CloseDialog();
-	return nil;
-    }
-
-    SCR::Execute (.background.run_output,
-	sformat("/usr/X11R6/bin/scantv -n %1 -f %2 2>&1 -o %3/xawtvrc",
-	    norm, freq, Tv::tmpdir));
-
-    string test_output = "";
-    any ret = nil;
-    list stations = [];
-    map xawtvrc = $[];
-    list retlist = nil;
-    do
-    {
-	ret = UI::PollInput();
-        if (SCR::Read(.background.output_open) &&
-	    SCR::Read(.background.newlines)>0)
-        {
-            // read the output line from scantv
-            test_output = select (SCR::Read(.background.newout), 0, nil);
-	    if (test_output != nil)
-		UI::ChangeWidget (`id(`scantv), `LastLine, test_output + "\n");
-	    // TODO: translate the output? ("no station")
-	    // FIXME: there is some mess in the scantv output...
-        }
-	else if (!SCR::Read(.background.output_open))
-	{
-	    ret = `done;
-	}
-    }
-    while (ret == nil);
-
-    SCR::Execute(.background.kill, nil);
-
-    if (ret == `done)
-    {
-	UI::ChangeWidget (`id(`ok), `Enabled, true);
-	xawtvrc = Tv::ReadStationsConfig (.tmp.xawtvrc);
-	stations = GetStationsAsItems (xawtvrc);
-	retlist = [ xawtvrc, stations ];
-	UI::ChangeWidget (`id(`scantv), `LastLine,
-	    // label: summary of scanning for stations
-	    sformat(_("Number of TV stations found: %1."), size (stations)));
-
-	ret = UI::UserInput();
-    }
-    UI::CloseDialog();
-
-    // TODO unload the modules?
-    return retlist;
-}
-
-/**
- * Returns a list of TV stations as table items
- * @param xawtvrc map with contents of xawtvrc config file
- * @return item list
- */
-global define list GetStationsAsItems (map xawtvrc) ``{
-
-    list stations = [];
-    foreach (string sect, map cont, xawtvrc, ``{
-	if (sect != "defaults" && sect != "global")
-	{
-	    stations = add (stations,
-		`item (`id(sect), xawtvrc[sect,"channel"]:"", sect));
-	}
-    });
-    return stations;
-}
 
 /* EOF */
 }

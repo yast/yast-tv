@@ -22,6 +22,8 @@
     y2milestone ("Tv module started");
 
     import "Mode";
+    import "Report";
+    import "Commandline";
 
     include "tv/ui.ycp";
     include "commandline/commandline.ycp";
@@ -44,9 +46,6 @@
 	}
 	i = i + 1;
     }
-
-    /* main ui function */
-    // any ret = no_io? TvSequenceNoIO (): TvSequence ();
 
 // --------------------------------------------------------------------------
 // --------------------------------- cmd-line handlers
@@ -134,14 +133,16 @@ global define boolean TvRemoveCardHandler (map options ) ``{
     return Tv::CardRemove (card_no);
 }
 
+block<boolean> abort_block = ``{return false;};
+
 /* the command line description map */
 map cmdline = $[
     "id"		: "tv",
     // translators: command line help text for Tv module
     "help"		: _("Tv card configuration module."),
     "guihandler"	: ``(TvSequence()),
-    "initialize"	: ``(Tv::Read(``{return false;})),
-    "finish"		: ``(Tv::Write(``{return false;})),
+    "initialize"	: ``(Tv::Read (abort_block)),
+    "finish"		: ``(Tv::Write (abort_block)),
     "actions"		: $[
 	"summary" :$[
 	    "handler"	: ``(TvSummaryHandler()),
