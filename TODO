@@ -14,8 +14,8 @@ TODO for yast2-tv
     /usr/src/kernel-modules/v4l2/saa7134-*/saa7134-cards.c
     from km_v4l2.rpm package
 
-- neededforbuild in yast2-tv.spec.in must be adapted to the new yast2
-  packages
+- fix neededforbuild in yast2-tv.spec.in: use yast2-sound instead of
+  yast2-config-sound when available, remove yast2-config-package-manager
 
 - the support for saa7134 sould work out of the box, but must be tested.
   Note: take care if it gets to libhd as well. More info:
