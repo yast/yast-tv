@@ -1,23 +1,16 @@
 /**
- * File:
- *   helps.ycp
- *
- * Module:
- *   Configuration of TV cards
- *
- * Summary:
- *   Functions returning help texts.
- *
- * Authors:
- *   Jan Holesovsky <kendy@suse.cz>
+ * File:	include/tv/helps.ycp
+ * Package:	TV cards configuration
+ * Summary:	Functions returning help texts.
+ * Authors:	Jan Holesovsky <kendy@suse.cz>
  *
  * $Id$
  *
  * All the help texts for the dialogs.
- *
  */
 
 {
+
     textdomain "tv";
 
     /**
@@ -190,4 +183,5 @@ cards</B> button.
 </P>");
 }
 
+/* EOF */
 }

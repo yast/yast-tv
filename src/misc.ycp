@@ -1,24 +1,17 @@
 /**
- * File:
- *   misc.ycp
- *
- * Package:
- *   Configuration of tv
- *
- * Summary:
- *   Miscelanous functions for configuration of tv.
- *
- * Authors:
- *   Jan Holesovsky <kendy@suse.cz>
+ * File:	include/tv/misc.ycp
+ * Package:	TV cards configuration
+ * Summary:	Miscelanous functions for configuration of tv.
+ * Authors:	Jan Holesovsky <kendy@suse.cz>
  *
  * $Id$
  *
  * Functions that are not UI related, do not belong to modules/tv.ycp
  * and are not common enough to be in a library.
- *
  */
 
 {
+
     import "Sound";
 
     /**
@@ -67,4 +60,5 @@
 	    });
     }
 
+/* EOF */
 }

@@ -2,7 +2,9 @@
 
     include "testsuite.ycp";
 
-    map READ = $[ "target" : $[ "size" : -1 ] ];
+    map READ = $[
+	"target" : $[ "size": -1, "tmpdir" : "/tmp", ]
+    ];
 
     TESTSUITE_INIT([READ], nil);
     import "Tv";

@@ -1,23 +1,16 @@
 /**
- * File:
- *   ModulesComments.ycp
- *
- * Package:
- *   Library for configuration of pieces of hardware
- *
- * Summary:
- *   A Module:: for handling special comments in /etc/modules.conf
- *
- * Authors:
- *   Jan Holesovsky <kendy@suse.cz>
+ * File:	modules/ModulesComments.ycp
+ * Package:	TV cards configuration
+ * Summary:	Library for handling special comments in /etc/modules.conf
+ * Authors:	Jan Holesovsky <kendy@suse.cz>
  *
  * $Id$
  *
  * Functions for handling special comments in /etc/modules.conf
- *
  */
 
 {
+
     module "ModulesComments";
 
     /**
@@ -96,4 +89,5 @@
 	return result;
     }
 
+/* EOF */
 }

@@ -1,20 +1,12 @@
 /**
- * File:
- *   include/tv/ui.ycp
- *
- * Package:
- *   Configuration of tv
- *
- * Summary:
- *   User interface functions.
- *
- * Authors:
- *   Jan Holesovsky <kendy@suse.cz>
+ * File:	include/tv/ui.ycp
+ * Package:	TV cards configuration
+ * Summary:	User interface functions.
+ * Authors:	Jan Holesovsky <kendy@suse.cz>
  *
  * $Id$
  *
  * All user interface functions.
- *
  */
 
 {
@@ -27,8 +19,8 @@ import "Progress";
 import "Summary";
 import "Tv";
 
-include "ui/common_popups.ycp";
-include "ui/common_messages.ycp";
+import "Popup";
+import "Label";
 include "wizard/sequencer.ycp";
 
 include "tv/helps.ycp";
@@ -47,7 +39,7 @@ global define any tvUserInput() ``{
     {
 	ret = UI::UserInput();
     } while ((ret == `cancel || ret == `abort) &&
-	     (Tv::IsDirty()? !UI::ReallyAbortPopup (true): false));
+	     (Tv::IsDirty()? !Popup::ReallyAbort (true): false));
 
     return (ret == `cancel)? `abort: ret;
 }
@@ -91,8 +83,8 @@ global define any TvSequence () ``{
     Wizard::SetContentsButtons ( caption,
 				 contents,
 				 "",
-				 BackButtonLabel (),
-				 NextButtonLabel ());
+				 Label::BackButton (),
+				 Label::NextButton ());
 
     any ret = WizardSequencer (aliases, sequence);
 
@@ -113,8 +105,8 @@ global define any TvSequenceNoIO () ``{
     Wizard::SetContentsButtons ( caption,
 				 contents,
 				 "",
-				 BackButtonLabel (),
-				 NextButtonLabel ());
+				 Label::BackButton (),
+				 Label::NextButton ());
 
     any ret = MainSequence ();
 
@@ -312,8 +304,8 @@ global define any DetectedDialog() ``{
     Wizard::SetContentsButtons ( caption,
 				 contents,
 				 DetectedDialogHelp (),
-				 BackButtonLabel (),
-				 FinishButtonLabel () );
+				 Label::BackButton (),
+				 Label::FinishButton () );
 
     any ret = nil;
     do
@@ -339,7 +331,7 @@ global define any DetectedDialog() ``{
 	    if (detected_no == nil)
 	    {
 		// For translators: The user chose [Configure...] but did not select a card
-		UI::MessagePopup(_("Please select a card to configure first."));
+		Popup::Message(_("Please select a card to configure first."));
 		continue;
 	    }
 
@@ -397,8 +389,8 @@ global define any OverviewDialog() ``{
 	Wizard::SetContentsButtons ( caption,
 				     contents,
 				     OverviewDialogHelp (),
-				     BackButtonLabel (),
-				     FinishButtonLabel () );
+				     Label::BackButton (),
+				     Label::FinishButton () );
 	UI::ChangeWidget(`id(`table), `Items, Tv::CardsAsItems());
 
     UI::SetFocus (`id (`table));
@@ -422,7 +414,7 @@ global define any OverviewDialog() ``{
 	    else
 	    {
 		// For translators: The user chose [Edit...] but did not select a card
-		UI::MessagePopup(_("Please select a card to edit first."));
+		Popup::Message(_("Please select a card to edit first."));
 		ret = nil;
 	    }
 	}
@@ -440,7 +432,7 @@ global define any OverviewDialog() ``{
 		Tv::current_card = Tv::CardGet(sel_no);
 		Tv::current_card_no = sel_no;
 		// For translators: The user chose [Delete] in the overview dialog
-		boolean really_del = UI::YesNoPopup(sformat(_("Do you really want to
+		boolean really_del = Popup::YesNo(sformat(_("Do you really want to
 remove the configuration
 of \"%1\"?"), lookup(Tv::current_card, "name", "")));
 
@@ -452,7 +444,7 @@ of \"%1\"?"), lookup(Tv::current_card, "name", "")));
 	    else
 	    {
 		// For translators: The user chose [Delete] but did not select a card
-		UI::MessagePopup(_("Please select a card to delete first."));
+		Popup::Message(_("Please select a card to delete first."));
 	    }
 	}
     } while (ret != `back && ret != `abort && ret != `next &&
@@ -514,9 +506,9 @@ global define map ChooseTuner(string kernel_module, map selected_tuner) ``{
 			    Tv::TunersDBAsItems (kernel_module, selected_tuner)),
 	      `VSpacing(0.3),
 	      `HBox(`HStretch(),
-		    `PushButton(`id(`ok), OKButtonLabel()),
+		    `PushButton(`id(`ok), Label::OKButton()),
 		    `HSpacing(2),
-		    `PushButton(`id(`cancel), CancelButtonLabel()),
+		    `PushButton(`id(`cancel), Label::CancelButton()),
 		    `HStretch()
 	      )
 	);
@@ -540,7 +532,7 @@ global define map ChooseTuner(string kernel_module, map selected_tuner) ``{
 	    else
 	    {
 		// For translators: The user chose [OK] but did not select a tuner
-		UI::MessagePopup (_("Please select your tuner first."));
+		Popup::Message (_("Please select your tuner first."));
 		ret = nil;
 	    }
 	}
@@ -640,13 +632,13 @@ global define any ManualDialog (boolean warn) ``{
     Wizard::SetContentsButtons ( caption,
 				 contents,
 				 ManualDialogHelp (),
-				 BackButtonLabel (),
-				 NextButtonLabel () );
+				 Label::BackButton (),
+				 Label::NextButton () );
 
     if (warn && lookup (Tv::current_card, "module", nil) == nil)
     {
 	// For translators: A warning popup
-	UI::MessagePopup(_("The selected card does not provide full
+	Popup::Message(_("The selected card does not provide full
 information for the automatic detection.
 
 Please, select the exact type from
@@ -698,7 +690,7 @@ the list in the following dialog."));
 	if (ret == `next && sel_no == nil)
 	{
 	    // For translators: The user chose [Next] but did not select a card
-	    UI::MessagePopup (_("Please select your card first."));
+	    Popup::Message (_("Please select your card first."));
 	    ret = nil;
 	}
 
@@ -723,7 +715,7 @@ the list in the following dialog."));
 	  if (sel_no == nil)
 	  {
 		// message popup
-		UI::MessagePopup (_("Please select your card first."));
+		Popup::Message (_("Please select your card first."));
 	  }
           else
           {
@@ -736,7 +728,7 @@ the list in the following dialog."));
 	        else
 	        {
 		  // message popup
-		  UI::MessagePopup (_("There is no tuner available
+		  Popup::Message (_("There is no tuner available
 for the selected card."));
 	        }
           }
@@ -872,8 +864,8 @@ of available kernel modules...")),
     Wizard::SetContentsButtons ( caption,
 				 contents,
 				 ManualDetailsDialogHelp (allow_changeoftype),
-				 BackButtonLabel (),
-				 NextButtonLabel ());
+				 Label::BackButton (),
+				 Label::NextButton ());
 
     if (!radio)
     {
@@ -987,7 +979,7 @@ of available kernel modules...")),
 	    if (selected_parameter == nil || selected_parameter == "")
 	    {
 		// For translators: The user chose [Set] but did not select a parameter she wants to set
-		UI::MessagePopup (_("Please select the parameter
+		Popup::Message (_("Please select the parameter
 your want to edit first."));
 	    }
 	    else
@@ -996,7 +988,7 @@ your want to edit first."));
 		if (value != filterchars (value, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-+0123456789"))
 		{
 		    // For translators: The user wants to set kernel parameters, but the string is wrong
-		    UI::MessagePopup (_("Please do not use other characters
+		    Popup::Message (_("Please do not use other characters
 than a-z, A-Z, _, -, + and 0-9."));
 		}
 		else
@@ -1023,7 +1015,7 @@ than a-z, A-Z, _, -, + and 0-9."));
 	    if (selected_parameter == nil || selected_parameter == "")
 	    {
 		// For translators: The user chose [Set] but did select a parameter she wants to set
-		UI::MessagePopup (_("Please select the parameter
+		Popup::Message (_("Please select the parameter
 your want to edit first."));
 	    }
 	    else
@@ -1113,7 +1105,7 @@ global define any AudioDialog() ``{
 								  current_rb != `rb_yes)),
 					       `Left(`RadioButton(`id(`rb_yes),
 								  `opt(`notify),
-								  UI::YesButtonLabel(),
+								  Label::YesButton(),
 								  current_rb == `rb_yes))
 					 )
 				     ),
@@ -1143,8 +1135,8 @@ global define any AudioDialog() ``{
     Wizard::SetContentsButtons ( caption,
 				 contents,
 				 AudioDialogHelp (),
-				 BackButtonLabel (),
-				 NextButtonLabel ());
+				 Label::BackButton (),
+				 Label::NextButton ());
 
     // Select the previously selected card
     if (current_rb == `rb_yes)
@@ -1186,7 +1178,7 @@ global define any AudioDialog() ``{
 	    UI::QueryWidget(`id(`sound_card_table), `CurrentItem) == nil)
 	{
 	    // For translators: The user chose [Next] but did not select a sound card
-	    UI::MessagePopup(_("Please select a sound card first."));
+	    Popup::Message(_("Please select a sound card first."));
 	    ret = nil;
 	}
     } while (ret != `back && ret != `abort && ret != `next);
@@ -1210,4 +1202,5 @@ global define any AudioDialog() ``{
     return ret;
 }
 
+/* EOF */
 }

@@ -1,24 +1,17 @@
 /**
- * File:
- *   modules/Tv.ycp
- *
- * Package:
- *   Configuration of TV cards
- *
- * Summary:
- *   Data for configuration of tv, input and output functions.
- *
- * Authors:
- *   Jan Holesovsky <kendy@suse.cz>
+ * File:	modules/Tv.ycp
+ * Package:	TV cards configuration
+ * Summary:	Data for configuration of tv, input and output functions.
+ * Authors:	Jan Holesovsky <kendy@suse.cz>
  *
  * $Id$
  *
  * Representation of the configuration of TV cards.
  * Input and output routines.
- *
  */
 
 {
+
     // Set the name of the module
     module "Tv";
     import "Progress";
@@ -29,7 +22,7 @@
     import "Require";
 
     include "tv/misc.ycp";
-    include "ui/common_messages.ycp";
+    import "Label";
     include "sound/write_routines.ycp";
 
     textdomain "tv";
@@ -461,8 +454,8 @@ It is currently not installed. Install it now?"), "kradio"));
                 // checkbox label
                 _("Do not ask me later")),
             `HBox(
-              `PushButton (`id(`ok),`opt(`key_F10), UI::YesButtonLabel()),
-              `PushButton (`id(`cancel),`opt(`key_F9), UI::NoButtonLabel())
+              `PushButton (`id(`ok),`opt(`key_F10), Label::YesButton()),
+              `PushButton (`id(`cancel),`opt(`key_F9), Label::NoButton())
             ))
     );
     any ret = nil;
@@ -1598,4 +1591,5 @@ to /etc/modules.conf."));
 	return filter (`val, param_list, ``(val != nil));
     }
 
+/* EOF */
 }

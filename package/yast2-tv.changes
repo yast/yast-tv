@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Jun 20 16:38:38 CEST 2003 - msvec@suse.de
+
+- converted to new popups and labels
+- updated testsuite
+- 2.8.1
+
+-------------------------------------------------------------------
 Mon Mar 31 11:19:34 CEST 2003 - jsuchome@suse.de
 
 - show currently selected tuner

@@ -1,6 +1,6 @@
 /**
  * File:	clients/tv_proposal.ycp
- * Package:	Configuration of TV cards
+ * Package:	TV cards configuration
  * Summary:	Proposal function dispatcher.
  * Authors:	Jan Holesovsky <kendy@suse.cz>
  *
