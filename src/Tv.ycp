@@ -21,7 +21,6 @@
     import "Mode";
     import "Require";
     import "Confirm";
-    import "Directory";
 
     include "tv/misc.ycp";
     import "Label";
@@ -44,10 +43,10 @@
      */
     list cards = [];
 
-	/**
-	 * List of cards which user chooses to delete.
-	 */
-	list cards_to_del = [];
+    /**
+     * List of cards which user chooses to delete.
+     */
+    list cards_to_del = [];
 
     /**
      * If the list of the cards changes, this is set to true and Write()
@@ -1673,7 +1672,7 @@ global define any ReadIRC () ``{
 
     // FIXME: all files???
     map out = SCR::Execute (.target.bash_output,
-	"/usr/bin/find  /usr/share/doc/packages/lirc/remotes/ -name *lircd*");
+	"/usr/bin/find  /usr/share/lirc/remotes/ -name *lircd*");
     remotes = splitstring (out["stdout"]:"", "\n");
 
     return `next;
