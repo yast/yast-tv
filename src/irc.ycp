@@ -27,8 +27,6 @@
 
     any ret = IRCDialog (true);
 
-    y2internal ("ret == %1", ret);
-
     if (ret == `next)
     {
 	Tv::WriteIRC();

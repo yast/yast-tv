@@ -14,7 +14,6 @@ textdomain "tv";
 
 import "Wizard";
 import "Wizard_hw";
-import "Progress";
 import "Popup";
 import "Label";
 import "Runlevel";
@@ -25,24 +24,8 @@ include "wizard/sequencer.ycp";
 include "ui/file_popups.ycp";
 
 include "tv/helps.ycp";
+include "tv/misc.ycp";
 
-
-/**
- * Enhanced version of UserInput which asks if really abort after
- * pressing [Abort].
- * @return any The value of the resulting UserInput.
- */
-global define any tvUserInput() ``{
-    any ret = nil;
-
-    do
-    {
-	ret = UI::UserInput();
-    } while ((ret == `cancel || ret == `abort) &&
-	     (Tv::IsDirty()? !Popup::ReallyAbort (true): false));
-
-    return (ret == `cancel)? `abort: ret;
-}
 
 /**
  * Dialog for seting up IRC
@@ -53,33 +36,22 @@ global define any IRCDialog (boolean alone) ``{
     // For translators: Caption of the dialog
     string caption = _("Infra red control configuration");
 
-    // The selected card
-    map selected_card = Tv::current_card;
-    if (selected_card == $[])
-    {
-	selected_card = Tv::CardGet (0);
-	// TODO offer cards, when there are more of them?
-    }
-
-    map current_card_parameters = selected_card["parameters"]:$[];
-    string module_name_tmp	= selected_card["module"]:nil;
-    map	selected_tuner		= Tv::GetTuner (
-	module_name_tmp, current_card_parameters["tuner"]:"-1");
-
-// FIXME don't have a card number when card was detected! - how to guess module?
-    integer card_id = tointeger (current_card_parameters["card"]:-1);
-
     boolean use_irc	= Tv::use_irc;
     string irc_config	= Tv::irc_config;
     string irc_module	= Tv::irc_module;
     list mods		= Tv::irc_modules_list;
 
-    string startdir = "/usr/share/doc/packages/lirc/remotes/";
+    string startdir = "/usr/share/lirc/remotes/";
+
+    if (irc_module == "")
+	irc_module = Tv::GetIRCModule();
 
     list remotes_items = [];
     foreach (string control, Tv::remotes, ``{
 	list aslist = splitstring (control, "/");
 	string last = select (aslist, size(aslist)-1, "");
+	if (issubstring (last, "lircd.conf."))
+	    last = substring (last, size ("lircd.conf."));
 	if (last != "")
 	    remotes_items = add (remotes_items, `item(`id(control), last));
     });
@@ -104,18 +76,17 @@ global define any IRCDialog (boolean alone) ``{
 	`Frame (_("IRC Settings"), `HBox(`HSpacing (0.5),
 	    `VBox(
 		`VSpacing (0.5),
+		`ReplacePoint (`id(`configs),
 		`HBox(
 		    // combobox label
 		    `ComboBox(`id(`config), `opt(`hstretch),
-			_("IRC Config File"), remotes_items)
-		    /* FIXME: choose the rest of files, adapt combo items???
+			_("IRC Config File"), remotes_items),
 		    `VBox(
 			`Label (""),
 			// button label
-			`PushButton(`id(`brow),`opt(`key_F7), _("Cho&ose..."))
+			`PushButton(`id(`brow),`opt(`key_F7), _("M&ore..."))
 		    )
-		    */
-		),
+		)),
 		`ComboBox (`id(`mods), `opt(`notify, `hstretch),
 		    // combobox label
 		    _("Kernel module"), mods),
@@ -140,20 +111,14 @@ global define any IRCDialog (boolean alone) ``{
 	Label::BackButton (), alone?Label::FinishButton():Label::NextButton ());
 
 
-//    foreach (symbol widget, [`config, `brow, `mods, `test],``{
-    foreach (symbol widget, [`config, `mods, `test],``{
+    foreach (symbol widget, [`config, `brow, `mods, `test],``{
 	UI::ChangeWidget (`id (widget), `Enabled, use_irc);
     });
 
-    // propose lirc_gpio module for some TV cards
-    if (contains (Tv::cards_with_lirc_gpio, card_id) && irc_module == "")
-	irc_module = "lirc_gpio";
-    if (contains (mods, irc_module))
-    {
-	UI::ChangeWidget (`id(`mods), `Value, irc_module);
-    }
-
     UI::ChangeWidget (`id(`config), `Value, irc_config);
+
+    if (contains (mods, irc_module))
+	UI::ChangeWidget (`id(`mods), `Value, irc_module);
 
     any ret = nil;
     do
@@ -208,38 +173,25 @@ Install it now?")))
 		use_irc = false;
 		UI::ChangeWidget (`id(`rd), `CurrentButton, `no);
 	    }
-//	    foreach (symbol widget, [`config, `brow, `mods, `test],``{
-	    foreach (symbol widget, [`config, `mods, `test],``{
+	    foreach (symbol widget, [`config, `brow, `mods, `test],``{
 		UI::ChangeWidget (`id (widget), `Enabled, use_irc);
 	    });
 	}
 	if (ret == `brow)
 	{
-	    /*
-	    string file = irc_config;
-	    if (SCR::Read(.target.size, file ) == -1)
-		file = startdir;
-	    file = PopupFileWithMask (file, ["lircd.conf.*"]);
-	    */
 	    string file = PopupFile (startdir);
 	    if (file != "")
 	    {
-		// FIXME only the file name, not whole path
 		remotes_items = union (remotes_items, [`item(`id(file), file)]);
-		UI::ChangeWidget (`id(`config), `Items, remotes_items);
+		UI::ReplaceWidget (`id(`configs), `HBox(
+		    `ComboBox(`id(`config), `opt(`hstretch),
+			_("IRC Config File"), remotes_items),
+		    `VBox(`Label (""),
+			`PushButton(`id(`brow),`opt(`key_F7), _("Mo&re..."))))
+		);
 		UI::ChangeWidget (`id(`config), `Value, file);
 	    }
 
-	}
-	if (use_irc && (ret == `next || ret == `test))
-	{
-	    if (irc_config == "" || SCR::Read (.target.size, irc_config) == -1)
-	    {
-		// FIXME better text
-		Popup::Message (_("Enter the corect config file name."));
-		UI::SetFocus (`id(`config));
-		continue;
-	    }
 	}
 	if (ret == `test)
 	{
@@ -301,6 +253,7 @@ global define boolean IRCTestPopup (string config_file, string mod, boolean modi
 	    out = SCR::Execute (.target.bash_output, "rclirc restart");
 	else
 	    out = SCR::Execute (.target.bash_output, "rclirc start");
+y2internal ("out: %1", out);
 	return out["stderr"]:"";
     }
 

@@ -43,4 +43,12 @@
     56,
     //BTTV_WINFAST2000
     34,
+    //BTTV_WINVIEW_601
+    17,
+    //BTTV_KWORLD
+    78,
+    //BTTV_TYPHOON_TVIEW
+    36,
+    //BTTV_GVBCTV5PCI
+    81
 ]

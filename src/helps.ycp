@@ -190,7 +190,10 @@ cards</B> button.
 global define string ChannelsDialogHelp () ``{
 
     return
-_("helptext for TV stations scan/edit FIXME");
+_("stations are saved to /etc/X11/xawtvrc
+
+<p>
+helptext for TV stations scan/edit FIXME");
 }
 
 /**
