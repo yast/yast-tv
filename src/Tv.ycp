@@ -724,6 +724,9 @@ available kernel modules."));
 		    while (count < parameter_counter)
 		    {
 			string value = lookup(param_map, count, "");
+            // this is a hack for detected cards (see bug #24132)
+            if (value == "")
+                value = "-1";
 			param_values = add(param_values, value);
 			count = count + 1;
 		    }
@@ -1365,17 +1368,17 @@ to /etc/modules.conf."));
 	{
 	    return [];
 	}
-
 	list tuners = lookup (tuners_database, kernel_module, []);
 	tuners = prepend(tuners, $[ "name" :
                                     // Default item of tuners list:
                                     _("Default (detected)"),
-				                "parameters" : $[] ]);
+				                "parameters" : $[ "tuner": "-1" ] ]);
 
+    if (selected_tuner == nil || selected_tuner == $[])
+        selected_tuner = $["parameters" : $[ "tuner": "-1" ]];
 	integer tuner_no = 0;
 	boolean some_is_selected = false;
 	map selected_tuner_parameters = lookup(selected_tuner, "parameters", $[]);
-
 	return
 	    maplist (`tuner, tuners, ``{
 		boolean select_this = CmpParameters ( lookup (tuner, "parameters", $[]),
@@ -1399,16 +1402,13 @@ to /etc/modules.conf."));
      * @return map Tuner.
      */
     global define map TunersDBSelectTuner(string kernel_module, integer number) ``{
-	if (number == 0)
-	{
-	    return $[]; // default value
-	}
-	else
-	{
-	    list tuners = lookup (tuners_database, kernel_module, []);
+	list tuners = lookup (tuners_database, kernel_module, []);
+	tuners = prepend(tuners, $[ "name" :
+                                    // Default item of tuners list:
+                                    _("Default (detected)"),
+				                "parameters" : $[ "tuner": "-1" ] ]);
 
-	    return select (tuners, number - 1, $[]);
-	}
+	return select (tuners, number , $[]);
     }
 
     /////////////////////////////////////////////////////////////////
