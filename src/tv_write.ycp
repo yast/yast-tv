@@ -36,7 +36,7 @@
     }
 
     // The settings are in the first argument
-    map settings = select (args, 0, $[]);
+    map settings = args[0]:$[];
     y2milestone("Only writing... (%1)", settings);
 
     if (! Tv::Import (settings))
@@ -44,8 +44,12 @@
 	return false;
     }
 
+    block<boolean> callback = ``{
+	return UI::PollInput () == `abort;
+    };
+
     Progress::off ();
-    boolean ret = Tv::Write ( ``{ return false; } );
+    boolean ret = Tv::Write (callback);
     Progress::on ();
 
     return ret;

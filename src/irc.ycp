@@ -10,7 +10,6 @@
  */
 
 {
-
     /***
      * <h3>Configuration of IRC</h3>
      */
@@ -22,7 +21,8 @@
 
     Wizard::CreateDialog();
 
-    Tv::Read (``{ return false;});
+    block<boolean> callback = ``{ return UI::PollInput () == `abort;};
+    Tv::Read (callback);
     Tv::ReadIRC();
 
     any ret = IRCDialog (true);

@@ -16,8 +16,8 @@
     import "Tv";
     import "Progress";
 
-    string func  = WFM::Args(0);
-    map    param = WFM::Args(1);
+    string func  = (string) WFM::Args(0);
+    map    param = (map) WFM::Args(1);
     map    ret   = $[];
 
     // Make proposal for installation/configuration...
@@ -56,7 +56,7 @@
     // Run an interactive workflow
     else if ( func == "AskUser" )
     {
-	any stored = Tv::Export ();
+	map stored = Tv::Export ();
 
 	// Do not show any progress during Read ()
 	Progress::off ();
@@ -64,7 +64,7 @@
 	Tv::ReadTunersDatabase ();
 	Progress::on ();
 
-	any seq = WFM::CallFunction ( `tv ( .noio ) );
+	any seq = WFM::CallFunction ( "tv", [ .noio ] );
 
 	if (seq != `next)
 	{
@@ -98,7 +98,8 @@
 
 	if (Tv::IsDirty ())
 	{
-	    success = Tv::Write ( ``{ return false; } );
+	    block<boolean> abort = ``{ return false; };
+	    success = Tv::Write ( abort );
 	}
 
 	// Fill return map

@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Dec  2 15:22:55 CET 2003 - jsuchome@suse.cz
+
+- syntax fixes for new interpreter
+- 2.9.3
+
+-------------------------------------------------------------------
 Tue Nov 18 14:05:45 CET 2003 - jsuchome@suse.cz
 
 - fixed button label in helptext (#33076)

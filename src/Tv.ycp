@@ -21,10 +21,8 @@
     import "Mode";
     import "Require";
     import "Confirm";
-
-    include "tv/misc.ycp";
+    import "Runlevel";
     import "Label";
-    include "sound/write_routines.ycp";
 
     textdomain "tv";
 
@@ -243,6 +241,1416 @@
 	// FIXME many ID's are missing!
     ];
 
+    // ------------------- function prototypes for include files:
+
+    global define boolean IsDirty ();
+
+    // ------------------- included files:
+
+    include "tv/misc.ycp";
+    include "sound/write_routines.ycp";
+
+    // ------------------- function definitions:
+
+
+    /**
+     * Dialog which asks for installing proposed application
+     * @param apps list of applications to install
+     * @param text text to show in dialog
+     */
+    define void InstallApplication (list apps, string text) ``{
+
+	UI::OpenDialog (`opt(`decorated), `VBox(
+            `HSpacing(50),
+            `RichText (`id(`rt), text),
+            `CheckBox (`id(`ch), `opt(`notify),
+                // checkbox label
+                _("Do Not Show This Message &Again")),
+            `HBox(
+              `PushButton (`id(`ok),`opt(`key_F10), Label::YesButton()),
+              `PushButton (`id(`cancel),`opt(`key_F9), Label::NoButton())
+            ))
+	);
+	any ret = nil;
+	do {
+	    ret = UI::UserInput();
+	    if (ret == `ch) ret = nil;
+	}
+	while (ret == nil);
+
+	not_ask = (boolean) UI::QueryWidget(`id(`ch), `Value);
+	UI::CloseDialog();
+	if (ret == `ok)
+	{
+	    list to_install = [];
+	    // check if packages are avialable...
+	    foreach (string app, apps, ``{
+		if (Require::IsPackageAvailable (app))
+		    to_install = add (to_install, app);
+	    });
+	    Require::DoInstallAndRemoveTarget (to_install, []);
+	}
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Some IO functions
+    /////////////////////////////////////////////////////////////////
+
+    /**
+     * Read the state of "not_ask" variable
+     * (if the TV/radio application presence should be checked again next time)
+     * @return not_ask value
+     */
+    global define boolean ReadUserSettings () ``{
+
+	SCR::Execute (.target.bash, "/bin/touch /var/lib/YaST2/tv.ycp");
+	any state = SCR::Read (.target.ycp, "/var/lib/YaST2/tv.ycp");
+	if ((is (state, map)) &&
+	    ((boolean)lookup ((map)state,"dont_ask_for_application",false)))
+	    return true;
+	return false;
+    }
+
+
+    /**
+     * Read the database of the TV cards.
+     * @return boolean Was the read successful?
+     */
+    global define boolean ReadCardsDatabase() ``{
+	if (cards_database == nil)
+	{
+	    cards_database = (list)SCR::Read (.target.yast2, "tv_cards.ycp");
+	}
+	if (cards_database == nil)
+	{
+	    // Error message popup:
+	    Report::Error(_("Unable to read the TV card database."));
+	    cards_database = [];
+	    return false;
+	}
+
+	// translate it
+	cards_database = (list) eval (cards_database);
+
+	return true;
+    }
+
+    /**
+     * Read the database of the tuners.
+     * @return boolean Was the read successful?
+     */
+    global define boolean ReadTunersDatabase() ``{
+	if (tuners_database == nil)
+	{
+	    tuners_database = (map) SCR::Read (.target.yast2, "tv_tuners.ycp");
+
+	    foreach (string modul, list tuners, tuners_database, ``{
+		tuners_by_id = add (tuners_by_id, modul, $[
+		    "-1": $[
+			    // Default item of tuners list:
+			    "name" : _("Default (detected)"),
+			    "parameters" : $[ "tuner": "-1" ]
+			]
+		    ]
+		);
+		foreach (map tuner, tuners, ``{
+		    tuners_by_id [modul, tuner["parameters", "tuner"]:"-2"] =
+			tuner;
+		});
+	    });
+	}
+	if (tuners_database == nil)
+	{
+	    // Error message popup:
+	    Report::Error(_("Unable to read the tuner database!"));
+	    tuners_database = $[];
+	    return false;
+	}
+
+	// translate it
+	tuners_database = (map) eval (tuners_database);
+	tuners_by_id = (map) eval (tuners_by_id);
+
+	return true;
+    }
+
+    /**
+     * Get a list of the available v4l kernel modules
+     * and store it to <B>kernel_modules</B> map.
+     * @return boolean Returns <B>true</B>.
+     */
+    global define boolean ReadKernelModules() ``{
+	path video_path = .modinfo.kernel.drivers.media.video;
+
+	kernel_modules = $[];
+	list modules_list = (list) SCR::Dir (video_path);
+	if (modules_list == nil)
+	{
+	    // Warning message popup:
+        Report::Warning(_("Unable to read the list of
+available kernel modules."));
+	    return true;
+	}
+
+	foreach (string mod, modules_list, ``{
+	    map parm = (map) SCR::Read ( add (video_path, mod));
+	    kernel_modules = add (kernel_modules, mod, parm);
+	});
+
+	y2debug ("All v4l kernel modules: %1", kernel_modules);
+
+	path radio_path = .modinfo.kernel.drivers.media.radio;
+
+	radio_modules = $[];
+	modules_list = (list) SCR::Dir (radio_path);
+	if (modules_list == nil)
+	{
+	    // Warning message popup:
+        Report::Warning(_("Unable to read the list of
+available kernel modules."));
+	    return true;
+	}
+
+	foreach(string mod, modules_list, ``{
+	    map parm = (map) SCR::Read ( add (radio_path, mod));
+	    radio_modules = add (radio_modules, mod, parm);
+	});
+
+	y2debug ("All radio kernel modules: %1", radio_modules);
+	return true;
+    }
+
+    /**
+     * Returns a list of all char-major-81-* in modules.conf
+     * @return list List [ "char-major-81-0", "char-major-81-3" ] or so...
+     */
+    define list GetMajor81Aliases() ``{
+	// get the specified char-major-81-*
+	list tv_aliases = SCR::Dir(.modules.alias);
+
+	return filter (string alias, tv_aliases,
+	    ``(size(alias) > 13 && substring(alias, 0, 13) == "char-major-81"));
+    }
+
+    /**
+     * Read parameters of one module. It return them in form:
+     * <PRE>
+     * </PRE>
+     * @param module_name Name of the module
+     * @return map Map with parameters
+     * @example
+     * $[ parameter_name: // parameter name
+     *    $[ 0: nil,      // its value for 1st card
+     *	     1: "3",      //               2nd card
+     *	...
+     */
+    define map ReadModuleParameters(string module_name) ``{
+
+	map options = $[];
+	if (contains (SCR::Dir(.modules.options), module_name))
+        options = (map) SCR::Read( add (.modules.options, module_name));
+
+	if (options == nil)
+	{
+	    return $[];
+	}
+
+	// Split the comma separated options into the needed map
+	options = mapmap (string key, string value, options, ``{
+	    if (value == nil)
+	    {
+		value = "";
+	    }
+	    list values = splitstring (value, ",");
+	    integer index = 0;
+	    map values_map = listmap (string val, values, ``{
+		list ret = [ index, val ];
+		index = index + 1;
+		return ret;
+	    });
+	    return $[ key : values_map ];
+	});
+
+	return options;
+    }
+
+    /**
+     * Fill the map of all tv settings from the SCR.
+     * @return boolean Was the reading succesfull?
+     */
+    global define boolean ReadSettings() ``{
+	cards = [];
+
+	// get the specified char-major-81-*
+	list tv_aliases = GetMajor81Aliases();
+
+	// the parameters read from modules.conf
+	// $[ "module" :  $[ parameter_name: $[ 0: nil, 1: "3", 2: "2" ] ] ]
+	//                   no_of_the_card ----^-------^-------^
+	map modules_parameters = $[];
+
+	// Number of a card using this module
+	// $[ "module" : integer ]
+	map modules_counts = $[];
+
+	// scan the video capture devices (major 81 and minor 0..63)
+	integer card_no = 0;
+	while (card_no < 128)
+	{
+	    string alias = sformat("char-major-81-%1", card_no);
+	    if (contains(tv_aliases, alias))
+	    {
+		string card_name = "";
+		string unique_key = nil;
+
+		// get the module name
+		string module_name = (string)
+		    SCR::Read( add (.modules.alias,alias) );
+		y2debug("Reading alias %1: module name is '%2'",
+		    alias, module_name);
+		if (module_name !=nil && module_name!="" && module_name !="off")
+		{
+		    if (modules_parameters[module_name]:nil == nil)
+		    {
+			modules_parameters = add (modules_parameters,
+			    module_name, ReadModuleParameters (module_name));
+			modules_counts = add (modules_counts, module_name, 0);
+		    }
+
+		    // get the name and unique key
+		    string comment = (string) SCR::Read(
+			add ( add(.modules.alias, alias), "comment"));
+		    map name_and_uk =
+			ModulesComments::ExtractFromComment (comment);
+
+		    if (name_and_uk != nil)
+		    {
+			card_name	= name_and_uk["name"]:"";
+			unique_key	= name_and_uk["unique_key"]:nil;
+		    }
+
+		    // read the parameters
+		    map parameters = modules_parameters[module_name]:$[];
+		    integer param_no = modules_counts[module_name]:0;
+		    modules_counts = add (modules_counts,
+					 module_name, param_no + 1);
+		    parameters = mapmap(string key, map value, parameters, ``{
+			string ret = value[param_no]:"";
+			return $[ key : ret ];
+		    });
+		    parameters = filter (string key, string value, parameters,
+			``( value != "" && value != nil));
+
+		    // fill the spaces in the cards
+		    while (size(cards) < card_no)
+		    {
+			cards = add(cards, nil);
+		    }
+
+		    boolean radio = false;
+		    if (card_no>63) radio = true;
+
+		    // add the card to the cards
+		    cards = add (cards, $[
+			"name"       : card_name,
+			"module"     : module_name,
+			"parameters" : parameters,
+			"unique_key" : unique_key,
+			"radio"      : radio ]
+		    );
+		}
+	    }
+	    card_no = card_no + 1;
+	}
+	y2debug("The previously saved configuration: %1", cards);
+
+	// Read user settings ("Do not ask again")
+	not_ask = ReadUserSettings();
+
+	return true;
+    }
+
+    /**
+     * Writes parameters of the modules. As an input, it uses a map
+     * with modules and all their parameters:
+     * <PRE>
+     * $[ "module" :	       // name of the module
+     *     [ no_last_param,	// number of cards using this modules
+     *	 $[ parameter_name:  // parameter name
+     *	     $[ 0: nil,      // its value for 1st card
+     *		1: "3",      //	       2nd card
+     * </PRE>
+     * @param modules_parameters Map with the modules and parameters
+     * @return boolean Was the write successful?
+     */
+    define boolean WriteModulesParameters(map modules_parameters) ``{
+
+	if (modules_parameters == nil)
+	{
+	    return true;
+	}
+
+	boolean result = true;
+	foreach(string module_name, list params_with_no, modules_parameters, ``{
+	    string param_values = "";
+	    integer parameter_counter = params_with_no[0]:0;
+	    if (parameter_counter == nil)
+	    {
+		parameter_counter = 0;
+	    }
+	    map parameters = params_with_no[1]:$[];
+	    if (parameters == nil)
+	    {
+		parameters = $[];
+	    }
+	    parameters = mapmap(string param_name, map param_map, parameters,``{
+
+		if (param_map == nil)
+		    param_map = $[];
+		// fill the holes in param_map and store the values
+		list param_values = [];
+		integer count = 0;
+		while (count < parameter_counter)
+		{
+		    string value = param_map[count]:"";
+		    // this is a hack for detected cards (see bug #24132)
+		    if (value == "")
+			value = "-1";
+		    param_values = add(param_values, value);
+		    count = count + 1;
+		}
+		return $[ param_name : mergestring(param_values, ",") ];
+	    });
+
+	    y2milestone ("Saving options '%1' for module '%2'",
+		parameters, module_name);
+
+	    if (parameters == $[] || parameters == nil)
+	    {
+		// We have to empty the options...
+		if (contains (SCR::Dir(.modules.options), module_name))
+		{
+		    SCR::Write ( add (.modules.options, module_name), nil);
+		}
+	    }
+	    else
+	    {
+		// Write it...
+		y2milestone ("pars=%1, name=%2", parameters, module_name);
+		result = result &&
+		SCR::Write( add (.modules.options, module_name), parameters);
+	    }
+	});
+
+	return result;
+    }
+
+    /**
+     * Write the TV settings to the SCR.
+     * @return boolean Was the reading successful?
+     */
+    define boolean WriteSettings() ``{
+	// common settings
+	y2milestone ("Writing char-major-81 (videodev) to modules.conf");
+	SCR::Write (.modules.alias."char-major-81", "videodev");
+
+	// fix of bug #18033: (slow initialization on some machines)
+	SCR::Write ( add (.modules.options, "i2c-algo-bit"), $["bit_test":"1"]);
+
+	// reset the old settings (all char-major-81-* aliases)
+	foreach (string alias, GetMajor81Aliases(), ``{
+	    SCR::Write ( add (.modules.alias, alias) , nil);
+	});
+
+	// fix of bug #19122:
+        // message "modprobe: Can't locate module char-major-81-1" when second
+        // tv card not present -> setting non-existing cards as "off"
+        integer i = 0;
+	while (i<4) {
+	    string alias = sformat ("char-major-81-%1", i);
+	    SCR::Write ( add (.modules.alias, alias), "off");
+	    i = i + 1;
+	}
+
+	// for cards choosed to delete...
+	foreach (map card, cards_to_del, ``{
+	    string module_name = card["module"]:nil;
+	    if (contains (SCR::Dir(.modules.options), module_name))
+	    {
+		y2milestone ("Deleting module %1 from /etc/modules.conf",
+		    module_name);
+		// ... delete module's options from /etc/modules.conf...
+		SCR::Write ( add (.modules.options, module_name), nil);
+	    }
+	    // ... and unload the module from kernel
+	    SCR::Execute(.target.bash,
+		sformat("/sbin/rmmod -r %1", module_name), $[]);
+	});
+
+	// necessary variables
+	boolean result = true;
+
+	// save the status (configured/unconfigured)
+	map probe_status = listmap (map card, detected_cards,
+	    ``( [ card["unique_key"]:nil, `no ] ));
+
+	// store the parameters to write to this variable
+	// $[ "module" :
+	//	[ no_last_param, $[ parameter_name: $[0: nil, 1: "3", 2: "2"]]]]
+	//                         no_of_the_card ----^-------^-------^
+	map modules_parameters = $[];
+
+	// do this for each card...
+	integer tv_card_no = 0;
+	integer radio_card_no = 64;
+	foreach (map card, cards, ``{
+
+	    boolean radio	= card["radio"]:false;
+	    string module_name	= card["module"]:nil;
+	    string card_name	= card["name"]:"Manually added card";
+	    string unique_key	= card["unique_key"]:sformat ("tv.nouniqkey%1",
+		(radio ? radio_card_no : tv_card_no));
+
+	    if (module_name != nil && module_name != "")
+	    {
+		string alias = sformat ("char-major-81-%1",
+		    (radio ? radio_card_no: tv_card_no));
+		y2milestone ("Writing alias %2 %1 to modules.conf",
+		    module_name, alias);
+
+		// write alias
+		SCR::Write ( add (.modules.alias, alias), module_name);
+
+		// store parameters to "modules_parameters"
+		list params_with_no = modules_parameters[module_name]:[];
+		integer parameter_counter = params_with_no[0]:0;
+		map parameters = params_with_no[1]:$[];
+
+		foreach (string param_name,any param_val,card["parameters"]:$[],
+		``{
+		    // add the parameter to "parameters" map
+		    map param_map = parameters[param_name]:$[];
+		    param_map = add (param_map, parameter_counter, param_val);
+		    parameters = add (parameters, param_name, param_map);
+		});
+		parameter_counter = parameter_counter + 1;
+		modules_parameters = add (modules_parameters, module_name,
+		    [ parameter_counter, parameters ]);
+
+		// write comment with unique key and the card name
+		string comment =
+		( radio ? "# YaST2 configured radio card\n"
+			: "# YaST2 configured TV card\n" ) +
+		    ModulesComments::StoreToComment (card_name, unique_key);
+
+		y2debug ("Writing comment to alias %1 in modules.conf", alias);
+		SCR::Write (add(add(.modules.alias, alias),"comment"), comment);
+
+		// set the appropriate unique key as configured
+		probe_status[unique_key] = `yes;
+	    }
+        if (radio)
+            radio_card_no = radio_card_no + 1;
+        else
+            tv_card_no = tv_card_no + 1;
+	});
+
+	// write the parameters
+	if (!WriteModulesParameters (modules_parameters))
+	{
+        // Error message popup
+	    Report::Error (_("Unable to write parameters
+to /etc/modules.conf."));
+	    result = false;
+	}
+
+	// write unique keys
+	foreach (`uk, `status, probe_status, ``{
+	    if (uk != nil)
+	    {
+		SCR::Write (.probe.status.configured, uk, status);
+	    }
+	});
+
+	// write modules.conf
+	if (!SCR::Write (.modules, nil))
+	{
+	    result = false;
+        // Error message popup
+	    Report::Error (_("Unable to write /etc/modules.conf."));
+	}
+
+	return result;
+    }
+
+    /**
+     * Write the sound settings needed for TV to the SCR.
+     * @return boolean Was the reading succesfull?
+     */
+    define boolean WriteSoundVolume() ``{
+	import "Sound";
+	// unmute the sound cards
+	foreach (map card, cards, ``{
+	    integer sound_card_no = card["sound_card_no"]:nil;
+	    if (sound_card_no != nil)
+	    {
+		Sound::SetVolume (sound_card_no, "Line", 80);
+		Sound::SetVolume (sound_card_no, "Video", 80);
+	    }
+
+	    // NOTE: it is not important to save the attached sound card number!
+	});
+
+    return SaveVolume();
+    }
+
+    /**
+     * Scan for the TV cards.
+     * @return boolean Return false if the module should be terminated.
+     */
+    global define boolean Detect() ``{
+
+	/* Confirmation: label text (detecting hardware: xxx) */
+	if (!Confirm::Detection (_("TV cards")))
+	{
+	    detected_cards = [];
+	    return true;
+	}
+
+	list probe_tv = (list) SCR::Read(.probe.tv);
+	if (probe_tv == nil)
+	{
+        // Warning message popup (detection problem):
+	    Report::Warning(_("Unable to probe the TV cards."));
+	    y2warning("Cannot probe TV cards: Read(.probe.tv) is nil.");
+		detected_cards = [];
+	    return true;
+	}
+
+	detected_cards =
+	    maplist(map tv_card, probe_tv, ``{
+		map result = $[];
+
+		// look for the name of the card
+		string card_name = lookup(tv_card, "sub_device", "");
+		if (card_name == nil || card_name == "")
+		{
+		    card_name = lookup(tv_card, "device", "");
+		}
+		result = add(result, "name", card_name);
+
+		// look for the unique id
+		string unique_key = lookup(tv_card, "unique_key", nil);
+		if (unique_key != nil)
+		{
+		    result = add(result, "unique_key", unique_key);
+		}
+
+		// look for the module
+		list drivers = lookup(tv_card, "drivers", []);
+		if (size(drivers) > 0)
+		{
+
+		    /* FIXME this should be improved. Just one of the modules is
+		     * taken in respect, which is currently sufficient, but
+		     * later, it could introduce problems...
+		     */
+		    list modules_list	= drivers[0,"modules"]:[];
+		    string module_name	= modules_list[0,0]:"";
+
+		    if (module_name != nil && module_name != "")
+		    {
+			result = add(result, "module", module_name);
+		    }
+		}
+		integer subdevice = tv_card["sub_device_id"]:nil;
+		integer subvendor = tv_card["sub_vendor_id"]:nil;
+		if (subdevice != nil && subvendor != nil)
+		{
+		    integer card_id = (subdevice << 16) | subvendor;
+		    card_id = (card_id & 0xffff0000) + (card_id & 0xffff);
+		    result = add (result, "card_id", card_id);
+		}
+		return result;
+	    });
+
+	if (Mode::test)
+	{
+	    detected_cards =
+		[ $["name":"Bt848 TV with DMA push", "unique_key":"qluk.HvsIesmJqQ4"],
+		  $["module":"bttv", "name":"Bt848 TV Kendy's special", "unique_key":"hluk.HvsIesmXXX1"]
+		];
+	}
+
+	y2milestone("Detected cards: %1", detected_cards);
+	return true;
+    }
+
+    /**
+     * Returns a list with the overview of the installed cards.
+     * It can be used in Summary::DevicesList().
+     * @return list Description of the installed cards
+     */
+    global define list InstalledCardsSummary() ``{
+	list installed_list = [];
+
+	if (size(cards) > 0)
+	{
+	    integer card_no = 0;
+	    installed_list = maplist(map card, cards, ``{
+
+		string card_item = nil;
+		string name = card["name"]:nil;
+		if (name != nil)
+		{
+		    string installed_str = "";
+		    if (card["radio"]:false)
+			installed_str = sformat(
+			    // Summary text (%1 is number)
+			    _("Installed as radio card number %1."), card_no);
+		    else
+			installed_str = sformat(
+			    // Summary text (%1 is number)
+			    _("Installed as TV card number %1."), card_no);
+		    card_item = Summary::Device(name, installed_str);
+		}
+		card_no = card_no + 1;
+		return card_item;
+	    });
+
+	    // Filter out nils
+	    installed_list = filter(`item, installed_list, ``(item != nil));
+	}
+	return installed_list;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Functions working with "cards"
+    /////////////////////////////////////////////////////////////////
+
+    /**
+     * Get <B>index</B>th card.
+     * @param index Index of the card to get.
+     * @return any The 'index'th card or nil
+     */
+    global define any CardGet(integer index) ``{
+	if (index < 0 || index >= size(cards))
+	{
+	    return nil;
+	}
+
+	return cards[index]:nil;
+    }
+
+    /**
+     * Add the <B>current_card</B> to the <B>cards</B>. Try to fill holes
+     * after removes.
+     * @return integer Index of the added card.
+     */
+    global define integer CardAddCurrent() ``{
+	if (cards == nil)
+	{
+	    cards = [];
+	}
+	integer index = nil;
+
+	// try to fill holes after a remove
+	integer i = 0;
+	boolean radio = current_card["radio"]:false;
+	if (radio && size (cards)<65)
+	{
+	    integer cards_s = size (cards);
+	    while (cards_s < 65)
+	    {
+		cards = add (cards, nil);
+		cards_s = cards_s + 1;
+	    }
+	}
+	cards = maplist(map card, cards, ``{
+	    if (radio && i<64 )
+	    {
+		i = i + 1;
+		return card;
+	    }
+	    if (card == nil && index == nil)
+	    {
+		index = i;
+		return current_card;
+	    }
+	    i = i + 1;
+	    return card;
+	});
+	if (index == nil)
+	{
+	    cards = add(cards, current_card);
+	    index = size(cards) - 1;
+	}
+	cards_dirty = true;
+	return index;
+    }
+
+    /**
+     * Replace <B>index</B>th card with the <B>current_card</B>.
+     * @param index The index of the card to replace.
+     * @return boolean Returns true if successfully replaced.
+     */
+    global define boolean CardReplaceWithCurrent(integer index) ``{
+	if (cards == nil)
+	{
+	    cards = [];
+	}
+	boolean success = false;
+
+	integer i = 0;
+	cards =
+	    maplist(`card, cards, ``{
+		if (i == index)
+		{
+		    card = current_card;
+		    success = true;
+
+		    cards_dirty = true;
+		}
+		i = i + 1;
+		return card;
+	    });
+
+	return success;
+    }
+
+    /**
+     * Remove <B>index</B>th card. Does not touch <B>current_card</B>.
+     * (In fact, we just replace the card on the position of 'index' with nil.)
+     * @param index The index of the card to remove.
+     * @return boolean Returns true if the card was erased.
+     */
+    global define boolean CardRemove(integer index) ``{
+	if (cards == nil)
+	{
+	    cards = [];
+	}
+	boolean success = false;
+
+	integer i = 0;
+	cards = maplist(map card, cards, ``{
+	    if (i == index)
+	    {
+		cards_to_del = add(cards_to_del, card);
+		card = nil;
+		success = true;
+
+		cards_dirty = true;
+	    }
+	    i = i + 1;
+	    return card;
+	});
+	return success;
+    }
+
+    /**
+     * If the configuration was changed by the user, this will return true.
+     * @return Has the configuration changed?
+     */
+    global define boolean IsDirty () ``{
+	return cards_dirty || irc_modified || stations_modified;
+    }
+
+    /**
+     * Creates a list of unique keys of cards that are already installed.
+     * @return list List of the unque keys.
+     */
+    global define list CardsUniqueKeys() ``{
+	if (cards == nil)
+	{
+	    cards = [];
+	}
+	// unique keys of the already installed cards
+	list installed_uk = maplist(map card, cards,``(card["unique_key"]:nil));
+
+	// filter out nils
+	return filter(`item, installed_uk, ``(item != nil));
+    }
+
+    /**
+     * Creates the content of the "configured card" Table in OverviewDialog()
+     * @return list List of `item()s
+     */
+    global define list CardsAsItems() ``{
+	if (cards == nil)
+	{
+	    cards = [];
+	}
+	integer card_no = 0;
+
+	list conf_list = maplist(map card, cards, ``{
+	    term ret = nil;
+	    if (card != nil)
+	    {
+		ret = `item(`id(card_no),sformat("%1",card_no),card["name"]:"");
+	    }
+	    card_no = card_no + 1;
+	    return ret;
+	});
+
+	return filter(`item, conf_list, ``(item != nil));
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Functions working with "detected_cards"
+    /////////////////////////////////////////////////////////////////
+
+    /**
+     * Get <B>index</B>th card.
+     * @param index Index of the card to get.
+     * @return any The 'index'th card or nil
+     */
+    global define map DetectedCardGet(integer index) ``{
+	if (index < 0 || index >= size(detected_cards))
+	{
+	    return $[];
+	}
+	return detected_cards[index]:$[];
+    }
+
+    /**
+     * List of the TV cards acceptable by the Selection Box widget in
+     * the DetectedDialog(). The already installed cards are filtered out.
+     * @return list List of TV cards including Other (not detected) with `id(-1))
+     */
+    global define list DetectedCardsAsItems() ``{
+	if (detected_cards == nil)
+	{
+	    detected_cards = [];
+	}
+	boolean is_first = true;
+
+	// unique keys of the already installed cards
+	list installed_uk = CardsUniqueKeys();
+
+	// create the list of `item()s (nil if it is already installed)
+	integer card_no = 0;
+	list detected_list = maplist(map card, detected_cards, ``{
+	    term ret = nil;
+
+	    string uk = lookup(card, "unique_key", nil);
+	    if (uk != nil && !contains(installed_uk, uk))
+	    {
+		ret = `item(`id(card_no), lookup(card, "name", ""), is_first);
+		is_first = false;
+	    }
+	    card_no = card_no + 1;
+	    return ret;
+	});
+
+	// filter out the nils
+	detected_list = filter(`card, detected_list, ``(card != nil));
+
+	// For translators: Entry for manual selection in the list of the cards to configure
+	return add(detected_list, `item(`id(-1), _("Other (not detected)"), is_first));
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Functions working with "cards_database"
+    /////////////////////////////////////////////////////////////////
+
+    /**
+     * Create a list of items for the "Vendors:" SelectionBox in the
+     * ManualDialog() screen.
+     * @param autodetected The autodetected card must be present in the database
+     *                     so we add it if needed.
+     * @param parameters Parameters of card that should be preselected.
+     * @param mod Kernel module the reselected card uses
+     * @return list List of list of `item()s and number of the vendor to preselect
+     */
+    global define list CardsDBVendorsAsItems (map autodetected, map parameters, string mod) ``{
+
+	integer preselect_vendor = nil;
+	integer vendor_no = 0;
+	// Handle the autodetected card
+	if (autodetected != nil && autodetected != $[])
+	{
+	    if (parameters["card"]:"-1" == "-1")
+	    {
+		preselect_vendor = vendor_no;
+	    }
+	    vendor_no = vendor_no + 1;
+	}
+
+	list vendors = maplist(map vendor, cards_database, ``{
+
+	    if (preselect_vendor == nil)
+	    {
+		foreach (map card, vendor["cards"]:[], ``{
+		    if (preselect_vendor == nil &&
+			(mod == nil || mod == card["module"]:nil) &&
+			CmpParameters(card["parameters"]:$[], parameters))
+		    {
+			preselect_vendor = vendor_no;
+		    }
+		});
+	    }
+	    term ret = `item(`id(vendor_no), vendor["name"]:"",
+		preselect_vendor == vendor_no);
+	    vendor_no = vendor_no + 1;
+	    return ret;
+	});
+
+	if (autodetected != nil && autodetected != $[])
+	{
+            // Item of cards list:
+	    vendors = prepend (vendors, `item ( `id (0), _("Autodetected card"),
+		preselect_vendor == 0 ));
+	}
+	return [ vendors, preselect_vendor ];
+    }
+
+    /**
+     * Create a list of cards of the selected vendor.
+     * @param autodetected The autodetected card must be present in the database
+     *                     so we add it if needed.
+     * @param sel_vendor The number of the selected vendor.
+     * @return list List of cards of the selected vendor.
+     */
+    global define list CardsDBVendorGetCards(map autodetected, integer sel_vendor) ``{
+	if (sel_vendor == nil || sel_vendor < 0)
+	{
+	    return [];
+	}
+
+	if (autodetected != nil && autodetected != $[])
+	{
+	    if (sel_vendor == 0)
+	    {
+		return [ autodetected ];
+	    }
+	    else
+	    {
+	        return cards_database[ sel_vendor - 1, "cards"]:[];
+	    }
+	}
+	else
+	{
+	    return cards_database[sel_vendor, "cards"]:[];
+	}
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Functions working with "tuners_database"
+    /////////////////////////////////////////////////////////////////
+
+    /**
+     * Returns the tuner map according to its ID
+     * @param kernel_name Name of the main module for this card.
+     * @param tuner_id ID of selected tuner
+     * @return map Tuner
+     */
+    global define map GetTuner (string kernel_name, string tuner_id) ``{
+
+        return tuners_by_id [kernel_name, tuner_id]:$[];
+    }
+
+
+    /**
+     * Are there any tuners for the <B>kernel_module</B>?
+     * @param kernel_module Name of the main module for this card.
+     * @return boolean Are there available tuners for it?
+     */
+    global define boolean TunersDBHasTunersFor(string kernel_module) ``{
+	return haskey (tuners_database, kernel_module);
+    }
+
+    /**
+     * List of tuners for TV cards acceptable by the SelectionBox widget.
+     * @param kernel_module The module for which do we need the list.
+     * @param selected_tuner The previously selected tuner.
+     * @return list List of `item()s.
+     */
+    global define list TunersDBAsItems(string kernel_module, map selected_tuner) ``{
+	if (tuners_database == nil)
+	{
+	    return [];
+	}
+	list tuners = tuners_database[kernel_module]:[];
+	tuners = prepend(tuners, $[
+            // Default item of tuners list:
+	    "name"		: _("Default (detected)"),
+	    "parameters"	: $[ "tuner": "-1" ] ]
+	);
+
+	if (selected_tuner == nil || selected_tuner == $[])
+	    selected_tuner = $["parameters" : $[ "tuner": "-1" ]];
+	integer tuner_no = 0;
+	boolean some_is_selected = false;
+	map selected_tuner_parameters = selected_tuner["parameters"]:$[];
+	return maplist (map tuner, tuners, ``{
+
+	    boolean select_this = CmpParameters ( tuner["parameters"]:$[],
+						  selected_tuner_parameters );
+	    term ret = `item(`id(tuner_no), tuner["name"]:"",
+			select_this && !some_is_selected);
+	    tuner_no = tuner_no + 1;
+	    if (select_this)
+	    {
+		some_is_selected = true;
+	    }
+	    return ret;
+	});
+    }
+
+    /**
+     * Return the <B>number</B>th tuner.
+     * @param kernel_module The module for which do we need the list.
+     * @param number The number of the tuner to be selected.
+     * @return map Tuner.
+     */
+    global define map TunersDBSelectTuner(string kernel_module, integer number) ``{
+	list tuners = tuners_database[kernel_module]:[];
+	tuners = prepend(tuners, $[
+            // Default item of tuners list:
+	    "name"	: _("Default (detected)"),
+	    "parameters" : $[ "tuner": "-1" ] ]
+	);
+	cards_dirty = true;
+	return tuners[number]:$[];
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Functions working with "kernel_modules"
+    /////////////////////////////////////////////////////////////////
+
+    /**
+     * List of the kernel modules for TV cards acceptable by the Combo Box
+     * widget in the ManualDetailsDialog().
+     * @param selected_module The module which should be selected in the Combo Box.
+     * @return list List of `item()s
+     */
+    global define list KernelModulesAsItems(string selected_module) ``{
+	return maplist(string key, map value, kernel_modules, ``{
+	    string name = key;
+	    string desc = value["module_description"]:"";
+	    if (desc != "" && desc != "<none>")
+	    {
+		name = sformat("%1: %2", key, desc);
+	    }
+	    return `item(`id(key), name, (key == selected_module));
+	});
+    }
+
+    /**
+     * List of the kernel modules for radio cards acceptable by the Combo Box
+     * widget in the ManualDetailsDialog().
+     * @param selected_module The module which should be selected in the widget
+     * @return list List of `item()s
+     */
+    global define list RadioModulesAsItems(string selected_module) ``{
+	return maplist (string key, map value, radio_modules, ``{
+	    string name = key;
+	    string desc = value["module_description"]:"";
+	    if (desc != "" && desc != "<none>")
+	    {
+		name = sformat("%1: %2", key, desc);
+	    }
+	    return `item(`id(key), name, (key == selected_module));
+	});
+    }
+
+    /**
+     * List of the parameters for the selected kernel module acceptable by
+     * the Table widget in the ManualDetailsDialog().
+     * @param selected_module The module which is selected in the Combo Box.
+     * @param parameters The current values of the kernel module parameters.
+     * @return list List of `item()s.
+     */
+    global define list KernelModuleParametersAsItems(string selected_module,
+						     map parameters) ``{
+	map kernel_module = kernel_modules[selected_module]:$[];
+	if (kernel_module == nil)
+	{
+	    return [];
+	}
+
+	// convert the map with parameters to list.
+	// Filter out the "module_*" params
+	list param_list = maplist (string key, `value, kernel_module, ``{
+	    term result = nil;
+	    if (substring (key, 0, 7) != "module_")
+	    {
+		result = `item ( `id(key), key, parameters[key]:"", value);
+	    }
+	    return result;
+	});
+
+	// filter out nils
+	return filter (term val, param_list, ``(val != nil));
+    }
+
+    /**
+     * List of the parameters for the selected kernel module acceptable by
+     * the Table widget in the ManualDetailsDialog().
+     * @param selected_module The module which is selected in the Combo Box.
+     * @param parameters The current values of the kernel module parameters.
+     * @return list List of `item()s.
+     */
+    global define list RadioModuleParametersAsItems (string selected_module,
+						     map parameters) ``{
+	map kernel_module = radio_modules[selected_module]:$[];
+	if (kernel_module == nil)
+	{
+	    return [];
+	}
+
+	list param_list = maplist (string key, `value, kernel_module, ``{
+	    term result = nil;
+	    if (substring (key, 0, 7) != "module_")
+	    {
+		result = `item ( `id(key), key, parameters[key]:"", value);
+	    }
+	    return result;
+	});
+
+	// filter out nils
+	return filter (term val, param_list, ``(val != nil));
+    }
+
+///////////////////////////////////////////////////////////////////////////
+//-------------------------------------------------- LIRC related functions
+
+/**
+ * Read IRC settings
+ * @return Symbol for next or abort dialog.
+ */
+global define any ReadIRC () ``{
+
+    cards_with_lirc_gpio = (list)
+	SCR::Read (.target.yast2, "tv_cards-lirc_gpio.ycp");
+    use_irc = Runlevel::ServiceStatus ("lirc") == 0;
+    irc_module = (string) SCR::Read (.sysconfig.lirc.LIRC_MODULE);
+    if (irc_module == nil) irc_module = "";
+
+    if (SCR::Read (.target.size, "/etc/lircd.conf") != -1)
+    {
+	irc_config = "/etc/lircd.conf";
+    }
+
+    // TODO: which config files?
+    map out = (map) SCR::Execute (.target.bash_output,
+	"/usr/bin/find  /usr/share/lirc/remotes/ -name *lircd*");
+    remotes = sort (splitstring (out["stdout"]:"", "\n"));
+
+    return `next;
+}
+
+/**
+ * Write IRC settings
+ * @return Symbol for next or abort dialog.
+ */
+global define any WriteIRC () ``{
+
+    // 1. sysconfig values
+    SCR::Write (.sysconfig.lirc.LIRC_MODULE, irc_module);
+    SCR::Write (.sysconfig.lirc, nil);
+
+    if (use_irc)
+    {
+	// 2. lircd config
+	// ... copy config file to /etc/lircd.conf
+	if (SCR::Read (.target.size, "/etc/lircd.conf") != -1)
+        {
+	    SCR::Execute (.target.bash,
+		"/bin/cp /etc/lircd.conf /etc/lircd.conf.YaST2save");
+	}
+	if (irc_config != "/etc/lircd.conf")
+	{
+	    SCR::Execute (.target.bash, sformat ("/bin/cp %1 /etc/lircd.conf",
+		irc_config));
+	    y2milestone("config file: %1 copied to /etc/lircd.conf",irc_config);
+	}
+
+	// adjust runlevels:
+	Runlevel::ServiceAdjust ("lirc", "enable");
+        // start the service
+	if (Runlevel::ServiceStatus ("lirc") == 0)
+	    Runlevel::RunInitScript ("lirc", "restart");
+	else
+	    Runlevel::RunInitScript ("lirc", "start");
+    }
+    else
+    {
+	// adjust runlevels:
+	Runlevel::ServiceAdjust ("lirc", "disable");
+        // stop the service
+	Runlevel::RunInitScript ("lirc", "stop");
+    }
+    return `next;
+}
+
+/**
+ * Load the desription of irc kernel modules (modinfo)
+ */
+global define void LoadIRCModulesDescription () ``{
+
+    irc_modules = listmap (string mod, irc_modules_list, ``{
+	map modinfo = (map) SCR::Read (add (.modinfo.kernel.misc, mod));
+	return [ mod, modinfo["module_description"]:"" ];
+    });
+}
+
+/**
+ * Decides which LIRC module can be used accoring to current TV card
+ * @return module name
+ */
+global define string GetIRCModule () ``{
+
+    string ret = "lirc_i2c";
+
+    map card = current_card;
+    if (card == $[])
+	card = (map) CardGet (0);
+    if (card == nil && detected_cards == [])
+	return ret;
+
+    integer cardnr = tointeger (card["parameters", "card"]:-1);
+    if (cardnr == -1)
+    {
+	// autodetected
+	integer card_id = -1;
+	if (card == nil)
+	    card = detected_cards [0]:$[];
+	// find the ID of current card (saved in detected_cards list)
+	foreach (map det_card, detected_cards, ``{
+	    if (card["module"]:nil == det_card["module"]:"" &&
+		card["name"]:nil == det_card["name"]:"")
+		card_id = det_card["card_id"]:-1;
+	});
+	if (contains (card_ids_lirc_gpio, card_id))
+	   ret = "lirc_gpio";
+    }
+    else
+    {
+	// manualy set card
+	if (contains (cards_with_lirc_gpio, cardnr))
+	    ret = "lirc_gpio";
+    }
+    return ret;
+}
+
+///////////////////////////////////////////////////////////////////////////
+//------------------------------------------- TV stations related functions
+
+/**
+ * Read the whole contents of xawtvrc file and return it as a map
+ * @param path proper agent (handling either global or temporary config file)
+ * return map
+ */
+global define map ReadStationsConfig (path pth) ``{
+
+    map xawtvrc = $[];
+    foreach (string section, SCR::Dir (add (pth, "s")), ``{
+	xawtvrc = add (xawtvrc, section, $[]);
+	foreach (string attr, SCR::Dir(add(add (pth, "v"), section)),``{
+	    xawtvrc [section, attr] = SCR::Read (add (add (add (pth, "v"), section), attr));
+	});
+    });
+    return xawtvrc;
+}
+
+/**
+ * Write to /etc/X11/xawtvrc
+ */
+global define boolean WriteStationsConfig () ``{
+
+    // create a backup
+    if (SCR::Read (.target.size, "/etc/X11/xawtv") != -1)
+    {
+	SCR::Execute (.target.bash,
+	    "/bin/cp /etc/X11/xawtvrc /etc/X11/xawtvrc.YaSTsave");
+    }
+    else
+    {
+	SCR::Execute (.target.bash, "/bin/touch /etc/X11/xawtvrc");
+    }
+
+    list new_sections = [];
+    foreach (string sec_name, map section, channels_config, ``{
+	new_sections = add (new_sections, sec_name);
+	foreach (string key, string value, section,``{
+	    SCR::Write (add (add (.xawtvrc.v, sec_name),key), value);
+	});
+    });
+    // remove removed stations
+    foreach (string section, SCR::Dir (.xawtvrc.s), ``{
+	if (!contains (new_sections, section))
+	    SCR::Write (add (.xawtvrc.s, section), nil);
+    });
+    return true;
+}
+
+
+/**
+ * Load the modules for TV suport now, use current (not yet saved) options
+ * It calls something like 'modprobe -C /dev/null bttv card=2 tuner=23'
+ * @return empty string on success, error message otherwise
+ */
+global define string tv_tmp_start() ``{
+
+    string modname = current_card["module"]:"";
+    string params = "";
+    maplist(string k, string v, current_card["parameters"]:$[], ``{
+	params = params + sformat(" %1=%2", k, v);
+    });
+    // we need to tell 'modprobe' not to look into modules.conf now, because
+    // it may contain messed options for the module %1 that will break the
+    // module loading. (modprobe would merge options specified in param %2 with
+    // those specified in modules.conf)
+    string cmd = sformat("/sbin/modprobe -C /dev/null %1 %2", modname, params);
+    y2debug ("command to run: %1", cmd);
+
+    map res = (map) SCR::Execute(.target.bash_output, cmd, $[]);
+    y2debug ("modprobe output: %1", res);
+
+    return res["stderr"]:"";
+}
+
+/**
+ * Initialize stations configuration (read global config etc.)
+ */
+global define boolean InitializeStationsConfig() ``{
+
+    string agent_file = sformat ("%1/tmp_xawtvrc.scr", tmpdir);
+    // create new agent for reading temporary xawtvrc
+    SCR::Write (.target.string, agent_file, sformat (".tmp.xawtvrc
+
+`ag_ini(
+  IniAgent(
+    \"%1/xawtvrc\",
+    $[
+      \"comments\": [ \"^[ \\t]*#.*\", \"#.*\", \"^[ \\t]*$\" ],
+      \"sections\" : [
+        $[
+        \"begin\" : [ \"^[ \\t]*\\\[[ \\t]*(.*[^ \\t])[ \\t]*\\\][ \\t]*\", \"[%%s]\"],
+        ],
+      ],
+      \"params\" : [
+        $[
+        \"match\" : [ \"^[ \\t]*([^=]*[^ \\t=])[ \\t]*=[ \\t]*(.*[^ \\t]|)[ \\t]*$\",
+		    \"%%s = %%s\"],
+	],
+      ],
+    ]
+  )
+)",
+    tmpdir));
+    SCR::RegisterAgent (.tmp.xawtvrc, agent_file);
+
+    // read global configuration file
+    if (SCR::Read (.target.size, "/etc/X11/xawtvrc") != -1)
+	channels_config = ReadStationsConfig (.xawtvrc);
+    if (!haskey (channels_config, "defaults"))
+	channels_config = add (channels_config, "defaults", $[]);
+    if (!haskey (channels_config, "global"))
+	channels_config = add (channels_config, "global", $[]);
+    return true;
+}
 
     /**
      * Read all TV card settings from the SCR
@@ -251,7 +1659,7 @@
      *	      was pressed.
      * @return boolean True on success
      */
-    global define boolean Read (block abort) ``{
+    global define boolean Read (block<boolean> abort) ``{
 	boolean read_aborted = false;
 
 	// For translators: Caption of the progress bar in the time of reading
@@ -308,7 +1716,7 @@
 	}
 
 	ReadIRC(); // TODO add progress
-	tmpdir = SCR::Read(.target.tmpdir);
+	tmpdir = (string) SCR::Read(.target.tmpdir);
 
 	// TODO add progress
 	InitializeStationsConfig ();
@@ -326,7 +1734,7 @@
      *	      was pressed.
      * @return boolean True on success
      */
-    global define boolean Write (block abort) ``{
+    global define boolean Write (block<boolean> abort) ``{
 
     if (!cards_dirty) return true;
 
@@ -494,11 +1902,10 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 
 	// add the not yet configured cards
 	foreach (map card, detected_cards, ``{
-	    string uk = lookup(card, "unique_key", nil);
+	    string uk = card["unique_key"]:nil;
 
 	    if (uk != nil &&
-		!contains(installed_uk, uk) &&
-		lookup (card, "module", nil) != nil)
+		!contains(installed_uk, uk) && card["module"]:nil != nil)
 	    {
 		current_card    = card;
 		current_card_no = nil;
@@ -515,17 +1922,15 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	{
 	    import "Sound";
 	    foreach (map card, Sound::GetSoundCardList (), ``{
-		integer sound_card_no = lookup(card, "card_no", nil);
+		integer sound_card_no = card["card_no"]:nil;
 		if (sound_card_no != nil)
 		{
 		    Sound::SetVolume (sound_card_no, "Line", 80);
 		    Sound::SetVolume (sound_card_no, "Video", 80);
 		}
 	    });
-        SaveVolume();
+	    SaveVolume();
 	}
-
-	return true;
     }
 
     /**
@@ -554,1414 +1959,6 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 
 	return Summary::DevicesList( union (detected_list, installed_list) );
     }
-
-    /**
-     * Dialog which asks for installing proposed application
-     * @param apps list of applications to install
-     * @param text text to show in dialog
-     */
-    define void InstallApplication (list apps, string text) ``{
-
-    UI::OpenDialog (`opt(`decorated),
-        `VBox(
-            `HSpacing(50),
-            `RichText (`id(`rt), text),
-            `CheckBox (`id(`ch), `opt(`notify),
-                // checkbox label
-                _("Do Not Show This Message &Again")),
-            `HBox(
-              `PushButton (`id(`ok),`opt(`key_F10), Label::YesButton()),
-              `PushButton (`id(`cancel),`opt(`key_F9), Label::NoButton())
-            ))
-    );
-    any ret = nil;
-    do {
-        ret = UI::UserInput();
-        if (ret == `ch) ret = nil;
-    }
-    while (ret == nil);
-
-    not_ask = UI::QueryWidget(`id(`ch), `Value);
-    UI::CloseDialog();
-    if (ret == `ok)
-    {
-	list to_install = [];
-	// check if packages are avialable...
-	foreach (string app, apps, ``{
-	    if (Require::IsPackageAvailable (app))
-		to_install = add (to_install, app);
-	});
-        Require::DoInstallAndRemoveTarget (to_install, []);
-    }
-    }
-
-    /////////////////////////////////////////////////////////////////
-    // Some IO functions
-    /////////////////////////////////////////////////////////////////
-
-    /**
-     * Read the state of "not_ask" variable
-     * (if the TV/radio application presence should be checked again next time)
-     * @return not_ask value
-     */
-    global define boolean ReadUserSettings () ``{
-
-    SCR::Execute (.target.bash, "/bin/touch /var/lib/YaST2/tv.ycp");
-    any state = SCR::Read (.target.ycp, "/var/lib/YaST2/tv.ycp");
-    if (is (state, map) && state["dont_ask_for_application"]:false == true)
-	return true;
-    return false;
-    }
-
-
-    /**
-     * Read the database of the TV cards.
-     * @return boolean Was the read successful?
-     */
-    global define boolean ReadCardsDatabase() ``{
-	if (cards_database == nil)
-	{
-	    cards_database = SCR (`Read (.target.yast2, "tv_cards.ycp"));
-	}
-	if (cards_database == nil)
-	{
-        // Error message popup:
-	    Report::Error(_("Unable to read the TV card database."));
-	    cards_database = [];
-	    return false;
-	}
-
-	// translate it
-	cards_database = eval (cards_database);
-
-	return true;
-    }
-
-    /**
-     * Read the database of the tuners.
-     * @return boolean Was the read successful?
-     */
-    global define boolean ReadTunersDatabase() ``{
-	if (tuners_database == nil)
-	{
-	    tuners_database = SCR (`Read (.target.yast2, "tv_tuners.ycp"));
-        foreach (`modul, `tuners, tuners_database, ``{
-          tuners_by_id = add (tuners_by_id, modul, $[
-                "-1": $[ "name" :
-                            // Default item of tuners list:
-                            _("Default (detected)"),
-				        "parameters" : $[ "tuner": "-1" ]] ]);
-          foreach (`tuner, tuners, ``{
-            tuners_by_id [modul, tuner["parameters", "tuner"]:"-2"] = tuner;
-          });
-        });
-	}
-	if (tuners_database == nil)
-	{
-        // Error message popup:
-	    Report::Error(_("Unable to read the tuner database!"));
-	    tuners_database = $[];
-	    return false;
-	}
-
-	// translate it
-	tuners_database = eval (tuners_database);
-	tuners_by_id = eval (tuners_by_id);
-
-	return true;
-    }
-
-    /**
-     * Get a list of the available v4l kernel modules
-     * and store it to <B>kernel_modules</B> map.
-     * @return boolean Returns <B>true</B>.
-     */
-    global define boolean ReadKernelModules() ``{
-	path video_path = .modinfo.kernel.drivers.media.video;
-
-	kernel_modules = $[];
-	list modules_list = SCR::Dir (video_path);
-	if (modules_list == nil)
-	{
-	    // Warning message popup:
-        Report::Warning(_("Unable to read the list of
-available kernel modules."));
-	    return true;
-	}
-
-	foreach(`mod, modules_list, ``{
-	    map parm = SCR::Read ( add (video_path, mod));
-	    kernel_modules = add (kernel_modules, mod, parm);
-	});
-
-	y2debug ("All v4l kernel modules: %1", kernel_modules);
-
-	path radio_path = .modinfo.kernel.drivers.media.radio;
-
-    radio_modules = $[];
-	modules_list = SCR::Dir (radio_path);
-	if (modules_list == nil)
-	{
-	    // Warning message popup:
-        Report::Warning(_("Unable to read the list of
-available kernel modules."));
-	    return true;
-	}
-
-	foreach(`mod, modules_list, ``{
-	    map parm = SCR::Read ( add (radio_path, mod));
-	    radio_modules = add (radio_modules, mod, parm);
-	});
-
-	y2debug ("All radio kernel modules: %1", radio_modules);
-	return true;
-    }
-
-    /**
-     * Returns a list of all char-major-81-* in modules.conf
-     * @return list List [ "char-major-81-0", "char-major-81-3" ] or so...
-     */
-    define list GetMajor81Aliases() ``{
-	// get the specified char-major-81-*
-	list tv_aliases = SCR::Dir(.modules.alias);
-
-	return
-	    filter ( `alias, tv_aliases,
-		     ``(size(alias) > 13 && substring(alias, 0, 13) == "char-major-81"));
-    }
-
-    /**
-     * Read parameters of one module. It return them in form:
-     * <PRE>
-     * </PRE>
-     * @param module_name Name of the module
-     * @return map Map with parameters
-     * @example
-     * $[ parameter_name: // parameter name
-     *    $[ 0: nil,      // its value for 1st card
-     *	     1: "3",      //               2nd card
-     *	...
-     */
-    define map ReadModuleParameters(string module_name) ``{
-
-    map options = $[];
-	if (contains (SCR::Dir(.modules.options), module_name))
-        options = SCR::Read( add (.modules.options, module_name));
-
-	if (options == nil)
-	{
-	    return $[];
-	}
-
-	// Split the comma separated options into the needed map
-	options =
-	    mapmap(`key, `value, options, ``{
-		if (value == nil)
-		{
-		    value = "";
-		}
-		list values = splitstring(value, ",");
-		integer index = 0;
-		map values_map =
-		    listmap(`val, values, ``{
-			list ret = [ index, val ];
-			index = index + 1;
-			return ret;
-		    });
-		return [ key, values_map ];
-	    });
-
-	return options;
-    }
-
-    /**
-     * Fill the map of all tv settings from the SCR.
-     * @return boolean Was the reading succesfull?
-     */
-    global define boolean ReadSettings() ``{
-	cards = [];
-
-	// get the specified char-major-81-*
-	list tv_aliases = GetMajor81Aliases();
-
-	// the parameters read from modules.conf
-	// $[ "module" :  $[ parameter_name: $[ 0: nil, 1: "3", 2: "2" ] ] ]
-	//                   no_of_the_card ----^-------^-------^
-	map modules_parameters = $[];
-
-	// Number of a card using this module
-	// $[ "module" : integer ]
-	map modules_counts = $[];
-
-	// scan the video capture devices (major 81 and minor 0..63)
-	integer card_no = 0;
-	while (card_no < 128)
-	{
-	    string alias = sformat("char-major-81-%1", card_no);
-	    if (contains(tv_aliases, alias))
-	    {
-		string card_name = "";
-		string unique_key = nil;
-
-		// get the module name
-		string module_name = SCR::Read( add (.modules.alias,alias) );
-		y2debug("Reading alias %1: module name is '%2'", alias, module_name);
-		if (module_name != nil && module_name != "" && module_name != "off")
-		{
-		    if (lookup(modules_parameters, module_name, nil) == nil)
-		    {
-			modules_parameters = add (modules_parameters,
-						  module_name,
-						  ReadModuleParameters (module_name));
-			modules_counts = add(modules_counts, module_name, 0);
-		    }
-
-		    // get the name and unique key
-		    string comment = SCR::Read(
-                add( add(.modules.alias, alias), "comment"));
-		    map name_and_uk = ModulesComments::ExtractFromComment (comment);
-		    if (name_and_uk != nil)
-		    {
-			card_name = lookup(name_and_uk, "name", "");
-			unique_key = lookup(name_and_uk, "unique_key", nil);
-		    }
-
-		    // read the parameters
-		    map parameters = lookup(modules_parameters, module_name, $[]);
-		    integer param_no = lookup(modules_counts, module_name, 0);
-		    modules_counts = add(modules_counts,
-					 module_name,
-					 param_no + 1);
-		    parameters =
-			mapmap(`key, `value, parameters, ``{
-			    string ret = lookup(value, param_no, "");
-			    return [ key, ret ];
-			});
-		    parameters = filter (`key, `value, parameters,
-					 ``( value != "" && value != nil));
-
-		    // NOTE: it is not important to save the attached sound card number!
-
-		    // fill the spaces in the cards
-		    while (size(cards) < card_no)
-		    {
-			cards = add(cards, nil);
-		    }
-
-            boolean radio = false;
-            if (card_no>63) radio = true;
-
-		    // add the card to the cards
-		    cards = add(cards, $[ "name"       : card_name,
-					  "module"     : module_name,
-					  "parameters" : parameters,
-					  "unique_key" : unique_key,
-                      "radio"      : radio ]);
-		}
-	    }
-	    card_no = card_no + 1;
-	}
-	y2debug("The previously saved configuration: %1", cards);
-
-	// Read user settings ("Do not ask again")
-	not_ask = ReadUserSettings();
-
-	return true;
-    }
-
-    /**
-     * Writes parameters of the modules. As an input, it uses a map
-     * with modules and all their parameters:
-     * <PRE>
-     * $[ "module" :	       // name of the module
-     *     [ no_last_param,	// number of cards using this modules
-     *	 $[ parameter_name:  // parameter name
-     *	     $[ 0: nil,      // its value for 1st card
-     *		1: "3",      //	       2nd card
-     * </PRE>
-     * @param modules_parameters Map with the modules and parameters
-     * @return boolean Was the write successful?
-     */
-    define boolean WriteModulesParameters(map modules_parameters) ``{
-
-	if (modules_parameters == nil)
-	{
-	    return true;
-	}
-
-	boolean result = true;
-	foreach(`module_name, `params_with_no, modules_parameters, ``{
-	    string param_values = "";
-	    integer parameter_counter = select(params_with_no, 0, 0);
-	    if (parameter_counter == nil)
-	    {
-		parameter_counter = 0;
-	    }
-	    map parameters = select(params_with_no, 1, $[]);
-	    if (parameters == nil)
-	    {
-		parameters = $[];
-	    }
-	    parameters =
-		mapmap(`param_name, `param_map, parameters, ``{
-		    if (param_map == nil)
-		    {
-			param_map = $[];
-		    }
-		    // fill the holes in param_map and store the values
-		    list param_values = [];
-		    integer count = 0;
-		    while (count < parameter_counter)
-		    {
-			string value = lookup(param_map, count, "");
-            // this is a hack for detected cards (see bug #24132)
-            if (value == "")
-                value = "-1";
-			param_values = add(param_values, value);
-			count = count + 1;
-		    }
-		    return [ param_name, mergestring(param_values, ",") ];
-		});
-
-	    y2milestone ("Saving options '%1' for module '%2'", parameters, module_name);
-
-	    if (parameters == $[] || parameters == nil)
-	    {
-		// We have to empty the options...
-		if (contains (SCR::Dir(.modules.options), module_name))
-		{
-		    SCR::Write ( add (.modules.options, module_name), nil);
-		}
-	    }
-	    else
-	    {
-		// Write it...
-        y2milestone ("pars=%1, name=%2", parameters, module_name);
-		result = result &&
-            SCR::Write( add (.modules.options, module_name), parameters);
-	    }
-	});
-
-	return result;
-    }
-
-    /**
-     * Write the TV settings to the SCR.
-     * @return boolean Was the reading successful?
-     */
-    define boolean WriteSettings() ``{
-	// common settings
-	y2milestone ("Writing char-major-81 (videodev) to modules.conf");
-	SCR::Write (.modules.alias."char-major-81", "videodev");
-
-	// fix of bug #18033: (slow initialization on some machines)
-	SCR::Write ( add (.modules.options, "i2c-algo-bit"), $["bit_test":"1"]);
-
-	// reset the old settings (all char-major-81-* aliases)
-	foreach (`alias, GetMajor81Aliases(), ``{
-	    SCR::Write ( add (.modules.alias, alias) , nil);
-	});
-
-	// fix of bug #19122:
-        // message "modprobe: Can't locate module char-major-81-1" when second
-        // tv card not present -> setting non-existing cards as "off"
-        integer i = 0;
-	while (i<4) {
-	    string alias = sformat ("char-major-81-%1", i);
-	    SCR::Write ( add (.modules.alias, alias), "off");
-	    i = i + 1;
-	}
-
-	// for cards choosed to delete...
-	foreach (`card, cards_to_del, ``{
-	    string module_name = lookup (card, "module", nil);
-		if (contains (SCR::Dir(.modules.options), module_name))
-		{
-			y2milestone ("Deleting module %1 from /etc/modules.conf",module_name);
-			// ... delete module's options from /etc/modules.conf...
-		    SCR::Write ( add (.modules.options, module_name), nil);
-        }
-		// ... and unload the module from kernel
-		SCR::Execute(.target.bash, sformat("/sbin/rmmod -r %1", module_name), $[]);
-	});
-
-	// necessary variables
-	boolean result = true;
-
-	// save the status (configured/unconfigured)
-	map probe_status = listmap (`card, detected_cards,
-				    ``( [ lookup (card, "unique_key", nil), `no ] ));
-
-	// store the parameters to write to this variable
-	// $[ "module" : [ no_last_param, $[ parameter_name: $[ 0: nil, 1: "3", 2: "2" ] ] ] ]
-	//                                   no_of_the_card ----^-------^-------^
-	map modules_parameters = $[];
-
-	// do this for each card...
-	integer tv_card_no = 0;
-	integer radio_card_no = 64;
-	foreach (map card, cards, ``{
-
-	    boolean radio = lookup (card, "radio", false);
-	    string module_name = lookup (card, "module", nil);
-	    string card_name = lookup (card, "name", "Manually added card");
-	    string unique_key = lookup (card, "unique_key",
-					sformat ("tv.nouniqkey%1", (radio ? radio_card_no : tv_card_no)));
-
-	    if (module_name != nil && module_name != "")
-	    {
-		string alias = sformat ("char-major-81-%1", (radio ? radio_card_no: tv_card_no));
-		y2milestone ("Writing alias %2 %1 to modules.conf", module_name, alias);
-
-		// write alias
-		SCR::Write ( add (.modules.alias, alias), module_name);
-
-		// store parameters to "modules_parameters"
-		list params_with_no = lookup (modules_parameters, module_name, []);
-		integer parameter_counter = select (params_with_no, 0, 0);
-		map parameters = select (params_with_no, 1, $[]);
-
-		foreach (`param_name, `param_val, lookup (card, "parameters", $[]), ``{
-		    // add the parameter to "parameters" map
-		    map param_map = lookup (parameters, param_name, $[]);
-		    param_map = add (param_map, parameter_counter, param_val);
-		    parameters = add (parameters, param_name, param_map);
-		});
-		parameter_counter = parameter_counter + 1;
-		modules_parameters = add (modules_parameters,
-					  module_name,
-					  [ parameter_counter, parameters ]);
-
-		// write comment with unique key and the card name
-		string comment =
-            ( radio ? "# YaST2 configured radio card\n" :
-             "# YaST2 configured TV card\n" )
-            + ModulesComments::StoreToComment (card_name, unique_key);
-		y2debug ("Writing comment to alias %1 in modules.conf", alias);
-		SCR::Write ( add ( add (.modules.alias, alias), "comment"), comment);
-
-		// set the appropriate unique key as configured
-		probe_status[unique_key] = `yes;
-	    }
-        if (radio)
-            radio_card_no = radio_card_no + 1;
-        else
-            tv_card_no = tv_card_no + 1;
-	});
-
-	// write the parameters
-	if (!WriteModulesParameters (modules_parameters))
-	{
-        // Error message popup
-	    Report::Error (_("Unable to write parameters
-to /etc/modules.conf."));
-	    result = false;
-	}
-
-	// write unique keys
-	foreach (`uk, `status, probe_status, ``{
-	    if (uk != nil)
-	    {
-		SCR::Write (.probe.status.configured, uk, status);
-	    }
-	});
-
-	// write modules.conf
-	if (!SCR::Write (.modules, nil))
-	{
-	    result = false;
-        // Error message popup
-	    Report::Error (_("Unable to write /etc/modules.conf."));
-	}
-
-	return result;
-    }
-
-    /**
-     * Write the sound settings needed for TV to the SCR.
-     * @return boolean Was the reading succesfull?
-     */
-    define boolean WriteSoundVolume() ``{
-	import "Sound";
-	// unmute the sound cards
-	foreach (`card, cards, ``{
-	    integer sound_card_no = lookup (card, "sound_card_no", nil);
-	    if (sound_card_no != nil)
-	    {
-		Sound::SetVolume (sound_card_no, "Line", 80);
-		Sound::SetVolume (sound_card_no, "Video", 80);
-	    }
-
-	    // NOTE: it is not important to save the attached sound card number!
-	});
-
-    return SaveVolume();
-    }
-
-    /**
-     * Scan for the TV cards.
-     * @return boolean Return false if the module should be terminated.
-     */
-    global define boolean Detect() ``{
-
-	/* Confirmation: label text (detecting hardware: xxx) */
-	if (!Confirm::Detection (_("TV cards")))
-	{
-	    detected_cards = [];
-	    return true;
-	}
-
-	list probe_tv = SCR::Read(.probe.tv);
-	if (probe_tv == nil)
-	{
-        // Warning message popup (detection problem):
-	    Report::Warning(_("Unable to probe the TV cards."));
-	    y2warning("Cannot probe TV cards: Read(.probe.tv) is nil.");
-		detected_cards = [];
-	    return true;
-	}
-
-	detected_cards =
-	    maplist(map tv_card, probe_tv, ``{
-		map result = $[];
-
-		// look for the name of the card
-		string card_name = lookup(tv_card, "sub_device", "");
-		if (card_name == nil || card_name == "")
-		{
-		    card_name = lookup(tv_card, "device", "");
-		}
-		result = add(result, "name", card_name);
-
-		// look for the unique id
-		string unique_key = lookup(tv_card, "unique_key", nil);
-		if (unique_key != nil)
-		{
-		    result = add(result, "unique_key", unique_key);
-		}
-
-		// look for the module
-		list drivers = lookup(tv_card, "drivers", []);
-		if (size(drivers) > 0)
-		{
-		    map first_driver = select(drivers, 0, $[]);
-		    list modules_list = lookup(first_driver, "modules", []);
-
-		    /* FIXME this should be improved. Just one of the modules is
-		     * taken in respect, which is currently sufficient, but
-		     * later, it could introduce problems...
-		     */
-		    list first_module = select(modules_list, 0, []);
-		    string module_name = select(first_module, 0, "");
-
-		    if (module_name != nil && module_name != "")
-		    {
-			result = add(result, "module", module_name);
-		    }
-		}
-		integer subdevice = tv_card["sub_device_id"]:nil;
-		integer subvendor = tv_card["sub_vendor_id"]:nil;
-		if (subdevice != nil && subvendor != nil)
-		{
-		    integer card_id = (subdevice << 16) | subvendor;
-		    card_id = (card_id & 0xffff0000) + (card_id & 0xffff);
-		    result = add (result, "card_id", card_id);
-		}
-		return result;
-	    });
-
-	if (Mode::test)
-	{
-	    detected_cards =
-		[ $["name":"Bt848 TV with DMA push", "unique_key":"qluk.HvsIesmJqQ4"],
-		  $["module":"bttv", "name":"Bt848 TV Kendy's special", "unique_key":"hluk.HvsIesmXXX1"]
-		];
-	}
-
-	y2milestone("Detected cards: %1", detected_cards);
-	return true;
-    }
-
-    /**
-     * Returns a list with the overview of the installed cards.
-     * It can be used in Summary::DevicesList().
-     * @return string Description of the installed cards
-     */
-    global define string InstalledCardsSummary() ``{
-	list installed_list = [];
-
-	if (size(cards) > 0)
-	{
-	    integer card_no = 0;
-	    installed_list = maplist(map card, cards, ``{
-
-		string card_item = nil;
-		string name = card["name"]:nil;
-		if (name != nil)
-		{
-		    string installed_str = "";
-		    if (card["radio"]:false)
-			installed_str = sformat(
-			    // Summary text (%1 is number)
-			    _("Installed as radio card number %1."), card_no);
-		    else
-			installed_str = sformat(
-			    // Summary text (%1 is number)
-			    _("Installed as TV card number %1."), card_no);
-		    card_item = Summary::Device(name, installed_str);
-		}
-		card_no = card_no + 1;
-		return card_item;
-	    });
-
-	    // Filter out nils
-	    installed_list = filter(`item, installed_list, ``(item != nil));
-	}
-
-	return installed_list;
-    }
-
-    /////////////////////////////////////////////////////////////////
-    // Functions working with "cards"
-    /////////////////////////////////////////////////////////////////
-
-    /**
-     * Get <B>index</B>th card.
-     * @param index Index of the card to get.
-     * @return any The 'index'th card or nil
-     */
-    global define any CardGet(integer index) ``{
-	if (index < 0 || index >= size(cards))
-	{
-	    return nil;
-	}
-
-	return cards[index]:nil;
-    }
-
-    /**
-     * Add the <B>current_card</B> to the <B>cards</B>. Try to fill holes
-     * after removes.
-     * @return integer Index of the added card.
-     */
-    global define integer CardAddCurrent() ``{
-	if (cards == nil)
-	{
-	    cards = [];
-	}
-	integer index = nil;
-
-	// try to fill holes after a remove
-	integer i = 0;
-	boolean radio = current_card["radio"]:false;
-	if (radio && size (cards)<65)
-	{
-	    integer cards_s = size (cards);
-	    while (cards_s < 65)
-	    {
-		cards = add (cards, nil);
-		cards_s = cards_s + 1;
-	    }
-	}
-	cards = maplist(map card, cards, ``{
-	    if (radio && i<64 )
-	    {
-		i = i + 1;
-		return card;
-	    }
-	    if (card == nil && index == nil)
-	    {
-		index = i;
-		return current_card;
-	    }
-	    i = i + 1;
-	    return card;
-	});
-	if (index == nil)
-	{
-	    cards = add(cards, current_card);
-	    index = size(cards) - 1;
-	}
-	cards_dirty = true;
-	return index;
-    }
-
-    /**
-     * Replace <B>index</B>th card with the <B>current_card</B>.
-     * @param index The index of the card to replace.
-     * @return boolean Returns true if successfully replaced.
-     */
-    global define boolean CardReplaceWithCurrent(integer index) ``{
-	if (cards == nil)
-	{
-	    cards = [];
-	}
-	boolean success = false;
-
-	integer i = 0;
-	cards =
-	    maplist(`card, cards, ``{
-		if (i == index)
-		{
-		    card = current_card;
-		    success = true;
-
-		    cards_dirty = true;
-		}
-		i = i + 1;
-		return card;
-	    });
-
-	return success;
-    }
-
-    /**
-     * Remove <B>index</B>th card. Does not touch <B>current_card</B>.
-     * (In fact, we just replace the card on the position of 'index' with nil.)
-     * @param index The index of the card to remove.
-     * @return boolean Returns true if the card was erased.
-     */
-    global define boolean CardRemove(integer index) ``{
-	if (cards == nil)
-	{
-	    cards = [];
-	}
-	boolean success = false;
-
-	integer i = 0;
-	cards = maplist(map card, cards, ``{
-	    if (i == index)
-	    {
-		cards_to_del = add(cards_to_del, card);
-		card = nil;
-		success = true;
-
-		cards_dirty = true;
-	    }
-	    i = i + 1;
-	    return card;
-	});
-	return success;
-    }
-
-    /**
-     * If the configuration was changed by the user, this will return true.
-     * @return Has the configuration changed?
-     */
-    global define boolean IsDirty () ``{
-	return cards_dirty || irc_modified || stations_modified;
-    }
-
-    /**
-     * Creates a list of unique keys of cards that are already installed.
-     * @return list List of the unque keys.
-     */
-    global define list CardsUniqueKeys() ``{
-	if (cards == nil)
-	{
-	    cards = [];
-	}
-	// unique keys of the already installed cards
-	list installed_uk =
-	    maplist(`card, cards, ``{
-		return lookup(card, "unique_key", nil);
-	    });
-
-	// filter out nils
-	return filter(`item, installed_uk, ``(item != nil));
-    }
-
-    /**
-     * Creates the content of the "configured card" Table in OverviewDialog()
-     * @return list List of `item()s
-     */
-    global define list CardsAsItems() ``{
-	if (cards == nil)
-	{
-	    cards = [];
-	}
-	integer card_no = 0;
-
-	list conf_list =
-	    maplist(`card, cards, ``{
-		term ret = nil;
-		if (card != nil)
-		{
-		    ret = `item(`id(card_no),
-				 sformat("%1", card_no),
-				 lookup(card, "name", ""));
-		}
-		card_no = card_no + 1;
-		return ret;
-	    });
-
-	return filter(`item, conf_list, ``(item != nil));
-    }
-
-    /////////////////////////////////////////////////////////////////
-    // Functions working with "detected_cards"
-    /////////////////////////////////////////////////////////////////
-
-    /**
-     * Get <B>index</B>th card.
-     * @param index Index of the card to get.
-     * @return any The 'index'th card or nil
-     */
-    global define any DetectedCardGet(integer index) ``{
-	if (index < 0 || index >= size(detected_cards))
-	{
-	    return $[];
-	}
-
-	return select(detected_cards, index, $[]);
-    }
-
-    /**
-     * List of the TV cards acceptable by the Selection Box widget in
-     * the DetectedDialog(). The already installed cards are filtered out.
-     * @return list List of TV cards including Other (not detected) with `id(-1))
-     */
-    global define list DetectedCardsAsItems() ``{
-	if (detected_cards == nil)
-	{
-	    detected_cards = [];
-	}
-	boolean is_first = true;
-
-	// unique keys of the already installed cards
-	list installed_uk = CardsUniqueKeys();
-
-	// create the list of `item()s (nil if it is already installed)
-	integer card_no = 0;
-	list detected_list = maplist(map card, detected_cards, ``{
-	    term ret = nil;
-
-	    string uk = lookup(card, "unique_key", nil);
-	    if (uk != nil && !contains(installed_uk, uk))
-	    {
-		ret = `item(`id(card_no), lookup(card, "name", ""), is_first);
-		is_first = false;
-	    }
-	    card_no = card_no + 1;
-	    return ret;
-	});
-
-	// filter out the nils
-	detected_list = filter(`card, detected_list, ``(card != nil));
-
-	// For translators: Entry for manual selection in the list of the cards to configure
-	return add(detected_list, `item(`id(-1), _("Other (not detected)"), is_first));
-    }
-
-    /////////////////////////////////////////////////////////////////
-    // Functions working with "cards_database"
-    /////////////////////////////////////////////////////////////////
-
-    /**
-     * Create a list of items for the "Vendors:" SelectionBox in the
-     * ManualDialog() screen.
-     * @param autodetected The autodetected card must be present in the database
-     *                     so we add it if needed.
-     * @param parameters Parameters of card that should be preselected.
-     * @param mod Kernel module the reselected card uses
-     * @return list List of list of `item()s and number of the vendor to preselect
-     */
-    global define list CardsDBVendorsAsItems (map autodetected, map parameters, string mod) ``{
-
-	integer preselect_vendor = nil;
-	integer vendor_no = 0;
-	// Handle the autodetected card
-	if (autodetected != nil && autodetected != $[])
-	{
-	    if (parameters["card"]:"-1" == "-1")
-	    {
-		preselect_vendor = vendor_no;
-	    }
-	    vendor_no = vendor_no + 1;
-	}
-
-	list vendors = maplist(map vendor, cards_database, ``{
-
-	    if (preselect_vendor == nil)
-	    {
-		foreach (map card, vendor["cards"]:[], ``{
-		    if (preselect_vendor == nil &&
-			(mod == nil || mod == card["module"]:nil) &&
-			CmpParameters(card["parameters"]:$[], parameters))
-		    {
-			preselect_vendor = vendor_no;
-		    }
-		});
-	    }
-	    term ret = `item(`id(vendor_no), vendor["name"]:"",
-		preselect_vendor == vendor_no);
-	    vendor_no = vendor_no + 1;
-	    return ret;
-	});
-
-	if (autodetected != nil && autodetected != $[])
-	{
-            // Item of cards list:
-	    vendors = prepend (vendors, `item ( `id (0), _("Autodetected card"),
-		preselect_vendor == 0 ));
-	}
-	return [ vendors, preselect_vendor ];
-    }
-
-    /**
-     * Create a list of cards of the selected vendor.
-     * @param autodetected The autodetected card must be present in the database
-     *                     so we add it if needed.
-     * @param sel_vendor The number of the selected vendor.
-     * @return list List of cards of the selected vendor.
-     */
-    global define list CardsDBVendorGetCards(map autodetected, integer sel_vendor) ``{
-	if (sel_vendor == nil || sel_vendor < 0)
-	{
-	    return [];
-	}
-
-	if (autodetected != nil && autodetected != $[])
-	{
-	    if (sel_vendor == 0)
-	    {
-		return [ autodetected ];
-	    }
-	    else
-	    {
-	        return lookup (select (cards_database, sel_vendor - 1, $[]), "cards", []);
-	    }
-	}
-	else
-	{
-	    return lookup (select (cards_database, sel_vendor, $[]), "cards", []);
-	}
-    }
-
-    /////////////////////////////////////////////////////////////////
-    // Functions working with "tuners_database"
-    /////////////////////////////////////////////////////////////////
-
-    /**
-     * Returns the tuner map according to its ID
-     * @param kernel_name Name of the main module for this card.
-     * @param tuner_id ID of selected tuner
-     * @return map Tuner
-     */
-    global define map GetTuner (string kernel_name, string tuner_id) ``{
-
-        return tuners_by_id [kernel_name, tuner_id]:$[];
-    }
-
-
-    /**
-     * Are there any tuners for the <B>kernel_module</B>?
-     * @param kernel_module Name of the main module for this card.
-     * @return boolean Are there available tuners for it?
-     */
-    global define boolean TunersDBHasTunersFor(string kernel_module) ``{
-	return haskey (tuners_database, kernel_module);
-    }
-
-    /**
-     * List of tuners for TV cards acceptable by the SelectionBox widget.
-     * @param kernel_module The module for which do we need the list.
-     * @param selected_tuner The previously selected tuner.
-     * @return list List of `item()s.
-     */
-    global define list TunersDBAsItems(string kernel_module, map selected_tuner) ``{
-	if (tuners_database == nil)
-	{
-	    return [];
-	}
-	list tuners = lookup (tuners_database, kernel_module, []);
-	tuners = prepend(tuners, $[ "name" :
-                                    // Default item of tuners list:
-                                    _("Default (detected)"),
-				                "parameters" : $[ "tuner": "-1" ] ]);
-
-    if (selected_tuner == nil || selected_tuner == $[])
-        selected_tuner = $["parameters" : $[ "tuner": "-1" ]];
-	integer tuner_no = 0;
-	boolean some_is_selected = false;
-	map selected_tuner_parameters = lookup(selected_tuner, "parameters", $[]);
-	return
-	    maplist (`tuner, tuners, ``{
-		boolean select_this = CmpParameters ( lookup (tuner, "parameters", $[]),
-						      selected_tuner_parameters );
-		term ret = `item(`id(tuner_no),
-				 lookup(tuner, "name", ""),
-				 select_this && !some_is_selected);
-		tuner_no = tuner_no + 1;
-		if (select_this)
-		{
-		    some_is_selected = true;
-		}
-		return ret;
-	    });
-    }
-
-    /**
-     * Return the <B>number</B>th tuner.
-     * @param kernel_module The module for which do we need the list.
-     * @param number The number of the tuner to be selected.
-     * @return map Tuner.
-     */
-    global define map TunersDBSelectTuner(string kernel_module, integer number) ``{
-	list tuners = lookup (tuners_database, kernel_module, []);
-	tuners = prepend(tuners, $[ "name" :
-                                    // Default item of tuners list:
-                                    _("Default (detected)"),
-				                "parameters" : $[ "tuner": "-1" ] ]);
-
-    cards_dirty = true;
-	return select (tuners, number , $[]);
-    }
-
-    /////////////////////////////////////////////////////////////////
-    // Functions working with "kernel_modules"
-    /////////////////////////////////////////////////////////////////
-
-    /**
-     * List of the kernel modules for TV cards acceptable by the Combo Box
-     * widget in the ManualDetailsDialog().
-     * @param selected_module The module which should be selected in the Combo Box.
-     * @return list List of `item()s
-     */
-    global define list KernelModulesAsItems(string selected_module) ``{
-	return
-	    maplist(`key, `value, kernel_modules, ``{
-		string name = key;
-		string desc = lookup(value, "module_description", "");
-		if (desc != "" && desc != "<none>")
-		{
-		    name = sformat("%1: %2", key, desc);
-		}
-		return `item(`id(key), name, (key == selected_module));
-	    });
-    }
-
-    /**
-     * List of the kernel modules for radio cards acceptable by the Combo Box
-     * widget in the ManualDetailsDialog().
-     * @param selected_module The module which should be selected in the widget
-     * @return list List of `item()s
-     */
-    global define list RadioModulesAsItems(string selected_module) ``{
-	return
-	    maplist(`key, `value, radio_modules, ``{
-		string name = key;
-		string desc = lookup(value, "module_description", "");
-		if (desc != "" && desc != "<none>")
-		{
-		    name = sformat("%1: %2", key, desc);
-		}
-		return `item(`id(key), name, (key == selected_module));
-	    });
-    }
-
-    /**
-     * List of the parameters for the selected kernel module acceptable by
-     * the Table widget in the ManualDetailsDialog().
-     * @param selected_module The module which is selected in the Combo Box.
-     * @param parameters The current values of the kernel module parameters.
-     * @return list List of `item()s.
-     */
-    global define list KernelModuleParametersAsItems(string selected_module, map parameters) ``{
-	map kernel_module = lookup (kernel_modules, selected_module, $[]);
-	if (kernel_module == nil)
-	{
-	    return [];
-	}
-
-	// convert the map with parameters to list. Filter out the "module_*" params
-	list param_list =
-	    maplist (`key, `value, kernel_module, ``{
-		term result = nil;
-		if (substring (key, 0, 7) != "module_")
-		{
-		    result = `item ( `id(key),
-				     key,
-				     lookup (parameters, key, ""),
-				     value);
-		}
-		return result;
-	    });
-
-	// filter out nils
-	return filter (`val, param_list, ``(val != nil));
-    }
-
-    /**
-     * List of the parameters for the selected kernel module acceptable by
-     * the Table widget in the ManualDetailsDialog().
-     * @param selected_module The module which is selected in the Combo Box.
-     * @param parameters The current values of the kernel module parameters.
-     * @return list List of `item()s.
-     */
-    global define list RadioModuleParametersAsItems(string selected_module, map parameters) ``{
-	map kernel_module = lookup (radio_modules, selected_module, $[]);
-	if (kernel_module == nil)
-	{
-	    return [];
-	}
-
-	// convert the map with parameters to list. Filter out the "module_*" params
-	list param_list =
-	    maplist (`key, `value, kernel_module, ``{
-		term result = nil;
-		if (substring (key, 0, 7) != "module_")
-		{
-		    result = `item ( `id(key),
-				     key,
-				     lookup (parameters, key, ""),
-				     value);
-		}
-		return result;
-	    });
-
-	// filter out nils
-	return filter (`val, param_list, ``(val != nil));
-    }
-
-///////////////////////////////////////////////////////////////////////////
-//-------------------------------------------------- LIRC related functions
-
-/**
- * Read IRC settings
- * @return Symbol for next or abort dialog.
- */
-global define any ReadIRC () ``{
-
-    cards_with_lirc_gpio = SCR::Read (.target.yast2, "tv_cards-lirc_gpio.ycp");
-    use_irc = Runlevel::ServiceStatus ("lirc") == 0;
-    irc_module = SCR::Read (.sysconfig.lirc.LIRC_MODULE);
-    if (irc_module == nil) irc_module = "";
-
-    if (SCR::Read (.target.size, "/etc/lircd.conf") != -1)
-    {
-	irc_config = "/etc/lircd.conf";
-    }
-
-    // TODO: which config files?
-    map out = SCR::Execute (.target.bash_output,
-	"/usr/bin/find  /usr/share/lirc/remotes/ -name *lircd*");
-    remotes = sort (splitstring (out["stdout"]:"", "\n"));
-
-    return `next;
-}
-
-/**
- * Write IRC settings
- * @return Symbol for next or abort dialog.
- */
-global define any WriteIRC () ``{
-
-    // 1. sysconfig values
-    SCR::Write (.sysconfig.lirc.LIRC_MODULE, irc_module);
-    SCR::Write (.sysconfig.lirc, nil);
-
-    if (use_irc)
-    {
-	// 2. lircd config
-	// ... copy config file to /etc/lircd.conf
-	if (SCR::Read (.target.size, "/etc/lircd.conf") != -1)
-        {
-	    SCR::Execute (.target.bash,
-		"/bin/cp /etc/lircd.conf /etc/lircd.conf.YaST2save");
-	}
-	if (irc_config != "/etc/lircd.conf")
-	{
-	    SCR::Execute (.target.bash, sformat ("/bin/cp %1 /etc/lircd.conf",
-		irc_config));
-	    y2milestone("config file: %1 copied to /etc/lircd.conf",irc_config);
-	}
-
-	// adjust runlevels:
-	Runlevel::ServiceAdjust ("lirc", "enable");
-        // start the service
-	if (Runlevel::ServiceStatus ("lirc") == 0)
-	    Runlevel::RunInitScript ("lirc", "restart");
-	else
-	    Runlevel::RunInitScript ("lirc", "start");
-    }
-    else
-    {
-	// adjust runlevels:
-	Runlevel::ServiceAdjust ("lirc", "disable");
-        // stop the service
-	Runlevel::RunInitScript ("lirc", "stop");
-    }
-    return `next;
-}
-
-/**
- * Load the desription of irc kernel modules (modinfo)
- */
-global define void LoadIRCModulesDescription () ``{
-
-    irc_modules = listmap (string mod, irc_modules_list, ``{
-	map modinfo = SCR::Read (add (.modinfo.kernel.misc, mod));
-	return [ mod, modinfo["module_description"]:"" ];
-    });
-}
-
-/**
- * Decides which LIRC module can be used accoring to current TV card
- * @return module name
- */
-global define string GetIRCModule () ``{
-
-    string ret = "lirc_i2c";
-
-    map card = current_card;
-    if (card == $[])
-	card = CardGet (0);
-    if (card == nil && detected_cards == [])
-	return ret;
-
-    integer cardnr = tointeger (card["parameters", "card"]:-1);
-    if (cardnr == -1)
-    {
-	// autodetected
-	integer card_id = -1;
-	if (card == nil)
-	    card = detected_cards [0]:$[];
-	// find the ID of current card (saved in detected_cards list)
-	foreach (map det_card, detected_cards, ``{
-	    if (card["module"]:nil == det_card["module"]:"" &&
-		card["name"]:nil == det_card["name"]:"")
-		card_id = det_card["card_id"]:-1;
-	});
-	if (contains (card_ids_lirc_gpio, card_id))
-	   ret = "lirc_gpio";
-    }
-    else
-    {
-	// manualy set card
-	if (contains (cards_with_lirc_gpio, cardnr))
-	    ret = "lirc_gpio";
-    }
-    return ret;
-}
-
-///////////////////////////////////////////////////////////////////////////
-//------------------------------------------- TV stations related functions
-
-/**
- * Read the whole contents of xawtvrc file and return it as a map
- * @param path proper agent (handling either global or temporary config file)
- * return map
- */
-global define map ReadStationsConfig (path pth) ``{
-
-    map xawtvrc = $[];
-    foreach (string section, SCR::Dir (add (pth, "s")), ``{
-	xawtvrc = add (xawtvrc, section, $[]);
-	foreach (string attr, SCR::Dir(add(add (pth, "v"), section)),``{
-	    xawtvrc [section, attr] = SCR::Read (add (add (add (pth, "v"), section), attr));
-	});
-    });
-    return xawtvrc;
-}
-
-/**
- * Write to /etc/X11/xawtvrc
- */
-global define boolean WriteStationsConfig () ``{
-
-    // create a backup
-    if (SCR::Read (.target.size, "/etc/X11/xawtv") != -1)
-    {
-	SCR::Execute (.target.bash,
-	    "/bin/cp /etc/X11/xawtvrc /etc/X11/xawtvrc.YaSTsave");
-    }
-    else
-    {
-	SCR::Execute (.target.bash, "/bin/touch /etc/X11/xawtvrc");
-    }
-
-    list new_sections = [];
-    foreach (string sec_name, map section, channels_config, ``{
-	new_sections = add (new_sections, sec_name);
-	foreach (string key, string value, section,``{
-	    SCR::Write (add (add (.xawtvrc.v, sec_name),key), value);
-	});
-    });
-    // remove removed stations
-    foreach (string section, SCR::Dir (.xawtvrc.s), ``{
-	if (!contains (new_sections, section))
-	    SCR::Write (add (.xawtvrc.s, section), nil);
-    });
-    return true;
-}
-
-
-/**
- * Load the modules for TV suport now, use current (not yet saved) options
- * It calls something like 'modprobe -C /dev/null bttv card=2 tuner=23'
- * @return empty string on success, error message otherwise
- */
-global define string tv_tmp_start() ``{
-
-    string modname = current_card["module"]:"";
-    string params = "";
-    maplist(string k, string v, current_card["parameters"]:$[], ``{
-	params = params + sformat(" %1=%2", k, v);
-    });
-    // we need to tell 'modprobe' not to look into modules.conf now, because
-    // it may contain messed options for the module %1 that will break the
-    // module loading. (modprobe would merge options specified in param %2 with
-    // those specified in modules.conf)
-    string cmd = sformat("/sbin/modprobe -C /dev/null %1 %2", modname, params);
-    y2debug ("command to run: %1", cmd);
-
-    map res = SCR::Execute(.target.bash_output, cmd, $[]);
-    y2debug ("modprobe output: %1", res);
-
-    return res["stderr"]:"";
-}
-
-/**
- * Initialize stations configuration (read global config etc.)
- */
-global define boolean InitializeStationsConfig() ``{
-
-    string agent_file = sformat ("%1/tmp_xawtvrc.scr", tmpdir);
-    // create new agent for reading temporary xawtvrc
-    SCR::Write (.target.string, agent_file, sformat (".tmp.xawtvrc
-
-`ag_ini(
-  IniAgent(
-    \"%1/xawtvrc\",
-    $[
-      \"comments\": [ \"^[ \\t]*#.*\", \"#.*\", \"^[ \\t]*$\" ],
-      \"sections\" : [
-        $[
-        \"begin\" : [ \"^[ \\t]*\\\[[ \\t]*(.*[^ \\t])[ \\t]*\\\][ \\t]*\", \"[%%s]\"],
-        ],
-      ],
-      \"params\" : [
-        $[
-        \"match\" : [ \"^[ \\t]*([^=]*[^ \\t=])[ \\t]*=[ \\t]*(.*[^ \\t]|)[ \\t]*$\",
-		    \"%%s = %%s\"],
-	],
-      ],
-    ]
-  )
-)",
-    tmpdir));
-    SCR::RegisterAgent (.tmp.xawtvrc, agent_file);
-
-    // read global configuration file
-    if (SCR::Read (.target.size, "/etc/X11/xawtvrc") != -1)
-	channels_config = ReadStationsConfig (.xawtvrc);
-    if (!haskey (channels_config, "defaults"))
-	channels_config = add (channels_config, "defaults", $[]);
-    if (!haskey (channels_config, "global"))
-	channels_config = add (channels_config, "global", $[]);
-    return true;
-}
 
 
 /* EOF */

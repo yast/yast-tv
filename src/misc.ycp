@@ -14,7 +14,10 @@
 
     import "Sound";
     import "Tv";
+    import "Label";
     import "Popup";
+
+    textdomain "tv";
 
     /**
      * Compares parameters of a card with the current_card. It is needed for
@@ -53,13 +56,12 @@
      * @return list List of sound cards
      */
     global define list SoundCardsAsItems() ``{
-	return
-	    maplist(`card, Sound::GetSoundCardList (), ``{
-		integer sound_card_no = lookup(card, "card_no", -1);
-		return `item(`id(sound_card_no),
-			     sformat("%1", sound_card_no),
-			     lookup(card, "name", ""));
-	    });
+
+	return maplist(map card, Sound::GetSoundCardList (), ``{
+	    integer sound_card_no = card["card_no"]:-1;
+	    return `item(`id(sound_card_no),
+			sformat("%1", sound_card_no), card["name"]:"");
+	});
     }
 
 /**
@@ -106,10 +108,10 @@ global define void ErrorWithDetails (string error, string details) ``{
 
     do
     {
-	ret = UI::UserInput();
+	ret = (symbol) UI::UserInput();
 	if (ret == `details)
 	{
-	    if (UI::QueryWidget (`id(`details), `Value))
+	    if ((boolean)UI::QueryWidget (`id(`details), `Value))
 		UI::ReplaceWidget (`id(`rp), `VBox (`Label (details)));
 	    else
 		UI::ReplaceWidget (`id(`rp), `Empty());
