@@ -65,7 +65,7 @@ not autodetected, use <B>Other (not detected)</B>. Then press
 ") +
 	    // Help: Detected cards, part 3 of 3
 	_("<P><B><BIG>Editing or deleting:</BIG></B><BR>
-If you press <B>Edit</B>, an additional dialog (where you
+If you press <B>Change</B>, an additional dialog (where you
 can change the configuration) will open.
 </P>");
     }

@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Nov 18 14:05:45 CET 2003 - jsuchome@suse.cz
+
+- fixed button label in helptext (#33076)
+- used UI:: builtins for file selection widgets 
+- 2.9.2
+
+-------------------------------------------------------------------
 Fri Oct 31 16:33:31 CET 2003 - jsuchome@suse.cz
 
 - basic command-line interface

@@ -151,7 +151,7 @@ map cmdline = $[
 	"add" :$[
 	    "handler"	: ``(TvAddCardHandler()),
 	    // translators: command line help text for add action
-	    "help"	: _("Add TV/radio card. Without parameters, add first detected card.")
+	    "help"	: _("Add TV card. Without parameters, add first one detected.")
 	],
 	"remove" :$[
 	    "handler"	: ``(TvRemoveCardHandler()),
