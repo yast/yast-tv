@@ -315,11 +315,9 @@ global define any DetectedDialog() ``{
     string caption = _("TV and Radio Card Setup");
 
     term contents =
-    // Caption of the detected cards list
+	// Caption of the detected cards list
 	Wizard_hw::DetectedContent(_("TV and Radio Cards to Configure"),
-				   Tv::DetectedCardsAsItems(),
-				   false,
-				   "");
+				   Tv::DetectedCardsAsItems(), false, "");
 
     Wizard::SetContentsButtons ( caption,
 				 contents,
@@ -330,16 +328,19 @@ global define any DetectedDialog() ``{
     any ret = nil;
     do
     {
-	// Update the content to the current values
-	string installed_overview = _("<P><B>No TV or radio card installed yet.</B></P>");
+	string installed_overview =
+	    // Update the content to the current values
+	    _("<P><B>No TV or radio card installed yet.</B></P>");
+
 	list installed_list = Tv::InstalledCardsSummary ();
 	if (size(installed_list) > 0)
 	{
-	    // For translators: Overview of the installed cards
-	    installed_overview = sformat (_("<P><B>Installed TV and Radio Cards:</B>%1</P>"),
-					  Summary::DevicesList(installed_list));
+	    installed_overview = sformat (
+		// For translators: Overview of the installed cards
+		_("<P><B>Installed TV and Radio Cards:</B>%1</P>"),
+		Summary::DevicesList (installed_list));
 	}
-	UI::ChangeWidget (`id(`configured_richtext), `Value, installed_overview);
+	UI::ChangeWidget (`id(`configured_richtext), `Value,installed_overview);
 
 	ret = tvUserInput();
 
@@ -613,7 +614,6 @@ global define any ManualDialog (boolean warn) ``{
 
     if (selected_vendor != nil)
     {
-    // FIXME check the module if available!
 	vendor_cards_db = Tv::CardsDBVendorGetCards(autodetected_card, selected_vendor);
     }
 
