@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Sep  6 17:16:44 CEST 2002 - jsuchome@suse.cz
+
+- added test before reading modules.options 
+
+-------------------------------------------------------------------
 Tue Aug 20 09:33:25 CEST 2002 - jsuchome@suse.cz
 
 - again adapted testsuite to extern changes

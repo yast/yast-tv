@@ -216,6 +216,10 @@
      * @return boolean True on success
      */
     global define boolean Write (block abort) ``{
+
+    // Shouldn't this be here?
+    // if (!cards_dirty) return true;
+
 	boolean write_aborted = false;
 	// For translators: Caption of the "save" dialog
 	string caption = _("Saving TV card configuration");
@@ -484,7 +488,11 @@ available kernel modules."));
      *	...
      */
     define map ReadModuleParameters(string module_name) ``{
-	map options = SCR::Read(.modules.options, module_name);
+
+    map options = $[];
+	if (contains (SCR::Dir(.modules.options), module_name))
+        options = SCR::Read(.modules.options, module_name);
+
 	if (options == nil)
 	{
 	    return $[];
@@ -748,7 +756,7 @@ available kernel modules."));
 		string comment =
 		    "# YaST2 configured TV card\n" +
 		    UniqueKeys::StoreToComment (card_name, unique_key);
-		y2milestone ("Writing comment to alias %1 in modules.conf", alias);
+		y2debug ("Writing comment to alias %1 in modules.conf", alias);
 		SCR::Write (.modules.alias.comment, comment, alias);
 
 		// set the appropriate unique key as configured
