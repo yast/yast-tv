@@ -1,0 +1,218 @@
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/adv7175.o
+description: <none>
+author:      <none>
+license:     "GPL"
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/bt819.o
+description: <none>
+author:      <none>
+license:     "GPL"
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/bt856.o
+description: <none>
+author:      <none>
+license:     "GPL"
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/bttv.o
+description: "bttv - v4l driver module for bt848/878 based cards"
+author:      "Ralph Metzler & Marcus Metzler & Gerd Knorr"
+license:     "GPL"
+parm:        radio int array (min = 1, max = 4), description "The TV card supports radio, default is 0 (no)"
+parm:        bigendian int, description "byte order of the framebuffer, default is native endian"
+parm:        fieldnr int, description "count fields, default is 0 (no)"
+parm:        bttv_verbose int, description "verbose startup messages, default is 1 (yes)"
+parm:        bttv_gpio int, description "log gpio changes, default is 0 (no)"
+parm:        bttv_debug int, description "debug messages, default is 0 (no)"
+parm:        irq_debug int, description "irq handler debug messages, default is 0 (no)"
+parm:        gbuffers int, description "number of capture buffers, default is 2 (64 max)"
+parm:        gbufsize int, description "size of the capture buffers, default is 0x208000"
+parm:        combfilter int
+parm:        lumafilter int
+parm:        video_nr int
+parm:        radio_nr int
+parm:        vbi_nr int
+parm:        triton1 int, description "set ETBF pci config bit [enable bug compatibility for triton1 + others]"
+parm:        vsfx int, description "set VSFX pci config bit [yet another chipset flaw workaround]"
+parm:        no_overlay int
+parm:        card int array (min = 1, max = 4), description "specify TV/grabber card model, see CARDLIST file for a list"
+parm:        pll int array (min = 1, max = 4), description "specify installed crystal (0=none, 28=28 MHz, 35=35 MHz)"
+parm:        tuner int array (min = 1, max = 4), description "specify installed tuner type"
+parm:        autoload int, description "automatically load i2c modules like tuner.o, default is 1 (yes)"
+parm:        gpiomask int
+parm:        audioall int
+parm:        audiomux int array (min = 1, max = 5)
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/bw-qcam.o
+description: <none>
+author:      <none>
+license:     "GPL"
+parm:        maxpoll int
+parm:        yieldlines int
+parm:        video_nr int
+parm:        parport string array (min = 1, max = 4)
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/c-qcam.o
+description: "Colour QuickCam for Video4Linux v0.05"
+author:      "Philip Blundell <philb@gnu.org>"
+license:     "GPL"
+parm:        parport int array (min = 1, max = 4), description "parport=<auto|n[,n]...> for port detection method
+  probe=<0|1|2> for camera detection method
+  force_rgb=<0|1> for RGB data format (default BGR)"
+parm:        probe int
+parm:        force_rgb int
+parm:        video_nr int
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/cpia.o
+description: "V4L-driver for Vision CPiA based cameras"
+author:      "Scott J. Bertin <sbertin@mindspring.com> & Peter Pregler <Peter_Pregler@email.com> & Johannes Erdfelt <jerdfelt@valinux.com>"
+license:     "GPL"
+parm:        video_nr int
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/cpia_pp.o
+description: "Parallel port driver for Vision CPiA based cameras"
+author:      "B. Huisman <bhuism@cs.utwente.nl> & Peter Pregler <Peter_Pregler@email.com>"
+license:     "GPL"
+parm:        parport string array (min = 1, max = 16), description "'auto' or a list of parallel port numbers. Just like lp."
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/cpia_usb.o
+description: <none>
+author:      <none>
+license:     "GPL"
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/i2c-old.o
+description: <none>
+author:      <none>
+license:     "GPL"
+parm:        scan int
+parm:        verbose int
+parm:        i2c_debug int
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/i2c-parport.o
+description: <none>
+author:      <none>
+license:     "GPL"
+parm:        debug int
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/meye.o
+description: "video4linux driver for the MotionEye camera"
+author:      "Stelian Pop <stelian.pop@fr.alcove.com>"
+license:     "GPL"
+parm:        gbuffers int, description "number of capture buffers, default is 2 (32 max)"
+parm:        gbufsize int, description "size of the capture buffers, default is 614400"
+parm:        video_nr int, description "video device to register (0=/dev/video0, etc)"
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/msp3400.o
+description: "device driver for msp34xx TV sound processor"
+author:      "Gerd Knorr"
+license:     "GPL"
+parm:        once int
+parm:        debug int
+parm:        simple int
+parm:        amsound int
+parm:        dolby int
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/pms.o
+description: <none>
+author:      <none>
+license:     "GPL"
+parm:        io_port int
+parm:        mem_base int
+parm:        video_nr int
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/saa5249.o
+description: <none>
+author:      <none>
+license:     "GPL"
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/saa7110.o
+description: <none>
+author:      <none>
+license:     "GPL"
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/saa7111.o
+description: <none>
+author:      <none>
+license:     "GPL"
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/saa7185.o
+description: <none>
+author:      <none>
+license:     "GPL"
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/stradis.o
+description: <none>
+author:      <none>
+license:     "GPL"
+parm:        video_nr int
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/tda7432.o
+description: "bttv driver for the tda7432 audio processor chip"
+author:      "Eric Sandeen <eric_sandeen@bigfoot.com>"
+license:     "GPL"
+parm:        debug int
+parm:        loudness int
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/tda9875.o
+description: <none>
+author:      <none>
+license:     "GPL"
+parm:        debug int
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/tuner-3036.o
+description: "SAB3036 tuner driver"
+author:      "Philip Blundell <philb@gnu.org>"
+license:     "GPL"
+parm:        debug int, description "Enable debugging output"
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/tuner.o
+description: "device driver for various TV and TV+FM radio tuners"
+author:      "Ralph Metzler, Gerd Knorr, Gunther Mayer"
+license:     "GPL"
+parm:        debug int
+parm:        type int
+parm:        addr int
+parm:        tv_range int array (min = 2, max = 2)
+parm:        radio_range int array (min = 2, max = 2)
+parm:        pal string
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/tvaudio.o
+description: "device driver for various i2c TV sound decoder / audiomux chips"
+author:      "Eric Sandeen, Steve VanDeBogart, Greg Alexander, Gerd Knorr"
+license:     "GPL"
+parm:        debug int
+parm:        tda9874a_SIF int
+parm:        tda9874a_STD int
+parm:        tda8425 int
+parm:        tda9840 int
+parm:        tda9850 int
+parm:        tda9855 int
+parm:        tda9873 int
+parm:        tda9874a int
+parm:        tea6300 int
+parm:        tea6420 int
+parm:        pic16c54 int
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/tvmixer.o
+description: <none>
+author:      "Gerd Knorr"
+license:     "GPL"
+parm:        debug int
+parm:        devnr int
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/videodev.o
+description: "Device registrar for Video4Linux drivers"
+author:      "Alan Cox"
+license:     "GPL"
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/w9966.o
+description: "Winbond w9966cf WebCam driver (FlyCam Supra and others)"
+author:      "Jakob Kemi <jakob.kemi@telia.com>"
+license:     "GPL"
+parm:        pardev string array (min = 0, max = 4), description "
+  <auto|name|none[,...]> Where to find cameras.
+    auto = probe all parports for camera
+    name = name of parport (eg parport0)
+    none = don't search for this camera
+  You can specify all cameras this way, for example:
+    pardev=parport2,auto,none,parport0 would search for cam1 on parport2, search
+    for cam2 on all parports, skip cam3 and search for cam4 on parport0"
+parm:        parmode int, description "
+  <0|1|2> transfer mode (0=auto, 1=ecp, 2=epp)"
+parm:        video_nr int
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/zoran.o
+description: "Zoran ZR36120 based framegrabber"
+author:      "Pauline Middelink <middelin@polyware.nl>"
+license:     "GPL"
+parm:        triton1 int
+parm:        cardtype int array (min = 1, max = 4)
+parm:        video_nr int
+parm:        vbi_nr int
+filename:    /lib/modules/2.4.18-4GB/kernel/drivers/media/video/zr36067.o
+description: <none>
+author:      <none>
+license:     "GPL"
+parm:        vidmem int
+parm:        triton int
+parm:        natoma int
+parm:        v4l_nbufs int
+parm:        v4l_bufsize int
+parm:        default_input int
+parm:        default_norm int
+parm:        lock_norm int
+parm:        pass_through int
+parm:        lml33dpath int
+parm:        video_nr int
