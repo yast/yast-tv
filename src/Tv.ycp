@@ -774,7 +774,7 @@ to /etc/modules.conf."));
 	}
 
 	// write unique keys
-	foreach (`uk, `status, probe_status, ``{
+	foreach (string uk, symbol status, probe_status, ``{
 	    if (uk != nil)
 	    {
 		SCR::Write (.probe.status.configured, uk, status);
@@ -928,7 +928,7 @@ to /etc/modules.conf."));
 	    });
 
 	    // Filter out nils
-	    installed_list = filter(`item, installed_list, ``(item != nil));
+	    installed_list = filter(string item, installed_list,``(item!= nil));
 	}
 	return installed_list;
     }
@@ -1016,7 +1016,7 @@ to /etc/modules.conf."));
 
 	integer i = 0;
 	cards =
-	    maplist(`card, cards, ``{
+	    maplist(map card, cards, ``{
 		if (i == index)
 		{
 		    card = current_card;
@@ -1081,7 +1081,7 @@ to /etc/modules.conf."));
 	list installed_uk = maplist(map card, cards,``(card["unique_key"]:nil));
 
 	// filter out nils
-	return filter(`item, installed_uk, ``(item != nil));
+	return filter(string item, installed_uk, ``(item != nil));
     }
 
     /**
@@ -1105,7 +1105,7 @@ to /etc/modules.conf."));
 	    return ret;
 	});
 
-	return filter(`item, conf_list, ``(item != nil));
+	return filter(string item, conf_list, ``(item != nil));
     }
 
     /////////////////////////////////////////////////////////////////
@@ -1156,7 +1156,7 @@ to /etc/modules.conf."));
 	});
 
 	// filter out the nils
-	detected_list = filter(`card, detected_list, ``(card != nil));
+	detected_list = filter(term card, detected_list, ``(card != nil));
 
 	// For translators: Entry for manual selection in the list of the cards to configure
 	return add(detected_list, `item(`id(-1), _("Other (not detected)"), is_first));
@@ -1384,7 +1384,7 @@ to /etc/modules.conf."));
 
 	// convert the map with parameters to list.
 	// Filter out the "module_*" params
-	list param_list = maplist (string key, `value, kernel_module, ``{
+	list param_list = maplist (string key, any value, kernel_module, ``{
 	    term result = nil;
 	    if (substring (key, 0, 7) != "module_")
 	    {
@@ -1412,7 +1412,7 @@ to /etc/modules.conf."));
 	    return [];
 	}
 
-	list param_list = maplist (string key, `value, kernel_module, ``{
+	list param_list = maplist (string key, any value, kernel_module, ``{
 	    term result = nil;
 	    if (substring (key, 0, 7) != "module_")
 	    {

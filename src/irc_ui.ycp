@@ -142,7 +142,7 @@ define boolean IRCTestPopup (string config_file, string mod, boolean modified) `
 	// Popup label (heading)
         `Label(_("IRC Test")),
 	// Popup label (info text), please keep translation
-        `Label(_("Push the buttons of your IR controler to test its functionality.")),
+        `Label(_("Push the buttons of your IR controller to test its functionality.")),
         `VSpacing(0.5),
         `LogView (`id (`irw), "", 10, 0),
         `VSpacing(0.5),
@@ -169,7 +169,7 @@ define boolean IRCTestPopup (string config_file, string mod, boolean modified) `
 	else if (!(boolean)SCR::Read(.background.output_open))
 	{
 	    // error text
-	    Popup::Error(_("Testing application is not responding."));
+	    Popup::Error(_("The testing application is not responding."));
 	    ret = `ok;
 	}
     }
@@ -190,7 +190,7 @@ define boolean IRCTestPopup (string config_file, string mod, boolean modified) `
 define any IRCDialog (boolean alone) ``{
 
     // For translators: Caption of the dialog
-    string caption = _("Infra red control configuration");
+    string caption = _("Infrared Control Configuration");
 
     boolean use_irc	= Tv::use_irc;
     string irc_config	= Tv::irc_config;
@@ -245,11 +245,11 @@ define any IRCDialog (boolean alone) ``{
 		)),
 		`ComboBox (`id(`mods), `opt(`notify, `hstretch),
 		    // combobox label
-		    _("Kernel module"), mods),
+		    _("Kernel Module"), mods),
 		`Left(
 		    `CheckBox (`id(`desc_ch), `opt (`notify),
 			//checkbox label
-			_("Show module description"), false)
+			_("Show Module Description"), false)
 		),
 		`ReplacePoint (`id(`rp), `Empty ()),
 		`VSpacing (0.5),
@@ -299,8 +299,9 @@ define any IRCDialog (boolean alone) ``{
 		    UI::OpenDialog (
 			Wizard_hw::SpacingAround (
 			    // popup label (waiting for other action):
-			    `Label(_("Please wait while getting list
-of kernel modules description...")),
+			    `Label(_("Please wait while the list
+of kernel module descriptions is retrieved...
+")),
 			    1.5, 1.5, 0.5, 0.5
 			)
 		    );
@@ -322,8 +323,9 @@ of kernel modules description...")),
             use_irc = (ret == `yes);
 	    if (use_irc && !Require::RequireAndConflictTarget (["lirc"], [],
 		// popup label (install required application?)
-		_("For using infra red devices, package 'lirc' is required.
-Install it now?")))
+		_("For using infrared devices, package 'lirc' is required.
+Install it now?
+")))
 
 	    {
 		use_irc = false;
