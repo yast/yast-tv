@@ -61,7 +61,7 @@
 	// find last line with a ":"
 	string line_with_uk = "";
 	integer colon_pos_uk = nil;
-	foreach(string line, comment_lines, ``{
+	foreach(string line, (list<string>) comment_lines, ``{
 	    integer c_pos = findfirstof(line, ":");
 	    if (c_pos != nil)
 	    {

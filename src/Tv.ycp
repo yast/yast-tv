@@ -286,7 +286,7 @@
 	{
 	    list<string> to_install = [];
 	    // check if packages are avialable...
-	    foreach (string app, apps, ``{
+	    foreach (string app, (list<string>) apps, ``{
 		if (Require::IsPackageAvailable (app))
 		    to_install = add (to_install, app);
 	    });
@@ -353,7 +353,7 @@
 	{
 	    tuners_database = (map)eval( SCR::Read (.target.yast2, "tv_tuners.ycp"));
 
-	    foreach (string modul, list tuners, tuners_database, ``{
+	    foreach (string modul, list<map<string,any> > tuners, (map<string,list<map<string,any> > >) tuners_database, ``{
 		tuners_by_id = add (tuners_by_id, modul, $[
 		    "-1": $[
 			    // Default item of tuners list:
@@ -401,7 +401,7 @@ available kernel modules."));
 	    return true;
 	}
 
-	foreach (string mod, modules_list, ``{
+	foreach (string mod, (list<string>) modules_list, ``{
 	    map parm = (map) SCR::Read ( add (video_path, mod));
 	    kernel_modules = add (kernel_modules, mod, parm);
 	});
@@ -420,7 +420,7 @@ available kernel modules."));
 	    return true;
 	}
 
-	foreach(string mod, modules_list, ``{
+	foreach(string mod, (list<string>) modules_list, ``{
 	    map parm = (map) SCR::Read ( add (radio_path, mod));
 	    radio_modules = add (radio_modules, mod, parm);
 	});
@@ -437,7 +437,7 @@ available kernel modules."));
 	// get the specified char-major-81-*
 	list tv_aliases = SCR::Dir(.modules.alias);
 
-	return filter (string alias, tv_aliases,
+	return filter (string alias, (list<string>) tv_aliases,
 	    ``(size(alias) > 13 && substring(alias, 0, 13) == "char-major-81"));
     }
 
@@ -465,14 +465,14 @@ available kernel modules."));
 	}
 
 	// Split the comma separated options into the needed map
-	options = mapmap (string key, string value, options, ``{
+	options = mapmap (string key, string value, (map<string,string>) options, ``{
 	    if (value == nil)
 	    {
 		value = "";
 	    }
 	    list values = splitstring (value, ",");
 	    integer index = 0;
-	    map values_map = listmap (string val, values, ``{
+	    map values_map = listmap (string val, (list<string>) values, ``{
 		map ret = $[ index: val ];
 		index = index + 1;
 		return ret;
@@ -543,11 +543,11 @@ available kernel modules."));
 		    integer param_no = modules_counts[module_name]:0;
 		    modules_counts = add (modules_counts,
 					 module_name, param_no + 1);
-		    parameters = mapmap(string key, map value, parameters, ``{
+		    parameters = mapmap(string key, map value, (map<string,map<string,any> >) parameters, ``{
 			string ret = value[param_no]:"";
 			return $[ key : ret ];
 		    });
-		    parameters = filter (string key, string value, parameters,
+		    parameters = filter (string key, string value, (map<string,string>) parameters,
 			``( value != "" && value != nil));
 
 		    // fill the spaces in the cards
@@ -600,7 +600,7 @@ available kernel modules."));
 	}
 
 	boolean result = true;
-	foreach(string module_name, list params_with_no, modules_parameters, ``{
+	foreach(string module_name, list params_with_no, (map<string,list<any> >) modules_parameters, ``{
 	    string param_values = "";
 	    integer parameter_counter = params_with_no[0]:0;
 	    if (parameter_counter == nil)
@@ -612,7 +612,7 @@ available kernel modules."));
 	    {
 		parameters = $[];
 	    }
-	    parameters = mapmap(string param_name, map param_map, parameters,``{
+	    parameters = mapmap(string param_name, map param_map, (map<string,map<string,any> >) parameters,``{
 
 		if (param_map == nil)
 		    param_map = $[];
@@ -667,7 +667,7 @@ available kernel modules."));
 	SCR::Write ( add (.modules.options, "i2c-algo-bit"), $["bit_test":"1"]);
 
 	// reset the old settings (all char-major-81-* aliases)
-	foreach (string alias, GetMajor81Aliases(), ``{
+	foreach (string alias, (list<string>) GetMajor81Aliases(), ``{
 	    SCR::Write ( add (.modules.alias, alias) , nil);
 	});
 
@@ -682,7 +682,7 @@ available kernel modules."));
 	}
 
 	// for cards choosed to delete...
-	foreach (map card, cards_to_del, ``{
+	foreach (map card, (list<map<string,any> >) cards_to_del, ``{
 	    string module_name = (string)lookup(card, "module", nil);
 	    if (contains (SCR::Dir(.modules.options), module_name))
 	    {
@@ -700,7 +700,7 @@ available kernel modules."));
 	boolean result = true;
 
 	// save the status (configured/unconfigured)
-	map probe_status = listmap (map card, detected_cards,
+	map probe_status = listmap (map card, (list<map<string,any> >) detected_cards,
 	    ``( $[ (string) lookup (card, "unique_key", nil): `no ] ));
 
 	// store the parameters to write to this variable
@@ -712,7 +712,7 @@ available kernel modules."));
 	// do this for each card...
 	integer tv_card_no = 0;
 	integer radio_card_no = 64;
-	foreach (map card, cards, ``{
+	foreach (map card, (list<map<string,any> >) cards, ``{
 
 	    boolean radio	= card["radio"]:false;
 	    string module_name	= (string) lookup (card,"module",nil);
@@ -774,7 +774,7 @@ to /etc/modules.conf."));
 	}
 
 	// write unique keys
-	foreach (string uk, symbol status, probe_status, ``{
+	foreach (string uk, symbol status, (map<string,symbol>) probe_status, ``{
 	    if (uk != nil)
 	    {
 		SCR::Write (.probe.status.configured, uk, status);
@@ -799,7 +799,7 @@ to /etc/modules.conf."));
     define boolean WriteSoundVolume() ``{
 	import "Sound";
 	// unmute the sound cards
-	foreach (map card, cards, ``{
+	foreach (map card, (list<map<string,any> >) cards, ``{
 	    integer sound_card_no = (integer) lookup (card,"sound_card_no",nil);
 	    if (sound_card_no != nil)
 	    {
@@ -837,7 +837,7 @@ to /etc/modules.conf."));
 	}
 
 	detected_cards =
-	    maplist(map tv_card, probe_tv, ``{
+	    maplist(map tv_card, (list<map<string,any> >) probe_tv, ``{
 		map result = $[];
 
 		// look for the name of the card
@@ -906,7 +906,7 @@ to /etc/modules.conf."));
 	if (size(cards) > 0)
 	{
 	    integer card_no = 0;
-	    installed_list = maplist(map card, cards, ``{
+	    installed_list = maplist(map card, (list<map<string,any> >) cards, ``{
 
 		string card_item = nil;
 		string name = (string) lookup (card, "name", nil);
@@ -928,7 +928,7 @@ to /etc/modules.conf."));
 	    });
 
 	    // Filter out nils
-	    installed_list = filter(string item, installed_list,``(item!= nil));
+	    installed_list = filter(string item, (list<string>) installed_list,``(item!= nil));
 	}
 	return installed_list;
     }
@@ -979,7 +979,7 @@ to /etc/modules.conf."));
 		cards_s = cards_s + 1;
 	    }
 	}
-	cards = maplist(map card, cards, ``{
+	cards = maplist(map card, (list<map<string,any> >) cards, ``{
 	    if (radio && i<64 )
 	    {
 		i = i + 1;
@@ -1016,7 +1016,7 @@ to /etc/modules.conf."));
 
 	integer i = 0;
 	cards =
-	    maplist(map card, cards, ``{
+	    maplist(map card,(list<map<string,any> >) cards, ``{
 		if (i == index)
 		{
 		    card = current_card;
@@ -1045,7 +1045,7 @@ to /etc/modules.conf."));
 	boolean success = false;
 
 	integer i = 0;
-	cards = maplist (map card, cards, ``{
+	cards = maplist (map card, (list<map<string,any> >)cards, ``{
 	    if (i == index && card != nil)
 	    {
 		cards_to_del = add(cards_to_del, card);
@@ -1078,10 +1078,10 @@ to /etc/modules.conf."));
 	    cards = [];
 	}
 	// unique keys of the already installed cards
-	list installed_uk = maplist(map card, cards,``(card["unique_key"]:nil));
+	list installed_uk = maplist(map card, (list<map<string,any> >)cards,``(card["unique_key"]:nil));
 
 	// filter out nils
-	return filter(string item, installed_uk, ``(item != nil));
+	return filter(string item, (list<string>) installed_uk, ``(item != nil));
     }
 
     /**
@@ -1095,7 +1095,7 @@ to /etc/modules.conf."));
 	}
 	integer card_no = 0;
 
-	list conf_list = maplist(map card, cards, ``{
+	list conf_list = maplist(map card, (list<map<string,any> >)cards, ``{
 	    term ret = nil;
 	    if (card != nil)
 	    {
@@ -1105,7 +1105,7 @@ to /etc/modules.conf."));
 	    return ret;
 	});
 
-	return filter(string item, conf_list, ``(item != nil));
+	return filter(string item, (list<string>) conf_list, ``(item != nil));
     }
 
     /////////////////////////////////////////////////////////////////
@@ -1142,7 +1142,7 @@ to /etc/modules.conf."));
 
 	// create the list of `item()s (nil if it is already installed)
 	integer card_no = 0;
-	list detected_list = maplist(map card, detected_cards, ``{
+	list detected_list = maplist(map card, (list<map<string,any> >) detected_cards, ``{
 	    term ret = nil;
 
 	    string uk = lookup(card, "unique_key", nil);
@@ -1156,7 +1156,7 @@ to /etc/modules.conf."));
 	});
 
 	// filter out the nils
-	detected_list = filter(term card, detected_list, ``(card != nil));
+	detected_list = filter(term card, (list<term>) detected_list, ``(card != nil));
 
 	// For translators: Entry for manual selection in the list of the cards to configure
 	return add(detected_list, `item(`id(-1), _("Other (not detected)"), is_first));
@@ -1189,7 +1189,7 @@ to /etc/modules.conf."));
 	    vendor_no = vendor_no + 1;
 	}
 
-	list vendors = maplist(map vendor, cards_database, ``{
+	list vendors = maplist(map vendor, (list<map<string,any> >)cards_database, ``{
 
 	    if (preselect_vendor == nil)
 	    {
@@ -1295,7 +1295,7 @@ to /etc/modules.conf."));
 	integer tuner_no = 0;
 	boolean some_is_selected = false;
 	map selected_tuner_parameters = selected_tuner["parameters"]:$[];
-	return maplist (map tuner, tuners, ``{
+	return maplist (map tuner, (list<map<string,any> >)tuners, ``{
 
 	    boolean select_this = CmpParameters ( tuner["parameters"]:$[],
 						  selected_tuner_parameters );
@@ -1338,7 +1338,7 @@ to /etc/modules.conf."));
      * @return list List of `item()s
      */
     global define list KernelModulesAsItems(string selected_module) ``{
-	return maplist(string key, map value, kernel_modules, ``{
+	return maplist(string key, map value, (map<string,map<string,any> >)kernel_modules, ``{
 	    string name = key;
 	    string desc = value["module_description"]:"";
 	    if (desc != "" && desc != "<none>")
@@ -1356,7 +1356,7 @@ to /etc/modules.conf."));
      * @return list List of `item()s
      */
     global define list RadioModulesAsItems(string selected_module) ``{
-	return maplist (string key, map value, radio_modules, ``{
+	return maplist (string key, map value, (map<string,map<string,any> >) radio_modules, ``{
 	    string name = key;
 	    string desc = value["module_description"]:"";
 	    if (desc != "" && desc != "<none>")
@@ -1384,7 +1384,7 @@ to /etc/modules.conf."));
 
 	// convert the map with parameters to list.
 	// Filter out the "module_*" params
-	list param_list = maplist (string key, any value, kernel_module, ``{
+	list param_list = maplist (string key, any value, (map<string,any>) kernel_module, ``{
 	    term result = nil;
 	    if (substring (key, 0, 7) != "module_")
 	    {
@@ -1394,7 +1394,7 @@ to /etc/modules.conf."));
 	});
 
 	// filter out nils
-	return filter (term val, param_list, ``(val != nil));
+	return filter (term val, (list<term>) param_list, ``(val != nil));
     }
 
     /**
@@ -1412,7 +1412,7 @@ to /etc/modules.conf."));
 	    return [];
 	}
 
-	list param_list = maplist (string key, any value, kernel_module, ``{
+	list param_list = maplist (string key, any value, (map<string,any>) kernel_module, ``{
 	    term result = nil;
 	    if (substring (key, 0, 7) != "module_")
 	    {
@@ -1422,7 +1422,7 @@ to /etc/modules.conf."));
 	});
 
 	// filter out nils
-	return filter (term val, param_list, ``(val != nil));
+	return filter (term val, (list<term>) param_list, ``(val != nil));
     }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1502,7 +1502,7 @@ global define any WriteIRC () ``{
  */
 global define void LoadIRCModulesDescription () ``{
 
-    irc_modules = listmap (string mod, irc_modules_list, ``{
+    irc_modules = listmap (string mod, (list<string>) irc_modules_list, ``{
 	map modinfo = (map) SCR::Read (add (.modinfo.kernel.misc, mod));
 	return $[ mod: (modinfo["module_description"]:"") ];
     });
@@ -1530,7 +1530,7 @@ global define string GetIRCModule () ``{
 	if (card == nil)
 	    card = detected_cards [0]:$[];
 	// find the ID of current card (saved in detected_cards list)
-	foreach (map det_card, detected_cards, ``{
+	foreach (map det_card, (list<map<string,any> >) detected_cards, ``{
 	    if (card["module"]:nil == det_card["module"]:"" &&
 		card["name"]:nil == det_card["name"]:"")
 		card_id = det_card["card_id"]:-1;
@@ -1584,7 +1584,7 @@ global define boolean WriteStationsConfig () ``{
     }
 
     list new_sections = [];
-    foreach (string sec_name, map section, channels_config, ``{
+    foreach (string sec_name, map<string,string> section, (map<string,map<string,string> >)channels_config, ``{
 	new_sections = add (new_sections, sec_name);
 	foreach (string key, string value, section,``{
 	    SCR::Write (add (add (.xawtvrc.v, sec_name),key), value);
@@ -1914,7 +1914,7 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	boolean any_tv_configured = false;
 
 	// add the not yet configured cards
-	foreach (map card, detected_cards, ``{
+	foreach (map card, (list<map<string,any> >) detected_cards, ``{
 	    string uk = (string) lookup (card, "unique_key", nil);
 
 	    if (uk != nil &&
@@ -1934,7 +1934,7 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	if (any_tv_configured)
 	{
 	    import "Sound";
-	    foreach (map card, Sound::GetSoundCardList (), ``{
+	    foreach (map card, (list<map<string,any> >)Sound::GetSoundCardList (), ``{
 		integer sound_card_no = card["card_no"]:-2;
 		if (sound_card_no != -2)
 		{
@@ -1956,13 +1956,13 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	list installed_list = InstalledCardsSummary();
 
 	// list of the unique keys of the already installed cards
-	list installed_uk = add (maplist (map card, cards, ``{
+	list installed_uk = add (maplist (map card, (list<map<string,any> >)cards, ``{
 	    return card["unique_key"]:nil;
 	}), "none");
 
 	// list of the not configured tv cards
 	list detected_list = [];
-	foreach (map card, detected_cards, ``{
+	foreach (map card, (list<map<string,any> >) detected_cards, ``{
 	    if (!contains (installed_uk, card["unique_key"]:"none"))
 	    {
 		detected_list = add (detected_list,
