@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Aug 16 15:20:49 CEST 2002 - jsuchome@suse.cz
+
+- new default entry to modules.conf (#18033)
+
+-------------------------------------------------------------------
 Mon Aug 12 21:19:51 CEST 2002 - arvin@suse.de
 
 - fixed testsuite
