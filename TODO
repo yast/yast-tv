@@ -1,6 +1,8 @@
 TODO for yast2-tv
 -----------------
 
+- Drop yast2-config-tv, pack yast2-tv :-)
+
 - Better generation of databases:
   - data/CARDLIST.bttv is
       /usr/src/linux/Documentation/video4linux/bttv/CARDLIST from
