@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Jul 24 14:48:47 CEST 2002 - jsuchome@suse.de
+
+- executed v4l-conf instead of kv4lsetup 
+
+-------------------------------------------------------------------
 Fri Jul 12 15:52:47 CEST 2002 - arvin@suse.de
 
 - use proper namespace for Args and CallFunction (#16776)
