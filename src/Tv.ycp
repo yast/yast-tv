@@ -48,6 +48,11 @@
      */
     list cards = [];
 
+	/**
+	 * List of cards which user chooses to delete.
+	 */
+	list cards_to_del = [];
+
     /**
      * If the list of the cards changes, this is set to true and Write()
      * must be called.
@@ -211,7 +216,7 @@
 	//   1: Write the settings
 	//   2: Write the sound volume
 	//   3: Install necessary software
-	integer no_of_steps = 2;
+	integer no_of_steps = 3;
 
 	// We do not set help text here, because it was set outside
 	Progress::New ( caption, " ", no_of_steps,
@@ -251,8 +256,7 @@ It is currently not installed. Do you want to install it now?"),
 	    // Initialize kv4lsetup
 	    SCR::Execute(.target.bash, "/opt/kde2/bin/kv4lsetup");
 	}
-
-	// increase the progress to "finish"
+	// increase the progress to "finish" -- problems ???
 	Progress::NextStage ();
 
 	return true;
@@ -588,6 +592,7 @@ available kernel modules."));
      * @return boolean Was the write successful?
      */
     define boolean WriteModulesParameters(map modules_parameters) ``{
+
 	if (modules_parameters == nil)
 	{
 	    return true;
@@ -658,6 +663,19 @@ available kernel modules."));
 	    SCR::Write (.modules.alias, nil, alias);
 	});
 
+	// for cards choosed to delete...
+	foreach (`card, cards_to_del, ``{
+	    string module_name = lookup (card, "module", nil);
+		if (contains (SCR::Dir(.modules.options), module_name))
+		{
+			y2milestone ("Deleting module %1 from /etc/modules.conf",module_name);
+			// ... deletes module's options from /etc/modules.conf...
+		    SCR::Write (.modules.options, nil, module_name);
+			// ... and unloads the module from kernel
+			SCR::Execute(.target.bash, sformat("/sbin/rmmod -r %1", module_name), $[]);
+		}
+	});
+
 	// necessary variables
 	boolean result = true;
 
@@ -706,7 +724,7 @@ available kernel modules."));
 		string comment =
 		    "# YaST2 configured TV card\n" +
 		    UniqueKeys::StoreToComment (card_name, unique_key);
-		y2milestone ("Writing comment \"%1\" to alias %2 in modules.conf", comment,alias);
+		y2milestone ("Writing comment to alias %1 in modules.conf", alias);
 		SCR::Write (.modules.alias.comment, comment, alias);
 
 		// set the appropriate unique key as configured
@@ -958,6 +976,7 @@ to /etc/modules.conf."));
 	    maplist(`card, cards, ``{
 		if (i == index)
 		{
+			cards_to_del = add(cards_to_del, card);
 		    card = nil;
 		    success = true;
 
