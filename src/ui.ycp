@@ -1641,8 +1641,8 @@ define any TvSequence () ``{
 	]
     ];
 
-    Wizard::SetDesktopIcon("tv");
     Wizard::CreateDialog ();
+    Wizard::SetDesktopIcon("tv");
     any ret = Sequencer::Run (aliases, sequence);
     UI::CloseDialog ();
 
