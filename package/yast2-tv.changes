@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Aug 06 10:54:24 CEST 2002 - arvin@suse.de
+
+- adapted testsuite to new /etc/install.inf agent
+
+-------------------------------------------------------------------
 Fri Jul 26 13:48:14 CEST 2002 - jsuchome@suse.cz
 
 - removed yast2-runlevel from Required and needforbuild
@@ -6,7 +11,7 @@ Fri Jul 26 13:48:14 CEST 2002 - jsuchome@suse.cz
 -------------------------------------------------------------------
 Wed Jul 24 14:48:47 CEST 2002 - jsuchome@suse.cz
 
-- executed v4l-conf instead of kv4lsetup 
+- executed v4l-conf instead of kv4lsetup
 
 -------------------------------------------------------------------
 Fri Jul 12 15:52:47 CEST 2002 - arvin@suse.de
