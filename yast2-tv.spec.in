@@ -1,6 +1,6 @@
 @HEADER-COMMENT@
 
-# neededforbuild  yast2-devel-packages yast2-packager yast2-runlevel yast2-sound
+# neededforbuild  hwinfo yast2-devel-packages yast2-packager yast2-runlevel yast2-sound
 
 @HEADER@
 Requires:	yast2 yast2-sound yast2-runlevel yast2-packager
