@@ -97,7 +97,7 @@
      *     ...
      *   ]
      */
-    list cards_database = nil;
+    global list cards_database = nil;
 
     /**
      * Database of the tuners for the manual configuration.
@@ -401,13 +401,35 @@
     }
 
     /**
+     * Return description of one kernel module
+     * @return map
+     */
+    global define map GetKernelModuleInfo (string modname) {
+
+	if (kernel_modules != nil)
+	{
+	    if (haskey (kernel_modules, modname))
+		return kernel_modules[modname]:$[];
+	    if (haskey (radio_modules, modname))
+		return radio_modules[modname]:$[];
+	}
+
+	path video_path = .modinfo.kernel.drivers.media.video;
+	map parm = (map) SCR::Read ( add (video_path, modname));
+	return (parm == nil) ? $[] : parm;
+    }
+
+    /**
      * Get a list of the available v4l kernel modules
      * and store it to <B>kernel_modules</B> map.
      * @return boolean Returns <B>true</B>.
      */
     global define boolean ReadKernelModules() ``{
-	path video_path = .modinfo.kernel.drivers.media.video;
 
+	if (kernel_modules != nil)
+	    return true;
+
+	path video_path = .modinfo.kernel.drivers.media.video;
 	kernel_modules = $[];
 	list modules_list = (list) SCR::Dir (video_path);
 	if (modules_list == nil)
@@ -988,7 +1010,7 @@ to %1."), "/etc/modprobe.d/tv."));
 	if (size(cards) > 0)
 	{
 	    integer card_no = 0;
-	    installed_list = maplist(map card, (list<map<string,any> >) cards, ``{
+	    installed_list = maplist(map card, (list<map>) cards, ``{
 
 		string card_item = nil;
 		string name = (string) lookup (card, "name", nil);
@@ -1024,12 +1046,11 @@ to %1."), "/etc/modprobe.d/tv."));
      * @param index Index of the card to get.
      * @return any The 'index'th card or nil
      */
-    global define any CardGet(integer index) ``{
+    global define any CardGet (integer index) ``{
 	if (index == nil || cards == nil || index < 0 || index >= size(cards))
 	{
 	    return nil;
 	}
-
 	return cards[index]:nil;
     }
 
@@ -1057,7 +1078,6 @@ to %1."), "/etc/modprobe.d/tv."));
 	    integer cards_s = size (cards);
 	    while (cards_s < 65)
 	    {
-//		cards = add (cards, nil);
 		cards = add (cards, $[]);
 		cards_s = cards_s + 1;
 	    }
@@ -1096,21 +1116,17 @@ to %1."), "/etc/modprobe.d/tv."));
 	    cards = [];
 	}
 	boolean success = false;
-
 	integer i = 0;
-	cards =
-	    maplist(map card,(list<map<string,any> >) cards, ``{
-		if (i == index)
-		{
-		    card = current_card;
-		    success = true;
-
-		    cards_dirty = true;
-		}
-		i = i + 1;
-		return card;
-	    });
-
+	cards = maplist (map card,(list<map>) cards, {
+	    if (i == index)
+	    {
+		card = current_card;
+		success = true;
+		cards_dirty = true;
+	    }
+	    i = i + 1;
+	    return card;
+	});
 	return success;
     }
 
@@ -1126,15 +1142,13 @@ to %1."), "/etc/modprobe.d/tv."));
 	    cards = [];
 	}
 	boolean success = false;
-
 	integer i = 0;
-	cards = maplist (map card, (list<map<string,any> >)cards, ``{
+	cards = maplist (map card, (list<map>)cards, ``{
 	    if (i == index && card != nil && card != $[])
 	    {
 		cards_to_del = add(cards_to_del, card);
 		card = nil;
 		success = true;
-
 		cards_dirty = true;
 	    }
 	    i = i + 1;
@@ -1250,6 +1264,26 @@ to %1."), "/etc/modprobe.d/tv."));
     /////////////////////////////////////////////////////////////////
 
     /**
+     * Grab the TV card from the database
+     * @param card_model model ID (to be set as "card=xx" module parameter)
+     * @param modname kernel module name (not necessary, used only to differene
+     * the cards with same id)
+     * @return card map
+     */
+    global define map GetTvCard (string card_model, string modname) {
+
+	map ret	= $[];
+	foreach (map vendor, (list<map>) cards_database, {
+            foreach (map card, vendor["cards"]:[], {
+		if (card_model == card["parameters","card"]:"" &&
+		    (ret == $[] || modname == card["module"]:""))
+		    ret	= card;
+	    });
+	});
+	return ret;
+    }
+
+    /**
      * Create a list of items for the "Vendors:" SelectionBox in the
      * ManualDialog() screen.
      * @param autodetected The autodetected card must be present in the database
@@ -1272,7 +1306,7 @@ to %1."), "/etc/modprobe.d/tv."));
 	    vendor_no = vendor_no + 1;
 	}
 
-	list vendors = maplist(map vendor, (list<map<string,any> >)cards_database, ``{
+	list vendors = maplist(map vendor, (list<map>) cards_database, ``{
 
 	    if (preselect_vendor == nil)
 	    {
@@ -1421,7 +1455,7 @@ to %1."), "/etc/modprobe.d/tv."));
      * @return list List of `item()s
      */
     global define list KernelModulesAsItems(string selected_module) ``{
-	return maplist(string key, map value, (map<string,map<string,any> >)kernel_modules, ``{
+	return maplist(string key, map value, (map<string,map>)kernel_modules, ``{
 	    string name = key;
 	    string desc = value["module_description"]:"";
 	    if (desc != "" && desc != "<none>")
@@ -1439,7 +1473,7 @@ to %1."), "/etc/modprobe.d/tv."));
      * @return list List of `item()s
      */
     global define list RadioModulesAsItems(string selected_module) ``{
-	return maplist (string key, map value, (map<string,map<string,any> >) radio_modules, ``{
+	return maplist (string key, map value, (map<string,map>) radio_modules, ``{
 	    string name = key;
 	    string desc = value["module_description"]:"";
 	    if (desc != "" && desc != "<none>")
@@ -1847,7 +1881,7 @@ global define boolean InitializeStationsConfig() ``{
      */
     global define boolean Write (block<boolean> abort) ``{
 
-    if (!cards_dirty) return true;
+	if (!IsDirty ()) return true;
 
 	boolean write_aborted = false;
 	// For translators: Caption of the "save" dialog
@@ -1858,53 +1892,64 @@ global define boolean InitializeStationsConfig() ``{
 	//   3: Install necessary software
 	integer no_of_steps = 2;
 
-    list<string> stages = [
+	list<string> stages = [
             // Progress stage
             _("Write the settings"),
             // Progress stage
 	    _("Update sound volume")];
 
-    list steps = [
+	list steps = [
             // Progress step
             _("Writing the settings..."),
             // Progress step
 	    _("Updating the sound volume...")];
 
-    if (!not_ask)
-    {
-        // Progress stage
-        stages = add (stages, _("Check for TV and radio applications"));
-        // Progress step
-        steps = add (steps, _("Checking for TV and radio applications..."));
-        no_of_steps = 3;
-    }
-    // Progress step
-    steps = add (steps, _("Finished"));
+	if (!not_ask)
+	{
+	    // Progress stage
+	    stages = add (stages, _("Check for TV and radio applications"));
+	    // Progress step
+	    steps = add (steps, _("Checking for TV and radio applications..."));
+	    no_of_steps	= no_of_steps + 1;
+	}
+	// Progress stage
+	stages = add (stages, _("Write IRC settings"));
 
-    Progress::New ( caption, " ", no_of_steps, stages, steps, "");
+	// Progress step
+	steps = add (steps, _("Writing IRC settings..."));
 
-    // TODO: It doesn't have sence to abort when WriteSettings (which is called
-    // firstly) is done. So no "eval (abort)" is called. May need
-    // improvement when the writing sequence gets longer.
+	// Progress stage
+	stages = add (stages, _("Write TV stations"));
 
-    // Write the settings
-    Progress::NextStage ();
-    if ( !WriteSettings() )
-    {
-	return false;
-    }
+	// Progress step
+	steps = add (steps, _("Writing TV stations..."));
 
-    // Write the sound volume
-    Progress::NextStage ();
-    if ( !WriteSoundVolume() )
-    {
-	return false;
-    }
+	// Progress step
+	steps = add (steps, _("Finished"));
 
+	Progress::New ( caption, " ", no_of_steps, stages, steps, "");
 
-    // check for applications for TV view/radio listen
-    if (!not_ask)
-    {
+	// no "eval (abort)" is currently called. May need
+	// improvement when the writing sequence gets longer.
+
+	// Write the settings
+	Progress::NextStage ();
+	if (cards_dirty && !WriteSettings())
+	{
+	    return false;
+	}
+
+	// Write the sound volume
+	Progress::NextStage ();
+	if (cards_dirty && !WriteSoundVolume())
+	{
+	    return false;
+	}
+
+	// check for applications for TV view/radio listen
+	if (!not_ask)
+	{
+
 	Progress::NextStage ();
 
 	// do we have TV or radio card?
@@ -1961,19 +2006,18 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	// save not_ask status
 	SCR::Write (.target.ycp, Directory::vardir + "/tv.ycp",
 	    $["dont_ask_for_application": not_ask]);
-    }
+	}
 
-    if (irc_modified)
-	WriteIRC(); // TODO add progress
+	if (irc_modified)
+	    WriteIRC();
 
-    // TODO add progress
-    if (stations_modified)
-	WriteStationsConfig ();
+	if (stations_modified)
+	    WriteStationsConfig ();
 
-    // increase the progress to "finish"
-    Progress::NextStage ();
+	// increase the progress to "finish"
+	Progress::NextStage ();
 
-    return true;
+	return true;
     }
 
     /**
@@ -2067,7 +2111,6 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 		    Summary::Device (card["name"]:"",Summary::NotConfigured()));
 	    }
 	});
-
 	return Summary::DevicesList (
 	    (list<string>) union (detected_list, installed_list) );
     }

@@ -33,6 +33,8 @@
     DUMP (Tv::kernel_modules);
     DUMP (Tv::radio_modules);
 
+    Tv::kernel_modules	= nil;//enforce new read
+
     TEST (``(Tv::ReadKernelModules()), [ READ_modules, $[], $[] ], nil);
     DUMP (Tv::kernel_modules);
     DUMP (Tv::radio_modules);

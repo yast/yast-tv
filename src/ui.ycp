@@ -363,7 +363,7 @@ define any ManualDialog (boolean warn) ``{
 
     // We must remember the current card if it was autodetected
     map autodetected_card = $[];
-    if ( module_name_tmp != nil && module_name_tmp != "" &&
+    if (module_name_tmp != nil && module_name_tmp != "" &&
          (current_card_parameters["card"]:"-1" == "-1"))
     {
 	autodetected_card = Tv::current_card;

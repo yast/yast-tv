@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Jun 18 15:26:02 CEST 2004 - jsuchome@suse.cz
+
+- enhanced command-line interface: set,show.irc,modules,cards
+
+-------------------------------------------------------------------
 Wed Jun 16 16:38:20 CEST 2004 - jsuchome@suse.cz
 
 - remove configuration from /etc/modprobe.conf, when it was
