@@ -26,6 +26,7 @@
     import "Summary";
     import "ModulesComments";
     import "Mode";
+    import "Require";
 
     include "tv/misc.ycp";
     include "ui/common_messages.ycp";
@@ -133,6 +134,11 @@
     global boolean proposal_valid = false;
 
     /**
+     * If YaST should check the presence of TV/radio application
+     */
+    global boolean not_ask = false;
+
+    /**
      * Read all TV card settings from the SCR
      * @param abort A block that can be called by Read to find
      *	      out whether abort is requested. Returns true if abort
@@ -181,14 +187,6 @@
 	    return false;
 	}
 
-	// The following was too slow, so it is done in the
-	// ManualDetailsDialog now
-	/*Progress::NextStep ();
-	if ( !ReadKernelModules() || eval (abort) )
-	{
-	    return false;
-	}*/
-
 	// Read the previous settings
 	Progress::NextStage ();
 	if ( !ReadSettings() || eval (abort) )
@@ -218,9 +216,7 @@
      */
     global define boolean Write (block abort) ``{
 
-    // TODO: add modified here!
-    // Shouldn't this be here?
-    // if (!cards_dirty) return true;
+    if (!cards_dirty) return true;
 
 	boolean write_aborted = false;
 	// For translators: Caption of the "save" dialog
@@ -229,42 +225,59 @@
 	//   1: Write the settings
 	//   2: Write the sound volume
 	//   3: Install necessary software
-	integer no_of_steps = 3;
+	integer no_of_steps = 2;
 
-	// We do not set help text here, because it was set outside
-	Progress::New ( caption, " ", no_of_steps,
-               // Progress stage
-		       [ _("Write the settings"),
-               // Progress stage
-			 _("Update sound volume"),
-               // Progress stage
-			 _("Check for KWinTV and KRadio")],
-               // Progress step
-		       [ _("Writing the settings..."),
-               // Progress step
-			 _("Updating the sound volume..."),
-               // Progress step
-			 _("Checking for KWinTV and KRadio..."),
-               // Progress step
-			 _("Finished") ],
-		       "" );
+    list stages = [
+            // Progress stage
+            _("Write the settings"),
+            // Progress stage
+			_("Update sound volume")];
+
+    list steps = [
+            // Progress step
+            _("Writing the settings..."),
+            // Progress step
+			_("Updating the sound volume...")];
+
+    if (!not_ask)
+    {
+        // Progress stage
+        stages = add (stages, _("Check for TV and radio applications"));
+        // Progress step
+        steps = add (steps, _("Checking for TV and radio applications..."));
+        no_of_steps = 3;
+    }
+    // Progress step
+    steps = add (steps, _("Finished"));
+
+	Progress::New ( caption, " ", no_of_steps, stages, steps, "");
+
+    // TODO: It doesn't have sence to abort when WriteSettings (which is called
+    // firstly) is done. So no "eval (abort)" is called. May need
+    // improvement when the writing sequence gets longer.
 
 	// Write the settings
 	Progress::NextStage ();
-	if ( !WriteSettings() || eval (abort) )
+	if ( !WriteSettings() )
 	{
 	    return false;
 	}
+
 
 	// Write the sound volume
 	Progress::NextStage ();
-	if ( !WriteSoundVolume() || eval (abort) )
+	if ( !WriteSoundVolume() )
 	{
 	    return false;
 	}
 
-	// Check for KWinTV (and probably install it)
+
+    // check for applications for TV view/radio listen
+    if (!not_ask)
+    {
 	Progress::NextStage ();
+
+    // do we have TV or radio card?
 	integer i = 0;
 	boolean tv = false;
 	boolean radio = false;
@@ -278,56 +291,39 @@
 		i = i + 1;
 	}
 
-    // propose kde applications only if we have KDE
-    // TODO: propose also gnome aplication (zapping)
-    // TODO: remove application names from the texts
-    // TODO: use Require interface
-    if (SCR::Execute(.target.bash, "rpm -q kdebase3-kdm 2>/dev/null")==0)
+    string tv_app = "motv";
+    if (Require::AreAllPackagesInstalled (["kdelibs3"])) tv_app = "kwintv";
+    else if (Require::AreAllPackagesInstalled (["gnome-panel"]))
+        tv_app = "zapping";
+
+    boolean tv_app_installed = Require::AreAllPackagesInstalled ([tv_app]);
+    boolean radio_app_installed = Require::AreAllPackagesInstalled (["kradio"]);
+
+    // do not propose kradio application if we have not KDE
+    if (radio && tv && !tv_app_installed && !radio_app_installed &&
+        tv_app == "kwintv")
     {
-
-	boolean kwintv_installed =
-        (SCR::Execute(.target.bash, "rpm -q kwintv 2>/dev/null")==0);
-    boolean kradio_installed =
-        (SCR::Execute(.target.bash, "rpm -q kradio 2>/dev/null")==0);
-
-	if (tv && !radio && !kwintv_installed)
+        // Popup text (required application are %1 and %2):
+        InstallApplication (["kradio", tv_app], sformat(_("To watch TV and listen to radio on your computer, you can use
+the <b>%1</b> and <b>%2</b> applications. None of them is currently not
+installed. Install now?"), tv_app, "kradio"));
+    }
+    else if (tv && !tv_app_installed)
 	{
-        // Popup text (required application):
-        if (UI::YesNoPopup(_("If you want to watch TV on your screen, you need the KWinTV application.
-It is currently not installed. Do you want to install it now?")))
-        {
-            include "require.ycp";
-            DoInstallAndRemove(["kwintv"], []);
-        }
-	}
-	else if (radio && !tv && !kradio_installed)
-	{
-        // Popup text (recommended application):
-        if (UI::YesNoPopup(_("To listen to radio on your computer, you can use the KRadio application.
-It is currently not installed. Install it now?
-")))
-        {
-            include "require.ycp";
-            DoInstallAndRemove(["kradio"], []);
-        }
-	}
-	else if (radio && tv && (!kwintv_installed || !kradio_installed))
-	{
-        // Popup text (recommended applications):
-        if (UI::YesNoPopup(_("To watch TV and listen to radio on your computer, you can use
-the KWinTV and KRadio applications. At least one of them is currently not
-installed. Install it now?
-")))
-        {
-            include "require.ycp";
-            list to_install = [];
-            if (!kwintv_installed) to_install = add (to_install, "kwintv");
-            if (!kradio_installed) to_install = add (to_install, "kradio");
-	        DoInstallAndRemove(to_install, []);
-        }
-	}
+        // Popup text (required application is %1):
+        InstallApplication ([tv_app], sformat(_("If you want to watch TV on your screen, you need the <b>%1</b> application.
+It is currently not installed. Do you want to install it now?"), tv_app));
+    }
+    else if (radio && !radio_app_installed && tv_app == "kwintv")
+    {
+        // Popup text (required application is %1):
+        InstallApplication (["kradio"], sformat (_("To listen to radio on your computer, you can use the <b>%1</b> application.
+It is currently not installed. Install it now?"), "kradio"));
     }
 
+    // save not_ask status
+    SCR::Write (.target.ycp, "/var/lib/YaST2/tv_not_ask.ycp", not_ask);
+    }
 
 	// increase the progress to "finish"
 	Progress::NextStage ();
@@ -438,9 +434,55 @@ installed. Install it now?
 	return Summary::DevicesList( union (detected_list, installed_list) );
     }
 
+    /**
+     * Dialog which asks for installing proposed application
+     * @param apps list of applications to install
+     * @param text text to show in dialog
+     */
+    define void InstallApplication (list apps, string text) ``{
+
+    UI::OpenDialog (`opt(`decorated),
+        `VBox(
+            `HSpacing(50),
+            `RichText (`id(`rt), text),
+            `CheckBox (`id(`ch), `opt(`notify),
+                // checkbox label
+                _("Do not ask me later")),
+            `HBox(
+              `PushButton (`id(`cancel),`opt(`key_F9), UI::NoButtonLabel()),
+              `PushButton (`id(`ok),`opt(`key_F10), UI::YesButtonLabel())
+            ))
+    );
+    any ret = nil;
+    do {
+        ret = UI::UserInput();
+        if (ret == `ch) ret = nil;
+    }
+    while (ret == nil);
+
+    not_ask = UI::QueryWidget(`id(`ch), `Value);
+    UI::CloseDialog();
+    if (ret == `ok)
+        Require::DoInstallAndRemove(apps, []);
+    }
+
     /////////////////////////////////////////////////////////////////
     // Some IO functions
     /////////////////////////////////////////////////////////////////
+
+    /**
+     * Read the state of "not_ask" variable
+     * (if the TV/radio application presence should be checked again next time)
+     * @return not_ask value
+     */
+    global define boolean ReadUserSettings () ``{
+
+    SCR::Execute (.target.bash, "/bin/touch /var/lib/YaST2/tv_not_ask.ycp");
+    any state = SCR::Read (.target.ycp, "/var/lib/YaST2/tv_not_ask.ycp");
+    if (is (state, boolean) && state == true) return true;
+    return false;
+    }
+
 
     /**
      * Read the database of the TV cards.
@@ -563,7 +605,6 @@ available kernel modules."));
 
     map options = $[];
 	if (contains (SCR::Dir(.modules.options), module_name))
-//        options = SCR::Read(.modules.options, module_name);
         options = SCR::Read( add (.modules.options, module_name));
 
 	if (options == nil)
@@ -681,10 +722,9 @@ available kernel modules."));
 	}
 	y2debug("The previously saved configuration: %1", cards);
 
-/*	while (card_no < 128)
-	{
-	    card_no = card_no + 1;
-    }*/
+    // Read user settings ("Do not ask again")
+    not_ask = ReadUserSettings();
+
 	return true;
     }
 
@@ -749,7 +789,6 @@ available kernel modules."));
 		// We have to empty the options...
 		if (contains (SCR::Dir(.modules.options), module_name))
 		{
-//		    SCR::Write (.modules.options, nil, module_name);
 		    SCR::Write ( add (.modules.options, module_name), nil);
 		}
 	    }
@@ -757,7 +796,6 @@ available kernel modules."));
 	    {
 		// Write it...
         y2milestone ("pars=%1, name=%2", parameters, module_name);
-//		result = result && SCR::Write(.modules.options, parameters, module_name);
 		result = result &&
             SCR::Write( add (.modules.options, module_name), parameters);
 	    }
@@ -773,16 +811,13 @@ available kernel modules."));
     define boolean WriteSettings() ``{
 	// common settings
 	y2milestone ("Writing char-major-81 (videodev) to modules.conf");
-//	SCR::Write (.modules.alias, "videodev", "char-major-81");
 	SCR::Write (.modules.alias."char-major-81", "videodev");
 
 	// fix of bug #18033: (slow initialization on some machines)
-//	SCR::Write (.modules.options, $["bit_test":"1"], "i2c-algo-bit");
 	SCR::Write ( add (.modules.options, "i2c-algo-bit"), $["bit_test":"1"]);
 
 	// reset the old settings (all char-major-81-* aliases)
 	foreach (`alias, GetMajor81Aliases(), ``{
-//	    SCR::Write (.modules.alias, nil, alias);
 	    SCR::Write ( add (.modules.alias, alias) , nil);
 	});
 
@@ -792,7 +827,6 @@ available kernel modules."));
     integer i = 0;
     while (i<4) {
         string alias = sformat ("char-major-81-%1", i);
-//        SCR::Write (.modules.alias, "off", alias);
         SCR::Write ( add (.modules.alias, alias), "off");
         i = i + 1;
     }
@@ -803,11 +837,10 @@ available kernel modules."));
 		if (contains (SCR::Dir(.modules.options), module_name))
 		{
 			y2milestone ("Deleting module %1 from /etc/modules.conf",module_name);
-			// ... deletes module's options from /etc/modules.conf...
-//		    SCR::Write (.modules.options, nil, module_name);
+			// ... delete module's options from /etc/modules.conf...
 		    SCR::Write ( add (.modules.options, module_name), nil);
         }
-		// ... and unloads the module from kernel
+		// ... and unload the module from kernel
 		SCR::Execute(.target.bash, sformat("/sbin/rmmod -r %1", module_name), $[]);
 	});
 
@@ -839,7 +872,6 @@ available kernel modules."));
 		y2milestone ("Writing alias %2 %1 to modules.conf", module_name, alias);
 
 		// write alias
-//		SCR::Write (.modules.alias, module_name, alias);
 		SCR::Write ( add (.modules.alias, alias), module_name);
 
 		// store parameters to "modules_parameters"
@@ -1417,6 +1449,7 @@ to /etc/modules.conf."));
                                     _("Default (detected)"),
 				                "parameters" : $[ "tuner": "-1" ] ]);
 
+    cards_dirty = true;
 	return select (tuners, number , $[]);
     }
 
