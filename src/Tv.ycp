@@ -242,13 +242,13 @@
             // Progress stage
             _("Write the settings"),
             // Progress stage
-			_("Update sound volume")];
+	    _("Update sound volume")];
 
     list steps = [
             // Progress step
             _("Writing the settings..."),
             // Progress step
-			_("Updating the sound volume...")];
+	    _("Updating the sound volume...")];
 
     if (!not_ask)
     {
@@ -261,26 +261,25 @@
     // Progress step
     steps = add (steps, _("Finished"));
 
-	Progress::New ( caption, " ", no_of_steps, stages, steps, "");
+    Progress::New ( caption, " ", no_of_steps, stages, steps, "");
 
     // TODO: It doesn't have sence to abort when WriteSettings (which is called
     // firstly) is done. So no "eval (abort)" is called. May need
     // improvement when the writing sequence gets longer.
 
-	// Write the settings
-	Progress::NextStage ();
-	if ( !WriteSettings() )
-	{
-	    return false;
-	}
+    // Write the settings
+    Progress::NextStage ();
+    if ( !WriteSettings() )
+    {
+	return false;
+    }
 
-
-	// Write the sound volume
-	Progress::NextStage ();
-	if ( !WriteSoundVolume() )
-	{
-	    return false;
-	}
+    // Write the sound volume
+    Progress::NextStage ();
+    if ( !WriteSoundVolume() )
+    {
+	return false;
+    }
 
 
     // check for applications for TV view/radio listen
@@ -288,7 +287,7 @@
     {
 	Progress::NextStage ();
 
-    // do we have TV or radio card?
+	// do we have TV or radio card?
 	integer i = 0;
 	boolean tv = false;
 	boolean radio = false;
@@ -333,13 +332,15 @@ It is currently not installed. Install it now?"), "kradio"));
     }
 
     // save not_ask status
-    SCR::Write (.target.ycp, "/var/lib/YaST2/tv_not_ask.ycp", not_ask);
+    SCR::Write (.target.ycp, "/var/lib/YaST2/tv.ycp",
+	$["dont_ask_for_application": not_ask]);
+
     }
 
-	// increase the progress to "finish"
-	Progress::NextStage ();
+    // increase the progress to "finish"
+    Progress::NextStage ();
 
-	return true;
+    return true;
     }
 
     /**
@@ -460,8 +461,8 @@ It is currently not installed. Install it now?"), "kradio"));
                 // checkbox label
                 _("Do not ask me later")),
             `HBox(
-              `PushButton (`id(`cancel),`opt(`key_F9), UI::NoButtonLabel()),
-              `PushButton (`id(`ok),`opt(`key_F10), UI::YesButtonLabel())
+              `PushButton (`id(`ok),`opt(`key_F10), UI::YesButtonLabel()),
+              `PushButton (`id(`cancel),`opt(`key_F9), UI::NoButtonLabel())
             ))
     );
     any ret = nil;
@@ -488,9 +489,13 @@ It is currently not installed. Install it now?"), "kradio"));
      */
     global define boolean ReadUserSettings () ``{
 
-    SCR::Execute (.target.bash, "/bin/touch /var/lib/YaST2/tv_not_ask.ycp");
-    any state = SCR::Read (.target.ycp, "/var/lib/YaST2/tv_not_ask.ycp");
-    if (is (state, boolean) && state == true) return true;
+//    SCR::Execute (.target.bash, "/bin/touch /var/lib/YaST2/tv_not_ask.ycp");
+//    any state = SCR::Read (.target.ycp, "/var/lib/YaST2/tv_not_ask.ycp");
+// if (is (state, boolean) && state == true) return true;
+    SCR::Execute (.target.bash, "/bin/touch /var/lib/YaST2/tv.ycp");
+    any state = SCR::Read (.target.ycp, "/var/lib/YaST2/tv.ycp");
+    if (is (state, map) && state["dont_ask_for_application"]:false == true)
+	return true;
     return false;
     }
 
@@ -744,8 +749,8 @@ available kernel modules."));
 	}
 	y2debug("The previously saved configuration: %1", cards);
 
-    // Read user settings ("Do not ask again")
-    not_ask = ReadUserSettings();
+	// Read user settings ("Do not ask again")
+	not_ask = ReadUserSettings();
 
 	return true;
     }
