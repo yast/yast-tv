@@ -41,11 +41,11 @@
 	];
 
 
-    TEST(``(Tv::GetMajor81Aliases()), [ READ_alias_nil , $[], $[] ], false);
+    TEST(``(Tv::GetMajor81Aliases(.modules)), [ READ_alias_nil , $[], $[] ], false);
 
-    TEST(``(Tv::GetMajor81Aliases()), [ READ_no_alias_81 , $[], $[] ], false);
+    TEST(``(Tv::GetMajor81Aliases(.modules)), [ READ_no_alias_81 , $[], $[] ], false);
 
-    TEST(``(Tv::GetMajor81Aliases()), [ READ_one_alias_81 , $[], $[] ], false);
+    TEST(``(Tv::GetMajor81Aliases(.modules)), [ READ_one_alias_81 , $[], $[] ], false);
 
-    TEST(``(Tv::GetMajor81Aliases()), [ READ_more_aliases_81 , $[], $[] ], false);
+    TEST(``(Tv::GetMajor81Aliases(.modules)), [ READ_more_aliases_81 , $[], $[] ], false);
 }
