@@ -4,9 +4,6 @@
 # $Id$
 #
 
-# TODO FIXME: The following must go away!!!
-ydatadir = $(yast2dir)
-
 ydata_DATA = tv_cards.ycp tv_tuners.ycp
 
 tv_cards.ycp: CARDLIST.bttv CARDLIST.saa7134
@@ -14,5 +11,8 @@ tv_cards.ycp: CARDLIST.bttv CARDLIST.saa7134
 
 tv_tuners.ycp: CARDLIST.bttv
 	$(srcdir)/create_tuner_db $^ > $@
+
+EXTRA_DIST = CARDLIST.bttv CARDLIST.saa7134 \
+	     create_tv_db create_tuner_db
 
 CLEANFILES = $(ydata_DATA)

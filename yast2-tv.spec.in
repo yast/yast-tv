@@ -1,6 +1,6 @@
 @HEADER-COMMENT@
 
-# neededforbuild  autoconf automake dejagnu expect libscr liby2 libycp libycp-devel libyui tcl yast2 yast2-agent-system yast2-base yast2-config-package-manager yast2-config-runlevel yast2-config-sound yast2-core-scr yast2-core-wfm yast2-devtools yast2-lib-hardware yast2-lib-wizard yast2-testsuite ycpdoc
+# neededforbuild  yast2-devtools yast2-testsuite yast2-core yast2-core-devel
 
 @HEADER@
 Requires:	yast2 yast2-lib-wizard yast2-lib-sequencer yast2-lib-hardware yast2-config-sound yast2-config-package-manager
@@ -26,4 +26,5 @@ Summary:	Configuration of TV cards
 @clientdir@/*.ycp
 @moduledir@/*.ycp
 @configdir@/*.y2cc
+@ydatadir@/*.ycp
 %doc @docdir@
