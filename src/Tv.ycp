@@ -571,21 +571,21 @@ available kernel modules."));
     }
 
     /**
-     * Returns a list of all char-major-250-* in modprobe config file
+     * Returns a list of all char-major-212-* in modprobe config file
      * @param mod_path path to agent (using modprobe.conf or modprobe.d/tv)
-     * @return list List [ "char-major-250-3", "char-major-81-67" ] or so...
+     * @return list List [ "char-major-212-3" ] or so...
      */
-    define list<string> GetMajor250Installs(path mod_path) ``{
-	// get the specified char-major-250-*
+    define list<string> GetMajorInstalls(path mod_path) ``{
+	// get the specified char-major-212-*
 	list tv_installs = SCR::Dir(add (mod_path, "install"));
 
 	if (tv_installs == nil)
 	    return [];
 
-	string major250 = "char-major-250";
+	string major = "char-major-212";
 
 	return filter (string alias, (list<string>) tv_installs,
-	    ``(size(alias) > size(major250) && substring(alias, 0, size(major250)) == major250));
+	    ``(size(alias) > size(major) && substring(alias, 0, size(major)) == major));
     }
 
     /**
@@ -677,7 +677,7 @@ available kernel modules."));
 
 	// get the specified char-major-81-*
 	list<string> tv_aliases = GetMajor81Aliases (mod_path);
-	list<string> tv_installs = GetMajor250Installs(mod_path);
+	list<string> tv_installs = GetMajorInstalls(mod_path);
 
 	// the parameters read from modprobe.d/tv
 	// $[ "module" :  $[ parameter_name: $[ 0: nil, 1: "3", 2: "2" ] ] ]
@@ -761,14 +761,14 @@ available kernel modules."));
 	    mod_path, tv_cards);
 
 
-	// scan DVB devices (major 250 and minor 3, 65, ...)
+	// scan DVB devices (major 212 and minor 3, 65, ...)
 
 	path install_path = add (mod_path, "install");
 	card_no = 0;
 	while (card_no < 4)
 	{
 	    integer minor = (card_no * 64) + 3;
-	    string install = sformat("char-major-250-%1", minor);
+	    string install = sformat("char-major-212-%1", minor);
 	    if (contains (tv_installs, install))
 	    {
 		string card_name = "";
@@ -1206,7 +1206,8 @@ available kernel modules."));
 	    });
 	    // remove options from old config file
 	    foreach (map card, (list<map>) cards, {
-		string module_name = card["module"]:"";
+		list<string> module_names = (list<string>)card["module"]:[];
+		string module_name = module_names[size(module_names) - 1]:"";
 		if (contains (SCR::Dir (.modules.options), module_name))
 		{
 		    SCR::Write (add (.modules.options, module_name), nil);
@@ -1321,7 +1322,7 @@ available kernel modules."));
 
 		if (dvb)
 		{
-		    alias = sformat("char-major-250-%1", 64 * dvb_card_no + 3);
+		    alias = sformat("char-major-212-%1", 64 * dvb_card_no + 3);
 		}
 
 		y2milestone ("Writing alias %2 %1 to /etc/modprobe.d/tv",
@@ -1949,8 +1950,9 @@ to %1."), "/etc/modprobe.d/tv."));
 	map ret	= $[];
 	foreach (map vendor, (list<map>) cards_database, {
             foreach (map card, vendor["cards"]:[], {
+		list<string> modnames = (list<string>)card["module"]:[];
 		if (card_model == card["parameters","card"]:"" &&
-		    (ret == $[] || modname == card["module"]:""))
+		    (ret == $[] || modname == modnames[size(modnames) - 1]:""))
 		    ret	= card;
 	    });
 	});
@@ -1985,8 +1987,9 @@ to %1."), "/etc/modprobe.d/tv."));
 	    if (preselect_vendor == nil)
 	    {
 		foreach (map card, vendor["cards"]:[], ``{
+		    list<string> mods = (list<string>)card["module"]:[];
 		    if (preselect_vendor == nil &&
-			(mod == nil || mod == card["module"]:nil) &&
+			(mod == nil || mod == mods[size(mods) - 1]:"") &&
 			CmpParameters(card["parameters"]:$[], parameters))
 		    {
 			preselect_vendor = vendor_no;
@@ -2215,6 +2218,8 @@ global define any WriteIRC () ``{
     SCR::Write (.sysconfig.lirc.LIRC_MODULE, irc_module);
     SCR::Write (.sysconfig.lirc, nil);
 
+    y2milestone("config file: %1", irc_config);
+
     if (use_irc)
     {
 	// 2. lircd config
@@ -2293,8 +2298,8 @@ global define string GetIRCModule () ``{
 	    card = detected_cards [0]:$[];
 	// find the ID of current card (saved in detected_cards list)
 	foreach (map det_card, (list<map<string,any> >) detected_cards, ``{
-	    if (card["module"]:nil == det_card["module"]:"" &&
-		card["name"]:nil == det_card["name"]:"")
+	    if (card["module"]:nil == det_card["module"]:[] &&
+		card["name"]:nil == det_card["name"]:[])
 		card_id = det_card["card_id"]:-1;
 	});
 	if (contains (card_ids_ir_kbd_gpio, card_id))
@@ -2303,7 +2308,8 @@ global define string GetIRCModule () ``{
     else
     {
 	// manualy set card
-	string mod = card["module"]:"bttv";
+	list<string> mods = (list<string>)card["module"]:[];
+	string mod = mods[size(mods) - 1]:"bttv";
 	if (contains (cards_with_ir_kbd_gpio[mod]:[], cardnr))
 	    ret = "ir-kbd-gpio";
     }
@@ -2369,7 +2375,9 @@ global define boolean WriteStationsConfig () ``{
  */
 global define string tv_tmp_start() ``{
 
-    string modname = current_card["module"]:"";
+    list<string> modnames = (list<string>) current_card["module"]:[];
+
+    string modname = modnames[size(modnames) - 1]:"";
     string params = "";
     maplist(string k, string v, current_card["parameters"]:$[], ``{
 	params = params + sformat(" %1=%2", k, v);
@@ -2575,7 +2583,12 @@ global define boolean InitializeStationsConfig() ``{
 	Progress::NextStage ();
 
 	// install required kernel packages
-	Package::InstallKernel(RequiredModules());
+	list<string> kernelmodules = RequiredModules();
+
+	if (size(kernelmodules) > 0)
+	{
+	    Package::InstallKernel(kernelmodules);
+	}
 
 	if (cards_dirty && !WriteSettings())
 	{
@@ -2708,8 +2721,9 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	foreach (map card, (list<map<string,any> >) detected_cards, ``{
 	    string uk = (string) lookup (card, "unique_key", nil);
 
+	    list<string> cardmodules = (list<string>)card["module"]:[];
 	    if (uk != nil &&
-		!contains(installed_uk, uk) && card["module"]:nil != nil)
+		!contains(installed_uk, uk) && cardmodules[size(cardmodules) - 1]:nil != nil)
 	    {
 		current_card    = card;
 		current_card_no = nil;

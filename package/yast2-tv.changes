@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Mon Sep 20 15:42:13 CEST 2004 - lslezak@suse.cz
+
+- make clean: remove only generated database
+- fixed datatypes
+- testsuite update
+- use 212 DVB major number (#43786)
+- version 2.10.5
+
+-------------------------------------------------------------------
 Fri Sep 10 12:39:59 CEST 2004 - lslezak@suse.cz
 
 - use "dvb" initscript for unknown cards

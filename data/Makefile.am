@@ -15,4 +15,5 @@ tv_tuners.ycp: CARDLIST.bttv
 EXTRA_DIST = CARDLIST.bttv CARDLIST.saa7134 \
 	     create_tv_db create_tuner_db tv_cards-lirc_gpio.ycp tv_dvbcards.ycp
 
-CLEANFILES = $(ydata_DATA)
+# delete generated files
+CLEANFILES = tv_cards.ycp tv_tuners.ycp
