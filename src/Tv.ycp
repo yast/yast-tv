@@ -747,7 +747,7 @@ available kernel modules."));
 		    // add the card to the cards
 		    tv_cards = add (tv_cards, $[
 			"name"       : card_name,
-			"module"     : module_name,
+			"module"     : [ module_name ],
 			"parameters" : parameters,
 			"unique_key" : unique_key,
 			"radio"      : radio ]
@@ -1084,6 +1084,8 @@ available kernel modules."));
 	    return true;
 	}
 
+	y2debug("write modules_parameters: %1", modules_parameters);
+
 	boolean result = true;
 	foreach (string module_name, list params_with_no,
 	(map<string,list>) modules_parameters, ``{
@@ -1098,9 +1100,10 @@ available kernel modules."));
 	    {
 		parameters = $[];
 	    }
+
+	    y2debug("parameters: %1", parameters);
 	    parameters = mapmap (string param_name, map param_map,
 	    (map<string,map>) parameters,``{
-
 		if (param_map == nil)
 		    param_map = $[];
 		// fill the holes in param_map and store the values
@@ -1110,13 +1113,19 @@ available kernel modules."));
 		{
 		    string value = param_map[count]:"";
 		    // this is a hack for detected cards (see bug #24132)
-		    if (value == nil || value == "")
+		    // check if there are more cards, prevent storing value -1 which can cause problems
+		    if ((value == nil || value == "") && parameter_counter > 1)
 			value = "-1";
 		    param_values = add(param_values, value);
 		    count = count + 1;
 		}
 		return $[ param_name : mergestring(param_values, ",") ];
 	    });
+	    y2debug("parameters: %1", parameters);
+
+	    // remove empty parameters
+	    parameters = filter(string modname, string opts, (map<string,string>) parameters, {return opts != nil && opts != "";});
+	    y2debug("parameters: %1", parameters);
 
 	    y2milestone ("Saving options '%1' for module '%2'",
 		parameters, module_name);
@@ -1203,13 +1212,32 @@ available kernel modules."));
 		}
 	    );
 
-//	    if (size(module_names) > 1)
-//	    {
-//		// TODO:remove install line
-//	    }
-	});
+	    if (size(module_names) > 1)
+	    {
+		// remove install line
+		list<string> installs = SCR::Dir(.modprobe_tv.install);
 
-	// FIXME remove DVB cards
+		if (installs != nil && size(installs) > 0)
+		{
+		    // search deleted card
+		    foreach(string major, installs, {
+			    path p = (used_modprobe_conf) ? .modules : .modprobe_tv;
+
+			    // get the name and unique key
+			    string comment = (string) SCR::Read(p + .install + major + "comment");
+			    map name_and_uk = ModulesComments::ExtractFromComment (comment);
+			    y2debug("comment: %1", name_and_uk);
+
+			    if ((string)card["unique_key"]:nil == name_and_uk["unique_key"]:"")
+			    {
+				y2milestone("removing install %1", major);
+				SCR::Write(p + .install + major, nil);
+			    }
+			}
+		    );
+		}
+	    }
+	});
 
 	boolean result = true;
 
@@ -1231,8 +1259,6 @@ available kernel modules."));
 	foreach (map card, (list<map>) cards, ``{
 
 	    boolean radio	= card["radio"]:false;
-
-//	    string module_name	= (string) lookup (card,"module",nil);
 	    list<string> module_names = card["module"]:[];
 
 	    string card_name	= card["name"]:"Manually added card";
@@ -1280,7 +1306,9 @@ available kernel modules."));
 		}
 
 		// store parameters to "modules_parameters"
-		list params_with_no = modules_parameters["module_name"/*!!!FIXME!!!*/]:[];
+		list<string> mods = card["module"]:[];
+		string module_name = mods[size(mods) - 1]:"";
+		list params_with_no = modules_parameters[module_name]:[];
 		integer parameter_counter = params_with_no[0]:0;
 		map parameters = params_with_no[1]:$[];
 
@@ -1292,7 +1320,7 @@ available kernel modules."));
 		    parameters [param_name]		= param_map;
 		});
 		parameter_counter			= parameter_counter + 1;
-		modules_parameters ["module_name"/*FIXME!!!*/]	=
+		modules_parameters [module_name]	=
 		    [ parameter_counter, parameters ];
 
 		// write comment with unique key and the card name
@@ -1539,9 +1567,26 @@ to %1."), "/etc/modprobe.d/tv."));
 			    // Summary text (%1 is number)
 			    _("Installed as radio card number %1."), card_no);
 		    else if (card["dvb"]:false)
+		    {
 			installed_str = sformat(
 			    // Summary text (%1 is number)
 			    _("Installed as DVB card number %1."), dvbcard_no);
+
+			list<map<string,string> > fw = card["firmware"]:[];
+			if (size(fw) > 0)
+			{
+			    foreach(map<string,string> f, fw, {
+				    foreach(string source, string target, f, {
+					    boolean inst = IsFWInstalled(target);
+
+					    installed_str = installed_str + "<BR>" + _("Firmware: ") +
+					    ((inst) ? sformat(_("Installed (%1)"), target) : sformat(_("Not installed (%1)"), source));
+					}
+				    );
+				}
+			    );
+			}
+		    }
 		    else
 			installed_str = sformat(
 			    // Summary text (%1 is number)
@@ -1721,14 +1766,29 @@ to %1."), "/etc/modprobe.d/tv."));
 	    cards = [];
 	}
 	integer card_no = 0;
+	integer dvb_card_no = 0;
 
 	list conf_list = maplist (map card, (list<map<string,any> >) cards, ``{
 	    term ret = nil;
+	    boolean isdvb = card["dvb"]:false;
+
 	    if (card != nil && card != $[])
 	    {
-		ret = `item(`id(card_no),sformat("%1",card_no),card["name"]:"");
+		integer num = (isdvb) ? dvb_card_no : card_no;
+		// suffix to differ between analog (TV) and digital (DVB) cards
+		string suff = (isdvb) ? _("DVB") : _("TV");
+
+		ret = `item(`id(card_no), sformat("%1 - %2", num, suff), card["name"]:"");
 	    }
-	    card_no = card_no + 1;
+	    if (isdvb)
+	    {
+		dvb_card_no = dvb_card_no + 1;
+	    }
+	    else
+	    {
+		card_no = card_no + 1;
+	    }
+
 	    return ret;
 	});
 

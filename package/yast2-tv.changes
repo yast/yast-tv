@@ -1,4 +1,15 @@
 -------------------------------------------------------------------
+Fri Sep  3 09:52:51 CEST 2004 - lslezak@suse.cz
+
+- remove DVB cards
+- firmware status in summary
+- small fixes
+- remove DVB card config
+- TV/DVB suffix in summary table
+- testsuite update
+- version 2.10.3
+
+-------------------------------------------------------------------
 Wed Sep  1 13:46:51 CEST 2004 - lslezak@suse.cz
 
 - ask for firmware file (firmware installation)

@@ -859,11 +859,11 @@ your want to edit first."));
 		string value =
 		    (string) UI::QueryWidget (`id(`parameter_entry), `Value);
 
-		if (value != filterchars (value, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-+0123456789"))
+		if (value != filterchars (value, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_/-+0123456789"))
 		{
 		    // User wants to set kernel parameters but string is wrong
 		    Popup::Message (_("Please do not use other characters
-than a-z, A-Z, _, -, + and 0-9."));
+than a-z, A-Z, _, -, +, / and 0-9."));
 		}
 		else
 		{
@@ -973,7 +973,7 @@ define any AudioDialog() ``{
     }
     // We used -1 to get known, that we did not set the sound_card_no yet...
     // Let's clean it up!
-    if (current_sound_card < 0 || current_sound_card == nil)
+    if (current_sound_card == nil || current_sound_card < 0)
     {
 	current_sound_card = 0;
     }
