@@ -30,7 +30,7 @@
 	boolean select_this = true;
 	if (size(parameters) > 0)
 	{
-	    foreach(string param, any value, parameters, ``{
+	    foreach(string param, any value, (map<string,any>) parameters, ``{
 		if (value != parameters_to_compare[param]:nil)
 		{
 		    select_this = false;
@@ -57,7 +57,7 @@
      */
     define list SoundCardsAsItems() ``{
 
-	return maplist(map card, Sound::GetSoundCardList (), ``{
+	return maplist(map card, (list<map<string,any> >)Sound::GetSoundCardList (), ``{
 	    integer sound_card_no = card["card_no"]:-1;
 	    return `item(`id(sound_card_no),
 			sformat("%1", sound_card_no), card["name"]:"");
