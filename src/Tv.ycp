@@ -940,7 +940,12 @@ available kernel modules."));
 	}
 
 	term content = `VBox(
-	    `Label(sformat(_("TV card '%1'\nrequires installed firmware to work.\n\nEnter location of the firmware file then\npress Continue to install the firmware."), card)),
+	    `Label(sformat(_("Firmware must be installed for 
+TV card '%1' to work.
+
+Enter the location of the firmware file then
+press Continue to install the firmware.
+"), card)),
 	    `VSpacing(1),
 	    `HBox(
 		`HSpacing(2),
@@ -978,6 +983,7 @@ available kernel modules."));
 	    if (ui == `browse)
 	    {
 		string currentfile = (string) UI::QueryWidget(`id(`firmware), `Value);
+		// header in file selection popup
 		string newfile = (string) UI::AskForExistingFile(currentfile, "*", _("Select Firmware File"));
 
 		if (newfile != nil)
@@ -1085,7 +1091,7 @@ available kernel modules."));
 		if (ask)
 		{
 		    // warning popup - md5sum returned non-zero exit status
-		    Report::Warning(_("Could not check MD5 sum of the firmware."));
+		    Report::Warning(_("Could not check the MD5 sum of the firmware."));
 		}
 		else
 		{
@@ -1103,10 +1109,11 @@ available kernel modules."));
 		    y2warning("MD5sum of the firmware is incorrect (expected: %1, computed: %2)", sum, md5);
 
 		    // warning popup - computed and expected md5sum don't match
-		    if (!ask || !Popup::YesNo(_("MD5 check sum of the installed firmware
+		    if (!ask || !Popup::YesNo(_("The MD5 check sum of the installed firmware
 does not match the value in the database. 
 
-Use the firmware file anyway?")))
+Use the firmware file anyway?
+")))
 		    {
 			// pressed 'NO' - remove the file
 			string rm = sformat("/bin/rm %1", target);
@@ -1849,7 +1856,7 @@ to %1."), "/etc/modprobe.d/tv."));
 						boolean inst = IsFWInstalled(firmware_prefix + target);
 
 						installed_str = installed_str + "<BR>" + _("Firmware: ") +
-						((inst) ? sformat(_("Installed (%1)"), target) : sformat(_("Not installed (%1)"), source));
+						((inst) ? sformat(_("Installed (%1)"), target) : sformat(_("Not Installed (%1)"), source));
 					    }
 					);
 				    }
