@@ -3,7 +3,7 @@
 # neededforbuild  autoconf automake dejagnu expect libscr liby2 libycp libycp-devel libyui tcl yast2 yast2-agent-system yast2-base yast2-config-package-manager yast2-config-runlevel yast2-config-sound yast2-core-scr yast2-core-wfm yast2-devtools yast2-lib-hardware yast2-lib-wizard yast2-testsuite ycpdoc
 
 @HEADER@
-Requires:	yast2 yast2-trans-tv yast2-db-tv yast2-lib-wizard yast2-lib-sequencer yast2-lib-hardware yast2-config-sound yast2-config-package-manager
+Requires:	yast2 yast2-lib-wizard yast2-lib-sequencer yast2-lib-hardware yast2-config-sound yast2-config-package-manager
 BuildArchitectures:	noarch
 
 Summary:	Configuration of TV cards
