@@ -9,7 +9,7 @@ yncludedir = @yncludedir@/tv
 client_DATA =			\
 	tv.ycp			\
 	tv_auto.ycp		\
-	proposal_tv.ycp		\
+	tv_proposal.ycp		\
 	tv_write.ycp
 
 ynclude_DATA =			\
