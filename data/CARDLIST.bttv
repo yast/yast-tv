@@ -97,6 +97,29 @@ bttv.o
   card=95 - Formac ProTV II
   card=96 - MachTV
   card=97 - Euresys Picolo
+  card=98 - ProVideo PV150
+  card=99 - AD-TVK503
+  card=100 - Hercules Smart TV Stereo
+  card=101 - Pace TV & Radio Card
+  card=102 - IVC-200
+  card=103 - Grand X-Guard / Trust 814PCI
+  card=104 - Nebula Electronics DigiTV
+  card=105 - ProVideo PV143
+  card=106 - PHYTEC VD-009-X1 MiniDIN (bt878)
+  card=107 - PHYTEC VD-009-X1 Combi (bt878)
+  card=108 - PHYTEC VD-009 MiniDIN (bt878)
+  card=109 - PHYTEC VD-009 Combi (bt878)
+  card=110 - IVC-100
+  card=111 - IVC-120G
+  card=112 - pcHDTV HD-2000 TV
+  card=113 - Twinhan DST + clones
+  card=114 - Winfast VC100
+  card=115 - Teppro TEV-560/InterVision IV-560
+  card=116 - SIMUS GVC1100
+  card=117 - NGS NGSTV+
+  card=118 - LMLBT4
+  card=119 - Tekram M205 PRO
+  card=120 - Conceptronic CONTVFMi
 
 tuner.o
   type=0 - Temic PAL (4002 FH5)
@@ -139,3 +162,9 @@ tuner.o
   type=37 - LG PAL (newer TAPC series)
   type=38 - Philips PAL/SECAM multi (FM1216ME MK3)
   type=39 - LG NTSC (newer TAPC series)
+  type=40 - HITACHI V7-J180AT
+  type=41 - Philips PAL_MK (FI1216 MK)
+  type=42 - Philips 1236D ATSC/NTSC daul in
+  type=43 - Philips NTSC MK3 (FM1236MK3 or FM1236/F)
+  type=44 - Philips 4 in 1 (ATI TV Wonder Pro/Conexant)
+  type=45 - Microtune 4049 FM5  
