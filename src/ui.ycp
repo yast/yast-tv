@@ -81,7 +81,9 @@ global define any TvSequence () ``{
 	]
     ];
 
+    // Caption of initializing dialog
     string caption = _("Initializing TV card configuration");
+    // Label text of initializing dialog
     term contents = `Label (_("Initializing ..."));
 
     Wizard::CreateDialog ();
@@ -307,6 +309,7 @@ global define any DetectedDialog() ``{
     string caption = _("TV card setup");
 
     term contents =
+    // Caption of the detected cards list
 	Wizard_hw::DetectedContent(_("TV cards to configure"),
 				   Tv::DetectedCardsAsItems(),
 				   false,
@@ -489,6 +492,7 @@ global define term CardsSelectionBox ( list vendor_cards_db,
 	});
 
     return `SelectionBox ( `id (`cards_selbox), `opt (`notify),
+               // SelectionBox label:
 			   _("&Cards:"), vendor_cards_items );
 }
 
@@ -504,6 +508,7 @@ global define map ChooseTuner(string kernel_module, map selected_tuner) ``{
 
     term contents =
 	`VBox(`SelectionBox(`id(`tuners_selbox),
+                // SelectionBox label:
 			    _("C&hoose your tuner:"),
 			    Tv::TunersDBAsItems (kernel_module, selected_tuner)),
 	      `VSpacing(0.3),
@@ -600,11 +605,13 @@ global define any ManualDialog (boolean warn) ``{
 	`HBox(`HSpacing(1.5),
 	      `VBox(
 		  `VSpacing(1.0),
+          // Frame label
 		  `Frame(_("Select the type of your card:"),
 			 `HBox(`HSpacing(0.5),
 			       `VBox(`VSpacing(0.2),
 				     `VBox(`HBox(`SelectionBox(`id(`vendors_selbox),
 							       `opt(`notify),
+                                   // SelectioBox label:
 							       _("&Vendors:"),
 							       all_vendors),
 						 `ReplacePoint(`id(`cards_rep),
@@ -612,6 +619,7 @@ global define any ManualDialog (boolean warn) ``{
 										   current_card_parameters ))
 					   ),
 					   `Right(`PushButton(`id(`tuner_button),
+                                // PushButton label:
 								_("&Select tuner")))
 				     ),
 				     `VSpacing(0.2)
@@ -621,6 +629,7 @@ global define any ManualDialog (boolean warn) ``{
 		  ),
 		  `VSpacing(0.5),
 		  `HCenter(`PushButton(`id(`details_button),
+                       // PushButton label:
 				       _("&Details...")))
 	      ),
 	      `HSpacing(1.5)
@@ -745,6 +754,7 @@ global define any ManualDetailsDialog() ``{
     {
 	UI::OpenDialog (
 	    Wizard_hw::SpacingAround (
+        // Popup label (waiting for other action):
 		`Label(_("Please wait while getting list
 of available kernel modules...")),
 		1.5, 1.5, 0.5, 0.5
@@ -786,9 +796,11 @@ of available kernel modules...")),
 		  `VSpacing(1.0),
 		  `ComboBox(`id(`module_combo),
 			    `opt(`hstretch, `notify),
+                // ComboBox label:
 			    _("&Kernel module"),
 			    all_modules
 		  ),
+          // Frame label:
 		  `Frame(_("Parameters of the module:"),
 			 `HBox(`HSpacing(0.5),
 			       `VBox(`VSpacing(0.2),
@@ -808,8 +820,10 @@ of available kernel modules...")),
 								 sformat(parameter_label,
 									 selected_parameter)),
 						      `Bottom(`PushButton(`id(`set_button),
+                                      // PushButton label
 									  _("&Set"))),
 						      `Bottom(`PushButton(`id(`reset_button),
+                                      // PushButton label
 									  _("R&eset")))
 						)
 					   )
@@ -987,10 +1001,12 @@ global define any AudioDialog() ``{
 	`HBox(`HSpacing(1.5),
 	      `VBox(
 		  `VSpacing(1.2),
+          // Label text:
 		  `Left(`HBox(`Label(_("TV card:")),
 			      `Label(`opt(`outputField), current_card_name)
 		  )),
 		  `VSpacing(0.7),
+          // Frame label:
 		  `Frame(_("Is the audio output connected to a sound card?"),
 			 `HBox(`HSpacing(0.5),
 			       `VBox(`VSpacing(0.2),
@@ -998,6 +1014,7 @@ global define any AudioDialog() ``{
 					 `id(`rb_group),
 					 `VBox(`Left(`RadioButton(`id(`rb_no),
 								  `opt(`notify),
+                                  // PushButton label:
 								  _("N&o"),
 								  current_rb != `rb_yes)),
 					       `Left(`RadioButton(`id(`rb_yes),
@@ -1008,11 +1025,15 @@ global define any AudioDialog() ``{
 				     ),
 				     `VBox(`HBox(`HSpacing(3.0),
 						 `Table(`id(`sound_card_table),
-							`header(_("Number"),
+							`header(
+                                // Header of table with sound card list 1/2
+                                _("Number"),
+                                // Header of table with sound card list 2/2
 								_("Sound card name")),
 							sound_cards)
 					   ),
 					   `Right(`PushButton(`id(`configure_button),
+                                  // PushButton label:
 							      _("&Configure sound cards...")))
 				     ),
 				     `VSpacing(0.2)

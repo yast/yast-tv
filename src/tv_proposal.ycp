@@ -79,8 +79,12 @@
     {
 	// Fill return map
 	ret =
-	    $[ "rich_text_title" : _( "TV cards" ),
-	       "menu_title"      : _( "&TV cards" ),
+	    $[ "rich_text_title" :
+                // Richtext title
+                _( "TV cards" ),
+	       "menu_title"      :
+                // Richtext title
+                _( "&TV cards" ),
 	       "id"              : "tv_conf"
 	    ];
     }

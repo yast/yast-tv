@@ -61,7 +61,7 @@ sub dbBTTV
 	    my $card_name = $3;
 	    if (defined $clean_names{$card_name})
 	    {
-		$card_name = "_(\"$clean_names{$card_name}\")";
+		$card_name = " // Item of the tuners list\n\t\t_(\"$clean_names{$card_name}\")";
 	    }
 	    else
 	    {
