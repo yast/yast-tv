@@ -189,6 +189,13 @@ define boolean IRCTestPopup (string config_file, string mod, boolean modified) `
  */
 define any IRCDialog (boolean alone) ``{
 
+    // skip IRC dialgo for DVB cards
+    // TODO: skip for all DVB cards?
+    if (alone == false && Tv::current_card["dvb"]:false == true)
+    {
+	return `next;
+    }
+
     // For translators: Caption of the dialog
     string caption = _("Infrared Control Configuration");
 
