@@ -1,0 +1,58 @@
+TODO for yast2-tv
+-----------------
+
+- Better generation of databases:
+  - data/CARDLIST.bttv is
+      /usr/src/linux/Documentation/video4linux/bttv/CARDLIST from
+      kernel-sources.rpm,
+    data/CARDLIST.saa7134 is
+      /usr/src/kernel-modules/v4l2/saa7134-*/CARDLIST from km_v4l2.rpm
+  - they both could be generated directly from the sources:
+    /usr/src/kernel-modules/v4l2/bttv-*/bttv-cards.c and
+    /usr/src/kernel-modules/v4l2/saa7134-*/saa7134-cards.c
+    from km_v4l2.rpm package
+
+- neededforbuild in yast2-tv.spec.in must be adapted to the new yast2
+  packages
+
+- the support for saa7134 sould work out of the box, but must be tested.
+  Note: take care if it gets to libhd as well. More info:
+  ----- 8< -----
+  From kraxel@suse.de Wed Jun 26 16:41:54 2002
+  Date: Tue, 18 Jun 2002 15:15:39 +0200
+  From: Gerd Knorr <kraxel@suse.de>
+  To: snwint@suse.de, kkaempf@suse.de, kendy@suse.cz, tcrhak@suse.cz
+  Subject: new tv cards, new driver ...
+  
+    Hi,
+  
+  You might have noticed that there is a new tv card chipset from
+  Philips (SAA7130/SAA7134):
+  
+  bogomips kraxel ~# lspci -vs d    
+  00:0d.0 Multimedia controller: Philips Semiconductors: Unknown device 7134 (rev 01)
+          Subsystem: Philips Semiconductors: Unknown device 2001
+          Flags: bus master, medium devsel, latency 32, IRQ 9
+          Memory at ca800000 (32-bit, non-prefetchable) [size=1K]
+          Capabilities: <available only to root>
+  
+  The cards sold by ALDI earlier this year are using that chipset for
+  example.  I've checked in a new km_v4l2 package with a driver for those
+  cards into the autobuild, thus Huberts kernels should have support for
+  these cards in near future.
+  
+  It would be nice if lspci, hwinfo and the yast2 module for TV cards
+  support these cards.  The module name is saa7134.  PCI IDs are 1131:7130
+  and 1131:7134.  The driver will autodetect all cards where a PCI
+  Subsystem ID is present, with one exception:  The subsys ID 1131:0000
+  doesn't work, this is the one which is used by the chip if the eeprom
+  with the PCI Subsystem ID isn't present.  For those cards a card=<nr>
+  insmod option is required to make them work.
+  
+    Gerd
+  
+  -- 
+  Gerd Knorr <kraxel@suse.de>  /  +49 30 29771242
+  SuSE Labs, Auﬂenstelle Berlin.
+  ----- 8< -----
+
