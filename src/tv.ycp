@@ -23,7 +23,7 @@
 
     import "Mode";
     import "Report";
-    import "Commandline";
+    import "CommandLine";
 
     include "tv/ui.ycp";
     include "commandline/commandline.ycp";
