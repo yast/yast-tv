@@ -2,7 +2,8 @@
 Mon Mar 14 13:41:58 CET 2005 - lslezak@suse.cz
 
 - fixed IRC configuration during installation (#66898),
-  reload config after lirc package installation
+  reload sysconfig file after lirc package installation
+- 2.11.3
 
 -------------------------------------------------------------------
 Mon Feb  7 17:42:06 CET 2005 - lslezak@suse.cz
