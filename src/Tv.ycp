@@ -612,7 +612,7 @@ available kernel modules."));
 	    {
 		parameters = $[];
 	    }
-	    parameters = mapmap(string param_name, map param_map, (map<string,map<string,any> >) parameters,``{
+	    parameters = mapmap(string param_name, map param_map, (map<string,map<any,any> >) parameters,``{
 
 		if (param_map == nil)
 		    param_map = $[];
@@ -1095,7 +1095,7 @@ to /etc/modules.conf."));
 	}
 	integer card_no = 0;
 
-	list conf_list = maplist(map card, (list<map<string,any> >)cards, ``{
+	list conf_list = maplist (map card, (list<map<string,any> >) cards, ``{
 	    term ret = nil;
 	    if (card != nil)
 	    {
@@ -1105,7 +1105,7 @@ to /etc/modules.conf."));
 	    return ret;
 	});
 
-	return filter(string item, (list<string>) conf_list, ``(item != nil));
+	return filter(term item, (list<term>) conf_list, ``(item != nil));
     }
 
     /////////////////////////////////////////////////////////////////
@@ -1760,7 +1760,7 @@ global define boolean InitializeStationsConfig() ``{
 	//   3: Install necessary software
 	integer no_of_steps = 2;
 
-    list stages = [
+    list<string> stages = [
             // Progress stage
             _("Write the settings"),
             // Progress stage
@@ -1970,7 +1970,8 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	    }
 	});
 
-	return Summary::DevicesList( union (detected_list, installed_list) );
+	return Summary::DevicesList (
+	    (list<string>) union (detected_list, installed_list) );
     }
 
 

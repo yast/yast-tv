@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Mar  5 09:54:51 CET 2004 - jsuchome@suse.cz
+
+- fix of type info
+- use Sequnecer module
+
+-------------------------------------------------------------------
 Mon Mar  1 19:50:52 CET 2004 - jsuchome@suse.cz
 
 - more type information
