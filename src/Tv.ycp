@@ -21,7 +21,7 @@
     import "Mode";
     import "Require";
     import "Confirm";
-    import "Runlevel";
+    import "Service";
     import "Label";
 
     textdomain "tv";
@@ -282,7 +282,7 @@
 	UI::CloseDialog();
 	if (ret == `ok)
 	{
-	    list to_install = [];
+	    list<string> to_install = [];
 	    // check if packages are avialable...
 	    foreach (string app, apps, ``{
 		if (Require::IsPackageAvailable (app))
@@ -319,7 +319,7 @@
     global define boolean ReadCardsDatabase() ``{
 	if (cards_database == nil)
 	{
-	    cards_database = (list)SCR::Read (.target.yast2, "tv_cards.ycp");
+	    cards_database = (list)eval(SCR::Read (.target.yast2, "tv_cards.ycp"));
 	}
 	if (cards_database == nil)
 	{
@@ -342,7 +342,7 @@
     global define boolean ReadTunersDatabase() ``{
 	if (tuners_database == nil)
 	{
-	    tuners_database = (map) SCR::Read (.target.yast2, "tv_tuners.ycp");
+	    tuners_database = (map)eval( SCR::Read (.target.yast2, "tv_tuners.ycp"));
 
 	    foreach (string modul, list tuners, tuners_database, ``{
 		tuners_by_id = add (tuners_by_id, modul, $[
@@ -526,7 +526,7 @@ available kernel modules."));
 		    if (name_and_uk != nil)
 		    {
 			card_name	= name_and_uk["name"]:"";
-			unique_key	= name_and_uk["unique_key"]:nil;
+			unique_key=(string)lookup(name_and_uk,"unique_key",nil);
 		    }
 
 		    // read the parameters
@@ -608,7 +608,7 @@ available kernel modules."));
 		if (param_map == nil)
 		    param_map = $[];
 		// fill the holes in param_map and store the values
-		list param_values = [];
+		list<string> param_values = [];
 		integer count = 0;
 		while (count < parameter_counter)
 		{
@@ -674,7 +674,7 @@ available kernel modules."));
 
 	// for cards choosed to delete...
 	foreach (map card, cards_to_del, ``{
-	    string module_name = card["module"]:nil;
+	    string module_name = (string)lookup(card, "module", nil);
 	    if (contains (SCR::Dir(.modules.options), module_name))
 	    {
 		y2milestone ("Deleting module %1 from /etc/modules.conf",
@@ -692,7 +692,7 @@ available kernel modules."));
 
 	// save the status (configured/unconfigured)
 	map probe_status = listmap (map card, detected_cards,
-	    ``( $[ (string) (card["unique_key"]:nil): `no ] ));
+	    ``( $[ (string) lookup (card, "unique_key", nil): `no ] ));
 
 	// store the parameters to write to this variable
 	// $[ "module" :
@@ -706,7 +706,7 @@ available kernel modules."));
 	foreach (map card, cards, ``{
 
 	    boolean radio	= card["radio"]:false;
-	    string module_name	= card["module"]:nil;
+	    string module_name	= (string) lookup (card,"module",nil);
 	    string card_name	= card["name"]:"Manually added card";
 	    string unique_key	= card["unique_key"]:sformat ("tv.nouniqkey%1",
 		(radio ? radio_card_no : tv_card_no));
@@ -791,7 +791,7 @@ to /etc/modules.conf."));
 	import "Sound";
 	// unmute the sound cards
 	foreach (map card, cards, ``{
-	    integer sound_card_no = card["sound_card_no"]:nil;
+	    integer sound_card_no = (integer) lookup (card,"sound_card_no",nil);
 	    if (sound_card_no != nil)
 	    {
 		Sound::SetVolume (sound_card_no, "Line", 80);
@@ -863,9 +863,9 @@ to /etc/modules.conf."));
 			result = add(result, "module", module_name);
 		    }
 		}
-		integer subdevice = tv_card["sub_device_id"]:nil;
-		integer subvendor = tv_card["sub_vendor_id"]:nil;
-		if (subdevice != nil && subvendor != nil)
+		integer subdevice = tv_card["sub_device_id"]:-1;
+		integer subvendor = tv_card["sub_vendor_id"]:-1;
+		if (subdevice != -1 && subvendor != -1)
 		{
 		    integer card_id = (subdevice << 16) | subvendor;
 		    card_id = (card_id & 0xffff0000) + (card_id & 0xffff);
@@ -900,7 +900,7 @@ to /etc/modules.conf."));
 	    installed_list = maplist(map card, cards, ``{
 
 		string card_item = nil;
-		string name = card["name"]:nil;
+		string name = (string) lookup (card, "name", nil);
 		if (name != nil)
 		{
 		    string installed_str = "";
@@ -1423,7 +1423,7 @@ global define any ReadIRC () ``{
 
     cards_with_lirc_gpio = (list)
 	SCR::Read (.target.yast2, "tv_cards-lirc_gpio.ycp");
-    use_irc = Runlevel::ServiceStatus ("lirc") == 0;
+    use_irc = Service::Status ("lirc") == 0;
     irc_module = (string) SCR::Read (.sysconfig.lirc.LIRC_MODULE);
     if (irc_module == nil) irc_module = "";
 
@@ -1467,19 +1467,19 @@ global define any WriteIRC () ``{
 	}
 
 	// adjust runlevels:
-	Runlevel::ServiceAdjust ("lirc", "enable");
+	Service::Adjust ("lirc", "enable");
         // start the service
-	if (Runlevel::ServiceStatus ("lirc") == 0)
-	    Runlevel::RunInitScript ("lirc", "restart");
+	if (Service::Status ("lirc") == 0)
+	    Service::RunInitScript ("lirc", "restart");
 	else
-	    Runlevel::RunInitScript ("lirc", "start");
+	    Service::RunInitScript ("lirc", "start");
     }
     else
     {
 	// adjust runlevels:
-	Runlevel::ServiceAdjust ("lirc", "disable");
+	Service::Adjust ("lirc", "disable");
         // stop the service
-	Runlevel::RunInitScript ("lirc", "stop");
+	Service::RunInitScript ("lirc", "stop");
     }
     return `next;
 }
@@ -1817,7 +1817,7 @@ global define boolean InitializeStationsConfig() ``{
 
 	boolean tv_app_installed = Require::AreAllPackagesInstalled ([tv_app]);
 	boolean radio_app_installed = Require::AreAllPackagesInstalled (["kradio"]);
-	list apps = [ tv_app, "alevt", "nxtvepg" ];
+	list<string> apps = [ tv_app, "alevt", "nxtvepg" ];
 
 	// do not propose kradio application if we have not KDE
 	if (radio && tv && !tv_app_installed && !radio_app_installed &&
@@ -1902,7 +1902,7 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 
 	// add the not yet configured cards
 	foreach (map card, detected_cards, ``{
-	    string uk = card["unique_key"]:nil;
+	    string uk = (string) lookup (card, "unique_key", nil);
 
 	    if (uk != nil &&
 		!contains(installed_uk, uk) && card["module"]:nil != nil)
@@ -1922,8 +1922,8 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	{
 	    import "Sound";
 	    foreach (map card, Sound::GetSoundCardList (), ``{
-		integer sound_card_no = card["card_no"]:nil;
-		if (sound_card_no != nil)
+		integer sound_card_no = card["card_no"]:-2;
+		if (sound_card_no != -2)
 		{
 		    Sound::SetVolume (sound_card_no, "Line", 80);
 		    Sound::SetVolume (sound_card_no, "Video", 80);
@@ -1950,7 +1950,7 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	// list of the not configured tv cards
 	list detected_list = [];
 	foreach (map card, detected_cards, ``{
-	    if (!contains (installed_uk, card["unique_key"]:nil))
+	    if (!contains (installed_uk, (string)lookup(card,"unique_key",nil)))
 	    {
 		detected_list = add (detected_list,
 		    Summary::Device (card["name"]:"",Summary::NotConfigured()));

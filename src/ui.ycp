@@ -357,7 +357,7 @@ global define any ManualDialog (boolean warn) ``{
 
     // Parameters and module name of the current card
     map current_card_parameters = Tv::current_card["parameters"]:$[];
-    string module_name_tmp	= Tv::current_card["module"]:nil;
+    string module_name_tmp = (string) lookup (Tv::current_card, "module", nil);
     // The selected tuner
     map	selected_tuner = Tv::GetTuner (module_name_tmp, current_card_parameters["tuner"]:"-1");
 
@@ -382,7 +382,7 @@ global define any ManualDialog (boolean warn) ``{
 	current_card_parameters, module_name_tmp);
 
     all_vendors		= vendors_and_selected[0]:[];
-    selected_vendor	= vendors_and_selected[1]:nil;
+    selected_vendor	= (integer) select (vendors_and_selected, 1, nil);
 
     if (selected_vendor != nil)
     {
@@ -1355,7 +1355,7 @@ Install it now?")))
 		modified = true;
 	    }
 	}
-	if (ret == `edit || ret == `channels)
+	if ((ret == `edit || ret == `channels) && current != nil)
 	{
 	    term it = (term) UI::QueryWidget (`id(`channels), `Item (current));
 	    term new = StationPopup (select (it,1,""), current, tv_channels);

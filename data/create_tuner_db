@@ -115,11 +115,13 @@ print " * From: @ARGV\n";
 print "   Textdomain \"tv\"\n";
 print " */";
 print "\n";
-print "\$[\n";
+print "{\n";
+print "textdomain \"tv\";\n";
+print "return \$[\n";
 
 dbBTTV($bttv_cardlist);
 #...more to come...
 
-print "\n]\n";
+print "\n];\n}\n";
 
 # The end...

@@ -29,4 +29,13 @@ module_DATA =			\
 	Tv.ycp			\
 	ModulesComments.ycp
 
+YCPCFLAGS = -I .
+
+ycpchook = tv
+
+tv:
+	ln -s . tv
+
 EXTRA_DIST = $(client_DATA) $(desktop_DATA) $(ynclude_DATA) $(config_DATA) $(module_DATA)
+
+include $(top_srcdir)/Makefile.am.common

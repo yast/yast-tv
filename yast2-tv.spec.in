@@ -30,7 +30,7 @@ Summary:	Configuration of TV cards
 %dir @yncludedir@/tv
 @yncludedir@/tv/*
 @clientdir@/*.ycp
-@moduledir@/*.ycp
+@moduledir@/*.*
 @configdir@/*.y2cc
 @desktopdir@/*.desktop
 @scrconfdir@/*.scr
