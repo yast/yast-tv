@@ -745,17 +745,21 @@ available kernel modules."));
 			unique_key=(string)lookup(name_and_uk,"unique_key",nil);
 		    }
 
+		    map parameters = $[];
+
 		    // read the parameters
-		    map parameters	= modules_parameters[module_name]:$[];
+		    map pars	= modules_parameters[module_name]:$[];
 		    integer param_no	= modules_counts[module_name]:0;
 		    modules_counts [module_name]	= param_no + 1;
-		    parameters = mapmap (string key, map value,
-		    (map<string,map>) parameters, ``{
+		    pars = mapmap (string key, map value,
+		    (map<string,map>) pars, ``{
 			return $[ key : value[param_no]:"" ];
 		    });
-		    parameters = filter (string key, string value,
-		    (map<string,string>) parameters,
+		    pars = filter (string key, string value,
+		    (map<string,string>) pars,
 			``( value != "" && value != nil));
+
+		    parameters = add(parameters, module_name, pars);
 
 		    // fill the spaces in the cards
 		    while (size(tv_cards) < card_no)
@@ -831,18 +835,19 @@ available kernel modules."));
 
 		    foreach(string module_name, module_names, {
 			// read the parameters
-			parameters = modules_parameters[module_name]:$[];
+			map pars = modules_parameters[module_name]:$[];
 			integer param_no	= modules_counts[module_name]:0;
 			modules_counts [module_name]	= param_no + 1;
-			parameters = mapmap (string key, map value,
-			(map<string,map>) parameters, ``{
+			pars = mapmap (string key, map value,
+			(map<string,map>) pars, ``{
 			    return $[ key : value[param_no]:"" ];
 			});
-			parameters = filter (string key, string value,
-			(map<string,string>) parameters,
+			pars = filter (string key, string value,
+			(map<string,string>) pars,
 			    ``( value != "" && value != nil));
-			}
-		    );
+
+			parameters = add(parameters, module_name, pars);
+		    });
 
 		    // fill the spaces in the cards
 		    while (size(tv_cards) < card_no)
@@ -1331,6 +1336,7 @@ available kernel modules."));
 		(radio ? radio_card_no : tv_card_no));
 	    boolean dvb = card["dvb"]:false;
 
+	    // TODO: remove "unknown", check number of modules instead
 	    if (dvb == true && card["unknown"]:false == true)
 	    {
 		// start dvb service
@@ -1380,21 +1386,26 @@ available kernel modules."));
 
 		// store parameters to "modules_parameters"
 		list<string> mods = card["module"]:[];
-		string module_name = mods[size(mods) - 1]:"";
-		list params_with_no = modules_parameters[module_name]:[];
-		integer parameter_counter = params_with_no[0]:0;
-		map parameters = params_with_no[1]:$[];
 
-		foreach (string param_name,any param_val,card["parameters"]:$[],
-		``{
-		    // add the parameter to "parameters" map
-		    map param_map	= parameters[param_name]:$[];
-		    param_map [parameter_counter]	= param_val;
-		    parameters [param_name]		= param_map;
-		});
-		parameter_counter			= parameter_counter + 1;
-		modules_parameters [module_name]	=
-		    [ parameter_counter, parameters ];
+		// process all modules used by the card
+		foreach(string module_name, mods, {
+			list params_with_no = modules_parameters[module_name]:[];
+			integer parameter_counter = params_with_no[0]:0;
+			map parameters = params_with_no[1]:$[];
+
+			foreach (string param_name,any param_val,card["parameters",module_name]:$[],
+			``{
+			    // add the parameter to "parameters" map
+			    map param_map	= parameters[param_name]:$[];
+			    param_map [parameter_counter]	= param_val;
+			    parameters [param_name]		= param_map;
+			});
+			parameter_counter			= parameter_counter + 1;
+			modules_parameters [module_name]	=
+			    [ parameter_counter, parameters ];
+
+		    }
+		);
 
 		// write comment with unique key and the card name
 		string comment =

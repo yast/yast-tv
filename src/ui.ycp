@@ -625,7 +625,7 @@ of available kernel modules...")),
     }
 
     // And its parameters.
-    map parameters = Tv::current_card["parameters"]:$[];
+    map parameters = Tv::current_card["parameters", selected_module]:$[];
 
     // A list of all the (media/video) kernel modules for the ComboBox widget
     list all_modules = Tv::ModulesAsItems(Tv::kernel_modules, selected_module);
@@ -896,8 +896,16 @@ than a-z, A-Z, _, -, +, / and 0-9."));
 		    // Redraw the table
 		    if (dvb)
 		    {
-			UI::ChangeWidget (`id(`parameters_table), `Items,
+			if (index == 1)
+			{
+			    UI::ChangeWidget ( `id(`parameters_table), `Items,
 			    Tv::ModuleParametersAsItems(Tv::dvb_modules, selected_module, parameters));
+			}
+			else
+			{
+			    UI::ChangeWidget ( `id(`parameters_table), `Items,
+			    Tv::ModuleParametersAsItems(Tv::dvb_core_drivers, selected_module, parameters));
+			}
 		    }
 		    else if (!radio)
 			UI::ChangeWidget (`id(`parameters_table), `Items,
@@ -926,8 +934,18 @@ your want to edit first."));
 
 		// Redraw the table
 		if (dvb)
-		    UI::ChangeWidget ( `id(`parameters_table), `Items,
+		{
+		    if (index == 1)
+		    {
+			UI::ChangeWidget ( `id(`parameters_table), `Items,
 			Tv::ModuleParametersAsItems(Tv::dvb_modules, selected_module, parameters));
+		    }
+		    else
+		    {
+			UI::ChangeWidget ( `id(`parameters_table), `Items,
+			Tv::ModuleParametersAsItems(Tv::dvb_core_drivers, selected_module, parameters));
+		    }
+		}
 		else if (!radio)
 		    UI::ChangeWidget ( `id(`parameters_table), `Items,
 			Tv::ModuleParametersAsItems(Tv::kernel_modules, selected_module, parameters));
@@ -954,7 +972,7 @@ your want to edit first."));
 	    Tv::current_card ["name"]	= _("User-Defined TV Card");
 
 
-	if (size(selected_modules) > 1)
+	if (size(selected_modules) > 1 || dvb)
 	{
 	    selected_modules[index] = selected_module;
 	    Tv::current_card["module"] = selected_modules;
@@ -965,11 +983,11 @@ your want to edit first."));
 	}
 	else
 	{
-	    Tv::current_card["module"]	= [ selected_module ];
+	    Tv::current_card["module"] = [ selected_module ];
 	}
 
-	Tv::current_card ["parameters"]	= parameters;
-	Tv::current_card ["radio"]	= radio;
+	Tv::current_card ["parameters", selected_module ] = parameters;
+	Tv::current_card ["radio"] = radio;
     }
     return ret;
 }
