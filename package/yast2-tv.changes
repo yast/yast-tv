@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Sat Feb 07 23:21:36 CET 2004 - arvin@suse.de
+
+- removed config files (*.y2cc)
+
+-------------------------------------------------------------------
 Wed Feb  4 12:54:43 CET 2004 - jsuchome@suse.cz
 
 - fixed testsuite
@@ -13,7 +18,7 @@ Tue Dec  2 15:22:55 CET 2003 - jsuchome@suse.cz
 Tue Nov 18 14:05:45 CET 2003 - jsuchome@suse.cz
 
 - fixed button label in helptext (#33076)
-- used UI:: builtins for file selection widgets 
+- used UI:: builtins for file selection widgets
 - 2.9.2
 
 -------------------------------------------------------------------
@@ -55,7 +60,7 @@ Tue Sep  2 12:39:19 CEST 2003 - jsuchome@suse.cz
 Thu Aug 28 09:01:23 CEST 2003 - jsuchome@suse.de
 
 - confirm hardware detection in manual mode (#26515)
-- 2.8.5 
+- 2.8.5
 
 -------------------------------------------------------------------
 Mon Aug 25 14:01:05 CEST 2003 - jsuchome@suse.cz
@@ -66,7 +71,7 @@ Mon Aug 25 14:01:05 CEST 2003 - jsuchome@suse.cz
 Wed Aug 20 14:27:28 CEST 2003 - jsuchome@suse.de
 
 - removed redundant "initialization dialog" (#28779)
-- 2.8.4 
+- 2.8.4
 
 -------------------------------------------------------------------
 Wed Aug 13 16:27:50 CEST 2003 - jsuchome@suse.de

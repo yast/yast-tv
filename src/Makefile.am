@@ -1,5 +1,5 @@
 #
-# Makefile.am for y2c_tv/src
+# Makefile.am for tv/src
 #
 # $Id$
 #
@@ -19,9 +19,6 @@ ynclude_DATA =			\
 	ui.ycp			\
 	irc_ui.ycp
 
-config_DATA =			\
-	tv.y2cc
-
 desktop_DATA =			\
 	tv.desktop
 
@@ -36,6 +33,6 @@ ycpchook = tv
 tv:
 	ln -s . tv
 
-EXTRA_DIST = $(client_DATA) $(desktop_DATA) $(ynclude_DATA) $(config_DATA) $(module_DATA)
+EXTRA_DIST = $(client_DATA) $(desktop_DATA) $(ynclude_DATA) $(module_DATA)
 
 include $(top_srcdir)/Makefile.am.common
