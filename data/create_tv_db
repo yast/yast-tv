@@ -2,7 +2,8 @@
 #
 # creates tv_cards.ycp - a database with the TV cards
 #
-# $1 - the CARDLIST source file
+# $1 - the CARDLIST.bttv source file
+# $2 - the CARDLIST.saa7134 source file
 # ...more to come...
 
 if ($#ARGV < 1)
@@ -12,12 +13,14 @@ if ($#ARGV < 1)
 
 # Parameters
 $bttv_cardlist_fname = $ARGV[0];
+$saa7134_cardlist_fname = $ARGV[1];
 # ... more to come ...
 
 # Names to translate
 %clean_names =
     (
     	"*** UNKNOWN/GENERIC *** " => "_(\"Unknown bttv card\")",
+    	"UNKNOWN/GENERIC" => "_(\"Unknown saa7134 card\")",
     	"[many vendors] CPH05X/06X (bt878)" => "\"CPH05X/06X (bt878)\"",
     	"Flyvideo 98 (LR50Q) / Chronos Video Shuttle II" => "\"FlyVideo 98 (LR50Q) / Chronos Video Shuttle II\"",
     	"Flyvideo 98EZ (capture only)" => "_(\"FlyVideo 98EZ (capture only)\")",
@@ -27,7 +30,7 @@ $bttv_cardlist_fname = $ARGV[0];
 # List of the known vendors
 $known_vendors = 
     "\(ATI\|AVerMedia\|BESTBUY\|FlyVideo\|GrandTec\|Hauppauge\|Intel\|".
-    "Leadtek\|MATRIX-Vision\|MIRO\|Phoebe\|Pinnacle\|".
+    "Leadtek\|LifeView\|MATRIX-Vision\|MIRO\|Phoebe\|Pinnacle\|".
     "STB\|Terratec\|Zoltrix\)";
 
 # This is for the sort function...
@@ -124,6 +127,45 @@ sub dbBTTV
     return @card_array;
 }
 
+# Create the saa7134 part of the database
+sub dbSAA7134
+{
+    $name = shift;
+    open (DB, $name) or die "Cannot open $name!";
+
+    @card_array = ();
+
+    while ($_ = <DB>)
+    {
+	# create the line
+	if (/^\s*([^= ]*) = (.*)$/)
+	{
+	    # Clean the name
+	    my $card_name = $2;
+	    if (defined $clean_names{$card_name})
+	    {
+		$card_name = $clean_names{$card_name};
+	    }
+	    else
+	    {
+		$card_name = "\"$card_name\"";
+	    }
+
+	    $item =
+		{ "name" => $card_name,
+		  "module" => "\"saa7134\"",
+		  "parameters" => "\$[ \"card\" : \"$1\" ]"
+		};
+	    
+	    push @card_array, $item;
+	}
+    }
+    
+    close(DB);
+
+    return @card_array;
+}
+
 # And do it!
 
 print "/* YaST2 TV cards database\n";
@@ -139,6 +181,7 @@ print "[\n";
 
 # Collect the parameters
 push @cards, dbBTTV($bttv_cardlist_fname);
+push @cards, dbSAA7134($saa7134_cardlist_fname);
 #...more to come...
 
 # Sort @cards
