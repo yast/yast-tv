@@ -39,6 +39,7 @@
 	    Tv::ReadCardsDatabase();
 	    Tv::ReadSettings ();
 	    Tv::Detect ();
+	    Tv::ReadIRC();
 	    UI::CloseDialog();
 	    Progress::on ();
 

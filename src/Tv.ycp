@@ -2556,7 +2556,7 @@ global define string GetIRCModule () ``{
 	// find the ID of current card (saved in detected_cards list)
 	foreach (map det_card, (list<map<string,any> >) detected_cards, ``{
 	    if (card["module"]:nil == det_card["module"]:[] &&
-		card["name"]:nil == det_card["name"]:[])
+		card["name"]:nil == det_card["name"]:"")
 		card_id = det_card["card_id"]:-1;
 	});
 	if (contains (card_ids_ir_kbd_gpio, card_id))
