@@ -1,0 +1,31 @@
+{
+    import "UniqueKeys";
+    include "testsuite.ycp";
+
+    // nil
+    DUMP(UniqueKeys::ExtractFromComment (nil));
+
+    // Empty, no colon
+    DUMP(UniqueKeys::ExtractFromComment (""));
+
+    // Just the colon
+    DUMP(UniqueKeys::ExtractFromComment (":"));
+
+    // Empty UK, name is present
+    DUMP(UniqueKeys::ExtractFromComment (":Name"));
+
+    // UK is present, empty name
+    DUMP(UniqueKeys::ExtractFromComment ("123.456:"));
+
+    // Empty UK + additional whitespace, name is present
+    DUMP(UniqueKeys::ExtractFromComment ("#	 :Some name\n"));
+
+    // More mathing lines, the last (with UK and name) is the right one
+    DUMP(UniqueKeys::ExtractFromComment ("#\n\n# u.k:This is not true\n# 654.321:This is true\n# \n"));
+
+    // Name with colons
+    DUMP(UniqueKeys::ExtractFromComment ("# u.k:::Name::with::colons::"));
+
+    // Usual comment
+    DUMP(UniqueKeys::ExtractFromComment ("# YaST2 configured TV card\n# 123.456:My TV Card\n"));
+}

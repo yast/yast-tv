@@ -1,0 +1,84 @@
+{
+    import "UniqueKeys";
+    include "testsuite.ycp";
+
+    define TEST_It_Now (map READ, map WRITE) ``{
+	list input = nil;
+	TEST(``(UniqueKeys::WriteSection ("tv", input)), [ READ, WRITE, $[] ], false);
+
+	input = [ ];
+	TEST(``(UniqueKeys::WriteSection ("tv", input)), [ READ, WRITE, $[] ], false);
+
+	input = [ $[ "state" : "configured", "unique" : "xyz.dny4jt7n78C"] ];
+	TEST(``(UniqueKeys::WriteSection ("tv", input)), [ READ, WRITE, $[] ], false);
+
+	input = [ $[ "state" : "configured", "unique" : "xyz.dny4jt7n78C"],
+	          $[ "state" : "configured", "unique" : "abc.G8Gj79JK4ft"] ];
+	TEST(``(UniqueKeys::WriteSection ("tv", input)), [ READ, WRITE, $[] ], false);
+    }
+
+    define TEST_It_Now_Write (map WRITE) ``{
+	// empty unique list
+	map READ =
+	    $[ "var" :
+		$[ "lib" :
+		    $[ "yast" :
+			$[ "unique" : nil ]
+	    ] ] ];
+	TEST_It_Now (READ, WRITE);
+
+	// none tv card
+	READ =
+	    $[ "var" :
+		$[ "lib" :
+		    $[ "yast" :
+			$[ "unique" :
+			    [ $[ "contents" : [ $["state":"configured", "unique" : "dn0t.+xOL8ZCSAQC" ]],
+				 "section" : "network" ] ]
+	    ]]]];
+	TEST_It_Now (READ, WRITE);
+
+	// one tv card
+	READ =
+	    $[ "var" :
+		$[ "lib" :
+		    $[ "yast" :
+			$[ "unique" :
+			    [ $[ "contents" : [ $["state":"configured", "unique" : "j4n8.dny4jt7n78C" ]],
+				 "section":"tv" ] ]
+	    ]]]];
+	TEST_It_Now (READ, WRITE);
+
+	// one network and one tv card
+	READ =
+	    $[ "var" :
+		$[ "lib" :
+		    $[ "yast" :
+			$[ "unique" :
+			    [ $[ "contents" : [ $["state":"configured", "unique" : "j4n8.dny4jt7n78C" ]],
+				 "section":"tv" ],
+			      $[ "contents" : [ $["state":"configured;0", "unique" : "h39g.d0486b39HD9" ]],
+				 "section":"network" ] ]
+	    ]]]];
+	TEST_It_Now (READ, WRITE);
+    }
+
+    // write failed
+    map WRITE =
+	$[ "var" :
+	    $[ "lib" :
+		$[ "yast" :
+		    $[ "unique" : true
+	]]]];
+    TEST_It_Now_Write (WRITE);
+
+    // write ok
+    WRITE =
+	$[ "var" :
+	    $[ "lib" :
+		$[ "yast" :
+		    $[ "unique" : false
+	]]]];
+    TEST_It_Now_Write (WRITE);
+
+}
