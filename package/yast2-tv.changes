@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Aug 12 21:19:51 CEST 2002 - arvin@suse.de
+
+- fixed testsuite
+
+-------------------------------------------------------------------
 Tue Aug 06 10:54:24 CEST 2002 - arvin@suse.de
 
 - adapted testsuite to new /etc/install.inf agent
