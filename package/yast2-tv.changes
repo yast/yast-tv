@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Jan  7 09:17:19 CET 2003 - jsuchome@suse.de
+
+- fixed testsuite
+
+-------------------------------------------------------------------
 Fri Dec 13 18:52:50 CET 2002 - jsuchome@suse.de
 
 - updated to new modules agent interface
