@@ -11,7 +11,7 @@
 .xawtvrc
 
 `ag_ini(
-  IniAgent(
+  `IniAgent(
     "/etc/X11/xawtvrc",
     $[
       "comments": [ "^[ \t]*#.*", "#.*", "^[ \t]*$" ],

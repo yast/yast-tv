@@ -13,5 +13,5 @@
 .sysconfig.lirc
 
 `ag_ini(
-  SysConfigFile("/etc/sysconfig/lirc")
+  `SysConfigFile("/etc/sysconfig/lirc")
 )
