@@ -28,7 +28,6 @@
     import "Mode";
 
     include "tv/misc.ycp";
-//    include "require.ycp"; // include when necessary
     include "ui/common_messages.ycp";
     include "sound/write_routines.ycp";
 
@@ -279,9 +278,9 @@
 	}
 
 	boolean kwintv_installed =
-        (SCR::Execute(.target.bash, "rpm -q kwintv")==0 ? true : false);
+        (SCR::Execute(.target.bash, "rpm -q kwintv 2>/dev/null")==0);
     boolean kradio_installed =
-        (SCR::Execute(.target.bash, "rpm -q kradio")==0 ? true : false);
+        (SCR::Execute(.target.bash, "rpm -q kradio 2>/dev/null")==0);
 
 	if (tv && !radio && !kwintv_installed)
 	{
@@ -313,7 +312,10 @@ installed. Install it now?
 ")))
         {
             include "require.ycp";
-	        DoInstallAndRemove(["kwintv", "kradio"], []);
+            list to_install = [];
+            if (!kwintv_installed) to_install = add (to_install, "kwintv");
+            if (!kradio_installed) to_install = add (to_install, "kradio");
+	        DoInstallAndRemove(to_install, []);
         }
 	}
 
