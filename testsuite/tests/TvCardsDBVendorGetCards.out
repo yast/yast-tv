@@ -1,0 +1,26 @@
+Read	.target.ycp ["/var/lib/YaST2/installmap.ycp", $[]] $[]
+Read	.probe.architecture nil
+Read	.probe.has_apm nil
+Read	.probe.has_pcmcia nil
+Read	.probe.has_smp nil
+Read	.probe.system []
+Dump	---------------
+Dump	[]
+Dump	[]
+Dump	[]
+Dump	---------------
+Dump	[]
+Dump	[]
+Dump	[]
+Dump	---------------
+Dump	[$["name":"my autodetected card"]]
+Dump	[$["name":"my autodetected card"]]
+Dump	[$["name":"my autodetected card"]]
+Dump	---------------
+Dump	[]
+Dump	[]
+Dump	[$["module":"bttv", "name":"Unknown bttv card", "parameters":$["card":"0"]], $["module":"bttv", "name":"TView99 CPH06X", "parameters":$["card":"38"]]]
+Dump	---------------
+Dump	[]
+Dump	[]
+Dump	[$["module":"bttv", "name":"ATI TV-Wonder VE", "parameters":$["card":"64"]]]
