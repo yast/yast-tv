@@ -159,13 +159,13 @@
 			 _("Read the previous settings"),
                // Progress stage
 			 _("Detect the devices") ],
-               // Progress stage
+               // Progress step
 		       [ _("Reading the database..."),
-               // Progress stage
+               // Progress step
 			 _("Reading the previous settings..."),
-               // Progress stage
+               // Progress step
 			 _("Detecting the devices..."),
-               // Progress stage
+               // Progress step
 			 _("Finished") ],
 		       "" );
 
@@ -239,13 +239,13 @@
 			 _("Update sound volume"),
                // Progress stage
 			 _("Check for KWinTV and KRadio")],
-               // Progress stage
+               // Progress step
 		       [ _("Writing the settings..."),
-               // Progress stage
+               // Progress step
 			 _("Updating the sound volume..."),
-               // Progress stage
+               // Progress step
 			 _("Checking for KWinTV and KRadio..."),
-               // Progress stage
+               // Progress step
 			 _("Finished") ],
 		       "" );
 
