@@ -335,16 +335,29 @@ of kernel module descriptions is retrieved...
         if (ret == `yes || ret == `no)
 	{
             use_irc = (ret == `yes);
-	    if (use_irc && !Require::RequireAndConflictTarget (["lirc"], [],
+	    if (use_irc)
+	    {
+		boolean lirc_installed = Require::AreAllPackagesInstalledTarget(["lirc"]);
+
+		if (!Require::RequireAndConflictTarget (["lirc"], [],
 		// popup label (install required application?)
 		_("For using infrared devices, package 'lirc' is required.
 Install it now?
 ")))
-
-	    {
-		use_irc = false;
-		UI::ChangeWidget (`id(`rd), `CurrentButton, `no);
+		{
+		    use_irc = false;
+		    UI::ChangeWidget (`id(`rd), `CurrentButton, `no);
+		}
+		else
+		{
+		    if (lirc_installed == false)
+		    {
+			// the package has been just installed - make ini-agent reread the config file
+			SCR::UnmountAgent(.sysconfig.lirc);
+		    }
+		}
 	    }
+
 	    foreach (symbol widget, [`mods, `test, `desc_ch],``{
 		UI::ChangeWidget (`id (widget), `Enabled, use_irc);
 	    });
