@@ -1486,6 +1486,7 @@ global define any WriteIRC () ``{
 	}
 	if (irc_config != "/etc/lircd.conf")
 	{
+	    SCR::Execute (.target.bash, "/bin/touch /etc/lircd.conf");
 	    SCR::Execute (.target.bash, sformat ("/bin/cp %1 /etc/lircd.conf",
 		irc_config));
 	    y2milestone("config file: %1 copied to /etc/lircd.conf",irc_config);
