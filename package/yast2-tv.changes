@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Jan 17 15:27:21 CET 2003 - jsuchome@suse.de
+
+- added ncurses f-keys shortcuts
+
+-------------------------------------------------------------------
 Tue Jan 14 17:39:18 CET 2003 - jsuchome@suse.de
 
 - fixed testsuite
