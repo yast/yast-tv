@@ -27,7 +27,6 @@
     import "RichText";
 
     include "tv/ui.ycp";
-    include "commandline/commandline.ycp";
 
     /**
      * Should we suppress Read() and Write()? It is necessary in proposals...
