@@ -29,8 +29,8 @@
     include "tv/ui.ycp";
 
     /* The main () */
-    y2milestone ("Tv module started");
     y2milestone ("----------------------------------------");
+    y2milestone ("Tv module started");
 
     /**
      * Should we suppress Read() and Write()? It is necessary in proposals...
@@ -57,5 +57,6 @@
 
     /* Finish */
     y2milestone ("Tv module finished");
+    y2milestone ("----------------------------------------");
     return ret;
 }

@@ -63,7 +63,7 @@
 	TEST_It_Now (READ, WRITE);
     }
 
-    // write failed
+    // write ok
     map WRITE =
 	$[ "var" :
 	    $[ "lib" :
@@ -72,7 +72,7 @@
 	]]]];
     TEST_It_Now_Write (WRITE);
 
-    // write ok
+    // write failed
     WRITE =
 	$[ "var" :
 	    $[ "lib" :

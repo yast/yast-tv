@@ -1,0 +1,6 @@
+Read	.probe.tv []
+Return	true
+Dump	[]
+Read	.probe.tv [$["drivers":[$["modules":[]]], "sub_device":"jmeno prvni", "unique_key":"klic"], $["device":"jmeno druhe", "drivers":[$["modules":[["bttv"]]]], "unique_key":"123xyz"]]
+Return	true
+Dump	[$["name":"jmeno prvni", "unique_key":"klic"], $["module":"bttv", "name":"jmeno druhe", "unique_key":"123xyz"]]

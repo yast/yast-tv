@@ -1,0 +1,15 @@
+Read	.target.ycp ["/var/lib/YaST2/installmap.ycp", $[]] $[]
+Read	.probe.architecture nil
+Read	.probe.has_apm nil
+Read	.probe.has_pcmcia nil
+Read	.probe.has_smp nil
+Read	.probe.system []
+Write	.modules.options $["card":"3,2", "tuner":"a,b,c"] "bttv" false
+Return	false
+Write	.modules.options $["card":"3,2", "tuner":"a,b,c"] "bttv" true
+Write	.modules.options $["isapnp_reset":"0"] "isa-pnp" true
+Return	true
+Dir	.modules.options: ["bttv"]
+Write	.modules.options nil "bttv" true
+Write	.modules.options $["isapnp_reset":"0"] "isa-pnp" true
+Return	true
