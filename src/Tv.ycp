@@ -26,6 +26,7 @@
     import "Service";
     import "Label";
     import "Message";
+    import "Package";
 
     textdomain "tv";
 
@@ -1149,6 +1150,37 @@ available kernel modules."));
 	return result;
     }
 
+    /*
+     * Return list of kernel modules required by configured cards
+     * @return list List of kernel modules
+     */
+    global define list<string> RequiredModules() {
+	list<string> reqmodules = [];
+
+	// get all required modules
+	foreach(map card, (list<map>) cards, {
+		list<string> m = (list<string>)card["module"]:[];
+
+		if (m != nil && size(m) > 0)
+		{
+		    // add .ko extension to kernel module name
+		    m = maplist(string mod, m, {
+			    return mod + ".ko";
+			}
+		    );
+		    reqmodules = (list<string>) merge(reqmodules, m);
+		}
+	    }
+	);
+
+	// remove duplicates
+	reqmodules = toset(reqmodules);
+
+	y2milestone("required kernel modules: %1", reqmodules);
+
+	return reqmodules;
+    }
+
     /**
      * Write the TV settings to the SCR.
      * @return boolean Was the reading successful?
@@ -1212,6 +1244,14 @@ available kernel modules."));
 		}
 	    );
 
+	    if (card["dvb"]:false == true && card["unknown"]:false == true)
+	    {
+		// stop dvb service
+		Service::Stop("dvb");
+
+		Service::Disable("dvb");
+	    }
+
 	    if (size(module_names) > 1)
 	    {
 		// remove install line
@@ -1266,7 +1306,15 @@ available kernel modules."));
 		(radio ? radio_card_no : tv_card_no));
 	    boolean dvb = card["dvb"]:false;
 
-	    if (module_names != nil && module_names != [])
+	    if (dvb == true && card["unknown"]:false == true)
+	    {
+		// start dvb service
+		Service::Start("dvb");
+
+		// enable dvb service
+		Service::Enable("dvb");
+	    }
+	    else if (module_names != nil && module_names != [])
 	    {
 		string alias = sformat ("char-major-81-%1",
 		    (radio ? radio_card_no: tv_card_no));
@@ -1434,7 +1482,7 @@ to %1."), "/etc/modprobe.d/tv."));
 	{
         // Warning message popup (detection problem):
 	    Report::Warning(_("Unable to probe the DVB cards."));
-	    y2warning("Cannot probe TV cards: Read(.probe.tv) is nil.");
+	    y2warning("Cannot probe TV cards: Read(.probe.dvb) is nil.");
 		detected_cards = [];
 	    return true;
 	}
@@ -1449,8 +1497,11 @@ to %1."), "/etc/modprobe.d/tv."));
 
 	probe_tv = merge(probe_tv, probe_dvb);
 
-	detected_cards =
-	    maplist(map tv_card, (list<map<string,any> >) probe_tv, ``{
+	boolean dvbservice = (Service::Status("dvb") == 0);
+
+	detected_cards = [];
+
+	foreach(map tv_card, (list<map<string,any> >) probe_tv, ``{
 		map result = $[];
 
 		// look for the name of the card
@@ -1472,6 +1523,7 @@ to %1."), "/etc/modprobe.d/tv."));
 		if (tv_card["dvb"]:false)
 		{
 		    result["dvb"] = true;
+		    boolean foundDB = false;
 
 		    foreach(map vendor, (list<map>) dvb_cards_database, ``{
 			    list<map> cards = (list<map>) vendor["cards"]:[];
@@ -1492,11 +1544,18 @@ to %1."), "/etc/modprobe.d/tv."));
 					);
 
 					y2debug("result: %1", result);
+
+					foundDB = true;
 				    }
 				}
 			    );
 			}
 		    );
+
+		    if (foundDB == false)
+		    {
+			result["unknown"] = true;
+		    }
 		}
 
 		// look for the module
@@ -1527,7 +1586,31 @@ to %1."), "/etc/modprobe.d/tv."));
 		    card_id = (card_id & 0xffff0000) + (card_id & 0xffff);
 		    result = add (result, "card_id", card_id);
 		}
-		return result;
+
+		// consider DVB cards as configured when dvb service is running
+		if (tv_card["dvb"]:false && dvbservice)
+		{
+		    // check whether the card is already in read cards
+		    boolean foundcard = false;
+		    string uniq = tv_card["unique_key"]:"";
+
+		    foreach(map c, (list<map>)cards, {
+			    if (c["unique_key"]:"" == uniq)
+			    {
+				foundcard = true;
+			    }
+			}
+		    );
+
+		    if (!foundcard)
+		    {
+			cards = add(cards, result);
+		    }
+		}
+		else
+		{
+		    detected_cards = add(detected_cards, result);
+		}
 	    });
 
 	if (Mode::test)
@@ -1537,6 +1620,7 @@ to %1."), "/etc/modprobe.d/tv."));
 		  $["module":"bttv", "name":"Bt848 TV Kendy's special", "unique_key":"hluk.HvsIesmXXX1"]
 		];
 	}
+
 	y2milestone("Detected cards: %1", detected_cards);
 	y2milestone("Cards: %1", cards);
 	return true;
@@ -2489,6 +2573,10 @@ global define boolean InitializeStationsConfig() ``{
 
 	// Write the settings
 	Progress::NextStage ();
+
+	// install required kernel packages
+	Package::InstallKernel(RequiredModules());
+
 	if (cards_dirty && !WriteSettings())
 	{
 	    return false;

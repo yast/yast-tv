@@ -1302,6 +1302,13 @@ define term StationPopup (string channel, string station, list items) ``{
  */
 define any ChannelsDialog () ``{
 
+    // skip this dialog for DVB cards
+    // TODO: station set up is different for DVB cards (use dvbscan utility)
+    if (Tv::current_card["dvb"]:false == true)
+    {
+	return `next;
+    }
+
     // dialog caption for TV Stations Dialog
     string caption = _("TV Station Configuration");
 

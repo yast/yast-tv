@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Sep 10 12:39:59 CEST 2004 - lslezak@suse.cz
+
+- use "dvb" initscript for unknown cards
+- install all required kernel modules/packages (#44394)
+- DVB cards - skip channel and IRC config dialogs
+- version 2.10.4
+
+-------------------------------------------------------------------
 Fri Sep  3 09:52:51 CEST 2004 - lslezak@suse.cz
 
 - remove DVB cards
