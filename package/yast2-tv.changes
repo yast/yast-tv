@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Oct 17 19:25:14 CEST 2003 - jsuchome@suse.cz
+
+- initial configuration of LIRC (linux infra red control)
+- initial support for TV programs editing/scaning
+- 2.9.0
+
+-------------------------------------------------------------------
 Wed Sep 10 16:11:26 CEST 2003 - jsuchome@suse.cz
 
 - return empty list of cards when detection is skipped (#30394)

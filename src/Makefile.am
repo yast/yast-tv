@@ -10,12 +10,14 @@ client_DATA =			\
 	tv.ycp			\
 	tv_auto.ycp		\
 	tv_proposal.ycp		\
-	tv_write.ycp
+	tv_write.ycp		\
+	irc.ycp
 
 ynclude_DATA =			\
 	helps.ycp		\
 	misc.ycp		\
-	ui.ycp
+	ui.ycp			\
+	irc_ui.ycp
 
 config_DATA =			\
 	tv.y2cc

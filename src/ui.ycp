@@ -25,6 +25,7 @@ include "wizard/sequencer.ycp";
 
 include "tv/helps.ycp";
 include "tv/misc.ycp";
+include "tv/irc_ui.ycp";
 
 
 /**
@@ -135,20 +136,29 @@ global define any MainSequence () ``{
 	    "man_manual_warn" : ``( ManualDialog (true) ),
 	    "man_details"     : ``( ManualDetailsDialog (true) ),
 	    "man_audio"       : ``( AudioDialog () ),
+	    "man_irc"		: ``( IRCDialog (false) ),
 	    "man_doit"        : ``( CardAddCurrentWrapper () ),
+	    "man_channels"	: ``( ChannelsDialog ()),
 
 	    "det_audio"       : ``( AudioDialog () ),
+	    "det_irc"		: ``( IRCDialog (false) ),
+	    "det_channels"	: ``( ChannelsDialog ()),
 	    "det_doit"        : ``( CardAddCurrentWrapper () ),
 
 	    "add_manual"      : ``( ManualDialog (false) ),
 	    "add_details"     : ``( ManualDetailsDialog (true) ),
 	    "add_audio"       : ``( AudioDialog () ),
+	    "add_irc"		: ``( IRCDialog (false) ),
 	    "add_doit"        : ``( CardAddCurrentWrapper () ),
+	    "add_channels"	: ``( ChannelsDialog ()),
 
 	    "rep_manual"      : ``( ManualDialog (false) ),
 	    "rep_details"     : ``( ManualDetailsDialog (false) ),
 	    "rep_audio"       : ``( AudioDialog () ),
-	    "rep_doit"        : ``( CardReplaceWithCurrentWrapper () )
+	    "rep_irc"		: ``( IRCDialog (false) ),
+	    "rep_doit"        : ``( CardReplaceWithCurrentWrapper () ),
+	    "rep_channels"	: ``( ChannelsDialog ()),
+
 	];
 
     map sequence = $[
@@ -168,24 +178,35 @@ global define any MainSequence () ``{
 	    `next             : `next,
 	    `add_button       : "add_manual",
 	    `edit_button      : "rep_manual",
-	    `edit_button_radio: "rep_details"
+	    `edit_button_radio: "rep_details",
 	],
 
 	"man_manual" : $[
 	    `abort            : `abort,
 	    `details_button   : "man_details",
-	    `next             : "man_audio"
+	    `next             : "man_audio",
+	    `channels		: "man_channels"
+	],
+	"man_channels" : $[
+	    `abort            : `abort,
+	    `next             : "man_manual"
 	],
 	"man_manual_warn" : $[
 	    `abort            : `abort,
 	    `details_button   : "man_details",
-	    `next             : "man_audio"
+	    `next             : "man_audio",
+	    `channels		: "man_channels", //FIXME warn_channels?
 	],
 	"man_details" : $[
 	    `abort            : `abort,
 	    `next             : "man_audio"
 	],
 	"man_audio" : $[
+	    `abort            : `abort,
+//	    `next             : "man_doit"
+	    `next             : "man_irc"
+	],
+	"man_irc" : $[
 	    `abort            : `abort,
 	    `next             : "man_doit"
 	],
@@ -194,6 +215,16 @@ global define any MainSequence () ``{
 	],
 
 	"det_audio" : $[
+	    `abort            : `abort,
+//	    `next             : "det_doit"
+	    `next             : "det_irc"
+	],
+	"det_irc" : $[
+	    `abort            : `abort,
+//	    `next             : "det_doit"
+	    `next             : "det_channels"
+	],
+	"det_channels" : $[
 	    `abort            : `abort,
 	    `next             : "det_doit"
 	],
@@ -204,13 +235,23 @@ global define any MainSequence () ``{
 	"add_manual" : $[
 	    `abort            : `abort,
 	    `details_button   : "add_details",
-	    `next             : "add_audio"
+	    `next             : "add_audio",
+	    `channels		: "add_channels"
+	],
+	"add_channels" : $[
+	    `abort            : `abort,
+	    `next             : "add_manual"
 	],
 	"add_details" : $[
 	    `abort            : `abort,
 	    `next             : "add_audio"
 	],
 	"add_audio" : $[
+	    `abort            : `abort,
+//	    `next             : "add_doit"
+	    `next             : "add_irc"
+	],
+	"add_irc" : $[
 	    `abort            : `abort,
 	    `next             : "add_doit"
 	],
@@ -221,7 +262,12 @@ global define any MainSequence () ``{
 	"rep_manual" : $[
 	    `abort            : `abort,
 	    `details_button   : "rep_details",
-	    `next             : "rep_audio"
+	    `next             : "rep_audio",
+	    `channels		: "rep_channels"
+	],
+	"rep_channels" : $[
+	    `abort            : `abort,
+	    `next             : "rep_manual"
 	],
 	"rep_details" : $[
 	    `abort            : `abort,
@@ -229,12 +275,19 @@ global define any MainSequence () ``{
 	],
 	"rep_audio" : $[
 	    `abort            : `abort,
+//	    `next             : "rep_doit"
+	    `next             : "rep_irc"
+	],
+	"rep_irc" : $[
+	    `abort            : `abort,
 	    `next             : "rep_doit"
 	],
 	"rep_doit" : $[
 	    `next             : "overview"
-	]
+	],
+
     ];
+    // FIXME: better sequences with irc, channels
 
     any ret = WizardSequencer (aliases, sequence);
 
@@ -363,46 +416,44 @@ global define any OverviewDialog() ``{
     // A list of the configured cards in the form allowed by the Table widet
     //list configured_cards = tvConfiguredCardsTableItems();
 
-    term contents =
-					     // For translators: Header of the table with installed cards
-	Wizard_hw::ConfiguredContent(`header(_("Number"),
-					     // For translators: Header of the table with installed cards
-					     _("Card name")),
-					     [],
-					     nil, nil, nil, nil);
+    term contents = Wizard_hw::ConfiguredContent(`header(
+        // For translators: Header of the table with installed cards
+	_("Number"),
+	// For translators: Header of the table with installed cards
+	_("Card name")),
+	[], nil, nil, nil, nil);
+
     contents = Wizard_hw::SpacingAround (contents, 1.5, 1.5, 1.0, 1.0);
 
     any ret = nil;
     do
     {
-	Wizard::SetContentsButtons ( caption,
-				     contents,
-				     OverviewDialogHelp (),
-				     Label::BackButton (),
-				     Label::FinishButton () );
+	Wizard::SetContentsButtons ( caption, contents, OverviewDialogHelp (),
+	    Label::BackButton (), Label::FinishButton () );
+
 	UI::ChangeWidget(`id(`table), `Items, Tv::CardsAsItems());
 
-    UI::SetFocus (`id (`table));
+	UI::SetFocus (`id (`table));
 
 	ret = tvUserInput();
 
 	integer sel_no = UI::QueryWidget (`id(`table), `CurrentItem);
 
 	// Edit the selected card
-    if (ret == `table)
-        ret = `edit_button;
+	if (ret == `table)
+	    ret = `edit_button;
 	if (ret == `edit_button)
 	{
 	    if (sel_no != nil)
 	    {
 		Tv::current_card = Tv::CardGet(sel_no);
 		Tv::current_card_no = sel_no;
-        if (sel_no > 63)
-            ret = `edit_button_radio;
+		if (sel_no > 63)
+		    ret = `edit_button_radio;
 	    }
 	    else
 	    {
-		// For translators: The user chose [Edit...] but did not select a card
+		// The user chose [Edit...] but did not select a card
 		Popup::Message(_("Please select a card to edit first."));
 		ret = nil;
 	    }
@@ -420,7 +471,7 @@ global define any OverviewDialog() ``{
 	    {
 		Tv::current_card = Tv::CardGet(sel_no);
 		Tv::current_card_no = sel_no;
-		// For translators: The user chose [Delete] in the overview dialog
+		// The user chose [Delete] in the overview dialog
 		boolean really_del = Popup::YesNo(sformat(_("Do you really want to
 remove the configuration
 of \"%1\"?"), lookup(Tv::current_card, "name", "")));
@@ -432,12 +483,17 @@ of \"%1\"?"), lookup(Tv::current_card, "name", "")));
 	    }
 	    else
 	    {
-		// For translators: The user chose [Delete] but did not select a card
+		// The user chose [Delete] but did not select a card
 		Popup::Message(_("Please select a card to delete first."));
 	    }
 	}
+    } while (!contains ([`back, `abort, `cancel, `next, `add_button,
+			 `edit_button, `edit_button_radio], ret));
+	/*
     } while (ret != `back && ret != `abort && ret != `next &&
-	     ret != `add_button && ret != `edit_button && ret!= `edit_button_radio);
+	     ret != `add_button && ret != `edit_button &&
+	     ret != `edit_button_radio);
+    */
 
     return ret;
 }
@@ -611,9 +667,16 @@ global define any ManualDialog (boolean warn) ``{
 			 )
 		  ),
 		  `VSpacing(0.5),
-		  `HCenter(`PushButton(`id(`details_button), `opt(`key_F7),
+		  `HCenter(
+		  `HBox(
+		    `PushButton(`id(`details_button), `opt(`key_F7),
 			// PushButton label:
-			_("&Expert settings...")))
+			_("&Expert settings...")),
+		    `PushButton(`id(`channels), `opt(`key_F8),
+			// PushButton label:
+			_("TV channels..."))
+		    )
+		  )
 	      ),
 	      `HSpacing(1.5)
 	);
@@ -722,7 +785,7 @@ for the selected card."));
 	        }
           }
 	}
-    } while (ret != `details_button &&
+    } while (ret != `details_button && ret != `channels &&
 	     ret != `back && ret != `abort && ret != `next);
 
     // hack for ncurses selection (first card is selected as a default):
@@ -1189,6 +1252,414 @@ global define any AudioDialog() ``{
     }
 
     return ret;
+}
+
+/**
+ * Dialogs for TV stations management
+ */
+global define any ChannelsDialog () ``{
+
+    // dialog caption
+    string caption = _("TV channels configuration");
+
+    list norms		= [
+	// TV norm
+	`item(`id("PAL"),	_("PAL")),
+	`item(`id("NTSC"),	_("NTSC")),
+	`item(`id("SECAM"),	_("SECAM")),
+	`item(`id("PAL-NC"),	_("PAL-NC")),
+	`item(`id("PAL-N"),	_("PAL-N")),
+	`item(`id("PAL-M"),	_("PAL-M")),
+	`item(`id("NTSC-JP"),	_("NTSC-JP")),
+    ];
+    list freqs_items	= [
+	// frequency table
+	`item (`id("us-bcast"),		_("us-bcast")),
+	`item (`id("us-cable"),		_("us-cable")),
+	`item (`id("us-cable-hrc"),	_("us-cable-hrc")),
+	`item (`id("japan-bcast"),	_("japan-bcast")),
+	`item (`id("japan-cable"),	_("japan-cable")),
+	`item (`id("europe-west"),	_("europe-west")),
+	`item (`id("europe-east"),	_("europe-east")),
+	`item (`id("italy"),		_("italy")),
+	`item (`id("newzealand"),	_("newzealand")),
+	`item (`id("australia"),	_("australia")),
+	`item (`id("ireland"),		_("ireland")),
+	`item (`id("france"),		_("france")),
+	`item (`id("china-bcast"),	_("china-bcast")),
+	`item (`id("southafrica"),	_("southafrica")),
+	`item (`id("argentina"),	_("argentina")),
+	`item (`id("australia-optus"),	_("australia-optus")),
+	`item (`id("russia"),		_("russia")),
+    ];
+
+    map channels_config = Tv::channels_config;
+    list tv_channels	= GetStationsAsItems (channels_config);
+    boolean modified	= false;
+
+    // TODO propose freq table from locale...
+    term contents = `HBox (`HSpacing (3), `VBox (
+        `VSpacing (2),
+	`HBox (
+	    // combobox label
+	    `ComboBox (`id(`norms), _("Tv Norm"), norms),
+	    // combobox label
+	    `ComboBox (`id(`freq), _("Frequency Table"), freqs_items),
+	    `HStretch (),
+	    `VBox(
+		`Label (""),
+		// button label
+		`PushButton (`id(`scan), _("Scan the Channels"))
+	    )
+	),
+        `VSpacing (0.5),
+	// frame label
+	`Frame (_("TV Stations"), `HBox(`HSpacing (0.5),
+	    `VBox(
+		`Table (`id(`channels),`opt(`notify), `header(
+		    // table header 1/2
+		    _("Channel"),
+		    // table header 2/2
+		    _("Station Name")), tv_channels),
+		`HBox (
+		    `PushButton(`id(`add), `opt(`key_F3), Label::AddButton()),
+		    `PushButton(`id(`edit), `opt(`key_F4), Label::EditButton()),
+		    `PushButton(`id(`del),`opt(`key_F5), Label::DeleteButton()),
+		    `HStretch()
+		)
+	    ),
+	    `HSpacing (0.5)
+	)),
+        `VSpacing (2)
+    ), `HSpacing(3));
+
+    Wizard::SetContentsButtons ( caption, contents, ChannelsDialogHelp (),
+	// TODO Next for detected sequence...
+	Label::BackButton (), Label::OKButton () );
+
+    // set the starting configuation
+    string tv_norm = toupper (channels_config["defaults", "norm"]:"pal");
+    string tv_freqtab = channels_config["global", "freqtab"]:"europe-west";
+    UI::ChangeWidget (`id(`norms), `Value, tv_norm);
+    UI::ChangeWidget (`id(`freq), `Value, tv_freqtab);
+
+    map new_config = $[];
+    any ret = nil;
+    do
+    {
+	ret = tvUserInput();
+	tv_norm = UI::QueryWidget (`id(`norms), `Value);
+	tv_freqtab = UI::QueryWidget (`id(`freq), `Value);
+
+	if (ret == `scan && Require::RequireAndConflictTarget(["v4l-tools"],[],
+	    // popup label (install required application?)
+	    _("For scanning the TV channels, package '%1' is required.
+Install it now?")))
+	{
+	    list scanned = ChannelsScanPopup (tv_norm, tv_freqtab);
+	    if (scanned != nil)
+	    {
+		new_config = eval (scanned [0]:[]);
+		tv_channels = eval (scanned [1]:[]);
+		UI::ChangeWidget (`id(`channels), `Items, tv_channels);
+		modified = true;
+	    }
+	}
+	string current = UI::QueryWidget (`id(`channels), `CurrentItem);
+	if (ret == `del && current != nil)
+	{
+	    tv_channels = filter (`it, tv_channels, ``(
+		select (it, 2, "") != current));
+	    UI::ChangeWidget (`id(`channels), `Items, tv_channels);
+	    modified = true;
+	}
+	if (ret == `add)
+	{
+	    term new = StationPopup ("","", tv_channels);
+	    if (new != nil)
+	    {
+		tv_channels = add (tv_channels, new);
+		UI::ChangeWidget (`id(`channels), `Items, tv_channels);
+		UI::ChangeWidget (`id(`channels), `CurrentItem,
+		    select (new,2,nil));
+		modified = true;
+	    }
+	}
+	if (ret == `edit || ret == `channels)
+	{
+	    term it = UI::QueryWidget (`id(`channels), `Item (current));
+	    term new = StationPopup (select (it,1,""), current, tv_channels);
+	    if (new != nil)
+	    {
+		tv_channels = filter (`i, tv_channels, ``(
+		    select (i, 2, "") != current));
+		tv_channels = add (tv_channels, new);
+		UI::ChangeWidget (`id(`channels), `Items, tv_channels);
+		UI::ChangeWidget (`id(`channels), `CurrentItem,
+		    select (new,2,nil));
+		modified = true;
+	    }
+	}
+
+    } while (!contains ([`back, `abort, `cancel, `next, `ok], ret));
+
+    if (tv_norm != channels_config["defaults","norm"]:"" ||
+	    tv_freqtab != channels_config["global","freqtab"]:"")
+	modified = true;
+
+    if (ret == `next && modified)
+    {
+	// save configuration to global values
+	/*
+	channels_config["defaults","norm"] = tv_norm;
+	channels_config["global","freqtab"] = tv_freqtab;
+	*/
+
+	// use updated configuration after scan:
+	channels_config["defaults"] = union (channels_config["defaults"]:$[],
+	    new_config["defaults"]:$[]);
+	channels_config["global"] = union (channels_config["global"]:$[],
+	    new_config["global"]:$[]);
+
+	// save channels
+	map xawtvrc = $[
+	    "defaults": channels_config["defaults"]:$[],
+	    "global":	channels_config["global"]:$[]
+	];
+	foreach (term i, tv_channels, ``{
+	    string name = select (i,2,"");
+	    // preserve station settings that yast doesn't configure
+	    map station = eval (channels_config[name]:$[]);
+	    station["channel"] = select (i,1,"");
+	    xawtvrc = add (xawtvrc, name, station);
+	});
+	Tv::channels_config = eval (xawtvrc);
+	Tv::stations_modified = modified;
+    }
+    return ret;
+}
+
+/**
+ * Popup for adding/editing TV station
+ * @param channel current channel (empty when adding)
+ * @param station current station name (empty when adding)
+ * @param items list of current stations (to check duplicates)
+ */
+global define term StationPopup (string channel, string station, list items) ``{
+
+    UI::OpenDialog( `opt(`decorated), `HBox(
+	`HSpacing(1),
+	`VBox(
+	    `HSpacing (50),
+	    `VSpacing(0.5),
+	    `HBox (
+		// textentry label
+		`TextEntry (`id (`channel), _("Channel"), channel),
+		`HSpacing(0.5),
+		// textentry label
+		`TextEntry (`id (`station), _("Station Name"), station)
+	    ),
+	    `VSpacing(0.5),
+	    `HBox(
+		`PushButton(`id(`ok),`opt(`default),Label::OKButton()),
+		`PushButton(`id(`cancel), Label::CancelButton())
+	    ),
+	    `VSpacing(0.5)),
+	`HSpacing(1)
+    ));
+    any result = nil;
+    term ret = nil;
+    UI::SetFocus (`id(`channel));
+    while (true)
+    {
+	result = UI::UserInput ();
+	if (result == `cancel)
+	    break;
+	if (result == `ok)
+	{
+	    string new_channel	= UI::QueryWidget (`id(`channel), `Value);
+	    string new_station	= UI::QueryWidget (`id(`station), `Value);
+	    if (new_channel == "")
+	    {
+		// message popup
+		Popup::Message (_("Enter a TV channel."));
+		UI::SetFocus (`id(`channel));
+		continue;
+	    }
+	    if (new_station == "")
+	    {
+		// message popup
+		Popup::Message (_("Enter a station name."));
+		UI::SetFocus (`id(`station));
+		continue;
+	    }
+	    string msg = "";
+	    foreach (`it, items, ``{
+		if (select (it, 1, "") == new_channel && new_channel != channel)
+		    // error message
+		    msg = _("There already exist such channel in the table.");
+		if (select (it, 2, "") == new_station && new_station != station)
+		    // error message
+		    msg = _("There already exist such station name in the table.");
+	    });
+	    if (msg != "")
+	    {
+		Popup::Message (msg);
+		continue;
+	    }
+	    if (channel != new_channel || station != new_station)
+		ret = `item (`id(new_station), new_channel, new_station);
+	    break;
+	}
+    }
+    UI::CloseDialog();
+    return ret;
+}
+
+
+/**
+ * Popup with TV stations scan
+ * @param norm TV norm (PAL/NTSC/...)
+ * @param freq frequency table (eourope-west/us-cable/...)
+ * @return list [ new xawtv conf, new items for stations table ]
+ */
+global define list ChannelsScanPopup (string norm, string freq) ``{
+
+    UI::OpenDialog(`opt(`decorated), `HBox(`HSpacing(1.5),
+    `VSpacing(18),
+    `VBox(
+        `HSpacing(60),
+        `VSpacing(0.5),
+	// Popup label (heading)
+        `Label(_("TV Channels Scan")),
+        `VSpacing(0.5),
+        `LogView (`id (`scantv), "", 10, 0),
+        `VSpacing(0.5),
+	`HBox (
+	    `PushButton(`id(`ok), Label::OKButton()),
+	    `PushButton(`id(`cancel), Label::CancelButton())
+	),
+        `VSpacing(0.5)),
+    `HSpacing(1.5)
+    ));
+    UI::ChangeWidget (`id(`ok), `Enabled, false);
+
+    // before scan, tv module has to be loaded (maybe TV is not configured yet)
+    string start = Tv::tv_tmp_start ();
+    if (start != "")
+    {
+	// error message
+	ErrorWithDetails (_("The kernel module for TV support could not be loaded"), start);
+	UI::CloseDialog();
+	return nil;
+    }
+
+    SCR::Execute (.background.run_output,
+	sformat("/usr/X11R6/bin/scantv -n %1 -f %2 2>&1 -o %3/xawtvrc",
+	    norm, freq, Tv::tmpdir));
+
+    string test_output = "";
+    any ret = nil;
+    list stations = [];
+    map xawtvrc = $[];
+    list retlist = nil;
+    do
+    {
+	ret = UI::PollInput();
+        if (SCR::Read(.background.output_open) &&
+	    SCR::Read(.background.newlines)>0)
+        {
+            // read the output line from scantv
+            test_output = select (SCR::Read(.background.newout), 0, nil);
+	    if (test_output != nil)
+		UI::ChangeWidget (`id(`scantv), `LastLine, test_output + "\n");
+	    // TODO: translate the output? ("no station")
+	    // FIXME: there is some mess in the scantv output...
+        }
+	else if (!SCR::Read(.background.output_open))
+	{
+	    ret = `done;
+	}
+    }
+    while (ret == nil);
+
+    SCR::Execute(.background.kill, nil);
+
+    if (ret == `done)
+    {
+	UI::ChangeWidget (`id(`ok), `Enabled, true);
+	xawtvrc = Tv::ReadStationsConfig (.tmp.xawtvrc);
+	stations = GetStationsAsItems (xawtvrc);
+	retlist = [ xawtvrc, stations ];
+	UI::ChangeWidget (`id(`scantv), `LastLine,
+	    // label: summary of scanning for stations
+	    sformat(_("Number of TV stations found: %1"), size (stations)));
+
+	ret = UI::UserInput();
+    }
+    UI::CloseDialog();
+
+    // TODO unload the modules?
+    // Tv::tv_tmp_stop();
+    return retlist;
+}
+
+/**
+ * Returns a list of TV stations as table items
+ * @param xawtvrc map with contents of xawtvrc config file
+ * @return item list
+ */
+global define list GetStationsAsItems (map xawtvrc) ``{
+
+    list stations = [];
+    foreach (string sect, map cont, xawtvrc, ``{
+	if (sect != "defaults" && sect != "global")
+	{
+	    stations = add (stations,
+		`item (`id(sect), xawtvrc[sect,"channel"]:"", sect));
+	}
+    });
+    return stations;
+}
+
+/**
+ * Error popup with the possibility of showing additional information
+ * about the problem
+ * @param error basic error message
+ * @param details more informations, e.g. stderr of some script
+ */
+global define void ErrorWithDetails (string error, string details) ``{
+
+    UI::OpenDialog (`HBox(`HSpacing (0.5),
+	`VBox(
+	    `VSpacing (0.5),
+	    // label
+	    `Left(`Heading (Label::ErrorMsg())),
+	    `Label (error),
+	    `ReplacePoint (`id(`rp), `Empty()),
+	    `VSpacing (0.5),
+	    `Left(`CheckBox (`id(`details), `opt (`notify),
+	        // checkbox label
+		_("&Show Details"), false)),
+	    `PushButton (`id(`ok), `opt(`key_F10,`default), Label::OKButton())
+	),
+	`HSpacing(0.5))
+    );
+    symbol ret = nil;
+
+    do
+    {
+	ret = UI::UserInput();
+	if (ret == `details)
+	{
+	    if (UI::QueryWidget (`id(`details), `Value))
+		UI::ReplaceWidget (`id(`rp), `VBox (`Label (details)));
+	    else
+		UI::ReplaceWidget (`id(`rp), `Empty());
+	}
+    }
+    while (ret != `ok && ret != `cancel);
+    UI::CloseDialog();
 }
 
 /* EOF */

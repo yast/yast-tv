@@ -1,0 +1,31 @@
+/**
+ * File:
+ *   xawtvrc.scr
+ * Summary:
+ *   SCR Agent for reading/writing /etc/X11/xawtvrc using the ini-agent
+ *
+ * $Id$
+ *
+ * Read/Sets the values defined in <tt>/etc/X11/xawtvrc</tt>.
+ */
+.xawtvrc
+
+`ag_ini(
+  IniAgent(
+    "/etc/X11/xawtvrc",
+    $[
+      "comments": [ "^[ \t]*#.*", "#.*", "^[ \t]*$" ],
+      "sections" : [
+        $[
+        "begin" : [ "^[ \t]*\\[[ \t]*(.*[^ \t])[ \t]*\\][ \t]*", "[%s]" ],
+        ],
+      ],
+      "params" : [
+        $[
+        "match" : [ "^[ \t]*([^=]*[^ \t=])[ \t]*=[ \t]*(.*[^ \t]|)[ \t]*$",
+		    "%s = %s"],
+	],
+      ],
+    ]
+  )
+)

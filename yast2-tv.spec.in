@@ -33,5 +33,6 @@ Summary:	Configuration of TV cards
 @moduledir@/*.ycp
 @configdir@/*.y2cc
 @desktopdir@/*.desktop
+@scrconfdir@/*.scr
 @ydatadir@/*.ycp
 %doc @docdir@

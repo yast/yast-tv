@@ -21,6 +21,7 @@
     import "Mode";
     import "Require";
     import "Confirm";
+    import "Directory";
 
     include "tv/misc.ycp";
     import "Label";
@@ -146,6 +147,12 @@
     // TV application
     string tv_app = "motv";
 
+    // configuration of TV stations (contents of /etc/X11/xawtvrc file)
+    global map channels_config = $[];
+
+    // temporary directory
+    global string tmpdir = "/tmp";
+
     /**
      * Read all TV card settings from the SCR
      * @param abort A block that can be called by Read to find
@@ -208,6 +215,12 @@
 	{
 	    return false;
 	}
+
+	ReadIRC(); // TODO add progress
+	tmpdir = SCR::Read(.target.tmpdir);
+
+	// TODO add progress
+	InitializeStationsConfig ();
 
 	// increase the progress to "finish"
 	Progress::NextStage ();
@@ -298,48 +311,54 @@
 		i = i + 1;
 	}
 
-    if (Require::AreAllPackagesInstalled (["kdelibs3"])) tv_app = "kwintv";
-    else if (Require::AreAllPackagesInstalled (["gnome-panel"]))
-        tv_app = "zapping";
+	if (Require::AreAllPackagesInstalled (["kdelibs3"]))
+	    tv_app = "kwintv";
+	else if (Require::AreAllPackagesInstalled (["gnome-panel"]))
+	    tv_app = "zapping";
 
-    boolean tv_app_installed = Require::AreAllPackagesInstalled ([tv_app]);
-    boolean radio_app_installed = Require::AreAllPackagesInstalled (["kradio"]);
+	boolean tv_app_installed = Require::AreAllPackagesInstalled ([tv_app]);
+	boolean radio_app_installed = Require::AreAllPackagesInstalled (["kradio"]);
+	list apps = [ tv_app, "alevt", "nxtvepg" ];
 
-    list apps = [ tv_app, "alevt", "nxtvepg" ];
-
-    // do not propose kradio application if we have not KDE
-    if (radio && tv && !tv_app_installed && !radio_app_installed &&
-        tv_app == "kwintv")
-    {
-        // Popup text (required application are %1):
-	apps = add (apps, "kradio");
-        InstallApplication (apps, sformat(_("<p>To enable watching TV and listening to radio on your computer,<br>
-these packages will be installed:<br>
-<b>%1</b>
-</p>
-"), mergestring (apps, ", ")));
-    }
-    else if (tv && !tv_app_installed)
+	// do not propose kradio application if we have not KDE
+	if (radio && tv && !tv_app_installed && !radio_app_installed &&
+	    tv_app == "kwintv")
 	{
-        // Popup text (required application are %1):
-        InstallApplication (apps, sformat(_("<p>To enable watching TV on your computer,<br>
+	    // Popup text (required application are %1):
+	    apps = add (apps, "kradio");
+	    InstallApplication (apps, sformat(_("<p>To enable watching TV and listening to radio on your computer,<br>
 these packages will be installed:<br>
 <b>%1</b>
 </p>
 "), mergestring (apps, ", ")));
-    }
-    else if (radio && !radio_app_installed && tv_app == "kwintv")
-    {
-        // Popup text (required application is %1):
-        InstallApplication (["kradio"], sformat (_("<p>To listen to radio on your computer, you can use the <b>%1</b> application.
+	}
+	else if (tv && !tv_app_installed)
+	{
+	    // Popup text (required application are %1):
+	    InstallApplication (apps, sformat(_("<p>To enable watching TV on your computer,<br>
+these packages will be installed:<br>
+<b>%1</b>
+</p>
+"), mergestring (apps, ", ")));
+	}
+	else if (radio && !radio_app_installed && tv_app == "kwintv")
+	{
+	    // Popup text (required application is %1):
+	    InstallApplication (["kradio"], sformat (_("<p>To listen to radio on your computer, you can use the <b>%1</b> application.
 It is currently not installed. Install it now?</p>"), "kradio"));
+	}
+
+	// save not_ask status
+	SCR::Write (.target.ycp, "/var/lib/YaST2/tv.ycp",
+	    $["dont_ask_for_application": not_ask]);
     }
 
-    // save not_ask status
-    SCR::Write (.target.ycp, "/var/lib/YaST2/tv.ycp",
-	$["dont_ask_for_application": not_ask]);
+    if (irc_modified)
+	WriteIRC(); // TODO add progress
 
-    }
+    // TODO add progress
+    if (stations_modified)
+	WriteStationsConfig ();
 
     // increase the progress to "finish"
     Progress::NextStage ();
@@ -1238,7 +1257,7 @@ to /etc/modules.conf."));
      * @return Has the configuration changed?
      */
     global define boolean IsDirty () ``{
-	return cards_dirty;
+	return cards_dirty || irc_modified || stations_modified;
     }
 
     /**
@@ -1616,6 +1635,228 @@ to /etc/modules.conf."));
 	// filter out nils
 	return filter (`val, param_list, ``(val != nil));
     }
+
+
+//---------------------------------------- new functions TODO comment
+
+global string irc_module = "";
+global string irc_config = "";
+global boolean use_irc = false;
+global boolean irc_modified = false;
+global boolean stations_modified = false;
+// id's of TV cards using lirc_gpio module
+global list cards_with_lirc_gpio = [];
+
+global list irc_modules_list = [ "lirc_i2c", "lirc_gpio", "lirc_bt829",
+    "lirc_it87", "lirc_parallel", "lirc_serial", "lirc_sir" ];
+global map irc_modules = $[];
+
+// path to config files of various remote controls
+global list remotes = [];
+
+/**
+ * Read IRC settings
+ * @return Symbol for next or abort dialog.
+ */
+global define any ReadIRC () ``{
+
+    cards_with_lirc_gpio = SCR::Read (.target.yast2, "tv_cards-lirc_gpio.ycp");
+    use_irc = Runlevel::ServiceStatus ("lirc") == 0;
+    irc_module = SCR::Read (.sysconfig.lirc.LIRC_MODULE);
+    if (irc_module == nil) irc_module = "";
+
+    // FIXME how to read irc config properly???
+    if (SCR::Read (.target.size, "/etc/lircd.conf") != -1)
+    {
+	irc_config = "/etc/lircd.conf";
+    }
+
+    // FIXME: all files???
+    map out = SCR::Execute (.target.bash_output,
+	"/usr/bin/find  /usr/share/doc/packages/lirc/remotes/ -name *lircd*");
+    remotes = splitstring (out["stdout"]:"", "\n");
+
+    return `next;
+}
+
+/**
+ * Write IRC settings
+ * @return Symbol for next or abort dialog.
+ */
+global define any WriteIRC () ``{
+
+    // 1. sysconfig values
+    SCR::Write (.sysconfig.lirc.LIRC_MODULE, irc_module);
+    SCR::Write (.sysconfig.lirc, nil);
+
+    if (use_irc)
+    {
+	// 2. lircd config
+	// ... copy config file to /etc/lircd.conf
+	if (SCR::Read (.target.size, "/etc/lircd.conf") != -1)
+        {
+	    SCR::Execute (.target.bash,
+		"/bin/cp /etc/lircd.conf /etc/lircd.conf.YaST2save");
+	}
+	if (irc_config != "/etc/lircd.conf")
+	{
+	    SCR::Execute (.target.bash, sformat ("/bin/cp %1 /etc/lircd.conf",
+		irc_config));
+	    y2milestone("config file: %1 copied to /etc/lircd.conf",irc_config);
+	}
+
+	// adjust runlevels:
+	Runlevel::ServiceAdjust ("lirc", "enable");
+        // start the service
+	if (Runlevel::ServiceStatus ("lirc") == 0)
+	    Runlevel::RunInitScript ("lirc", "restart");
+	else
+	    Runlevel::RunInitScript ("lirc", "start");
+    }
+    else
+    {
+	// adjust runlevels:
+	Runlevel::ServiceAdjust ("lirc", "disable");
+        // stop the service
+	Runlevel::RunInitScript ("lirc", "stop");
+    }
+    return `next;
+}
+
+/**
+ * Read the whole contents of xawtvrc file and return it as a map
+ * @param path proper agent (handling either global or temporary config file)
+ * return map
+ */
+global define map ReadStationsConfig (path pth) ``{
+
+    map xawtvrc = $[];
+    foreach (string section, SCR::Dir (add (pth, "s")), ``{
+	xawtvrc = add (xawtvrc, section, $[]);
+	foreach (string attr, SCR::Dir(add(add (pth, "v"), section)),``{
+	    xawtvrc [section, attr] = SCR::Read (add (add (add (pth, "v"), section), attr));
+	});
+    });
+    return xawtvrc;
+}
+
+/**
+ * Write to /etc/X11/xawtvrc
+ */
+global define boolean WriteStationsConfig () ``{
+
+    // create a backup
+    if (SCR::Read (.target.size, "/etc/X11/xawtv") != -1)
+    {
+	SCR::Execute (.target.bash,
+	    "/bin/cp /etc/X11/xawtvrc /etc/X11/xawtvrc.YaSTsave");
+    }
+    else
+    {
+	SCR::Execute (.target.bash, "/bin/touch /etc/X11/xawtvrc");
+    }
+
+    list new_sections = [];
+    foreach (string sec_name, map section, channels_config, ``{
+	new_sections = add (new_sections, sec_name);
+	foreach (string key, string value, section,``{
+	    SCR::Write (add (add (.xawtvrc.v, sec_name),key), value);
+	});
+    });
+    // remove removed stations
+    foreach (string section, SCR::Dir (.xawtvrc.s), ``{
+	if (!contains (new_sections, section))
+	    SCR::Write (add (.xawtvrc.s, section), nil);
+    });
+    return true;
+}
+
+
+/**
+ * Load the modules for TV suport now, use current (not yet saved) options
+ * It calls something like 'modprobe -C /dev/null bttv card=2 tuner=23'
+ * @return empty string on success, error message otherwise
+ */
+global define string tv_tmp_start() ``{
+
+    string modname = current_card["module"]:"";
+    string params = "";
+    maplist(string k, string v, current_card["parameters"]:$[], ``{
+	params = params + sformat(" %1=%2", k, v);
+    });
+    // we need to tell 'modprobe' not to look into modules.conf now, because
+    // it may contain messed options for the module %1 that will break the
+    // module loading. (modprobe would merge options specified in param %2 with
+    // those specified in modules.conf)
+    string cmd = sformat("/sbin/modprobe -C /dev/null %1 %2", modname, params);
+    y2debug ("command to run: %1", cmd);
+
+    map res = SCR::Execute(.target.bash_output, cmd, $[]);
+    y2debug ("modprobe output: %1", res);
+
+    return res["stderr"]:"";
+}
+
+// FIXME not necesary?
+global define string tv_tmp_stop() ``{
+
+    string modname = current_card["module"]:"";
+    string cmd = sformat("/sbin/modprobe -r %1", modname);
+    map res = SCR::Execute(.target.bash_output, cmd, $[]);
+    return res["stderr"]:"";
+}
+
+/**
+ * Initialize stations configuration (read global config etc.)
+ */
+global define boolean InitializeStationsConfig() ``{
+
+    string agent_file = sformat ("%1/tmp_xawtvrc.scr", tmpdir);
+    // create new agent for reading temporary xawtvrc
+    SCR::Write (.target.string, agent_file, sformat (".tmp.xawtvrc
+
+`ag_ini(
+  IniAgent(
+    \"%1/xawtvrc\",
+    $[
+      \"comments\": [ \"^[ \\t]*#.*\", \"#.*\", \"^[ \\t]*$\" ],
+      \"sections\" : [
+        $[
+        \"begin\" : [ \"^[ \\t]*\\\[[ \\t]*(.*[^ \\t])[ \\t]*\\\][ \\t]*\", \"[%%s]\"],
+        ],
+      ],
+      \"params\" : [
+        $[
+        \"match\" : [ \"^[ \\t]*([^=]*[^ \\t=])[ \\t]*=[ \\t]*(.*[^ \\t]|)[ \\t]*$\",
+		    \"%%s = %%s\"],
+	],
+      ],
+    ]
+  )
+)",
+    tmpdir));
+    SCR::RegisterAgent (.tmp.xawtvrc, agent_file);
+
+    // read global configuration file
+    if (SCR::Read (.target.size, "/etc/X11/xawtvrc") != -1)
+	channels_config = ReadStationsConfig (.xawtvrc);
+    if (!haskey (channels_config, "defaults"))
+	channels_config = add (channels_config, "defaults", $[]);
+    if (!haskey (channels_config, "global"))
+	channels_config = add (channels_config, "global", $[]);
+    return true;
+}
+
+/**
+ * Load the desription of irc kernel modules (modinfo)
+ */
+global define void LoadIRCModulesDescription () ``{
+
+    irc_modules = listmap (string mod, irc_modules_list, ``{
+	map modinfo = SCR::Read (add (.modinfo.kernel.misc, mod));
+	return [ mod, modinfo["module_description"]:"" ];
+    });
+}
 
 /* EOF */
 }
