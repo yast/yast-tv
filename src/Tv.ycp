@@ -142,6 +142,9 @@
      */
     global boolean not_ask = false;
 
+    // TV application
+    string tv_app = "motv";
+
     /**
      * Read all TV card settings from the SCR
      * @param abort A block that can be called by Read to find
@@ -294,7 +297,6 @@
 		i = i + 1;
 	}
 
-    string tv_app = "motv";
     if (Require::AreAllPackagesInstalled (["kdelibs3"])) tv_app = "kwintv";
     else if (Require::AreAllPackagesInstalled (["gnome-panel"]))
         tv_app = "zapping";
@@ -302,22 +304,28 @@
     boolean tv_app_installed = Require::AreAllPackagesInstalled ([tv_app]);
     boolean radio_app_installed = Require::AreAllPackagesInstalled (["kradio"]);
 
+    list apps = [ tv_app, "alevt", "nxtvepg" ];
+
     // do not propose kradio application if we have not KDE
     if (radio && tv && !tv_app_installed && !radio_app_installed &&
         tv_app == "kwintv")
     {
-        // Popup text (required application are %1 and %2):
-        InstallApplication (["kradio", tv_app], sformat(_("<p>To watch TV and listen to radio on your computer, you can use
-the <b>%1</b> and <b>%2</b> applications. They are not currently 
-installed. Install now?</p>
-"), tv_app, "kradio"));
+        // Popup text (required application are %1):
+	apps = add (apps, "kradio");
+        InstallApplication (apps, sformat(_("<p>To enable watching TV and listening to radio on your computer,<br>
+these packages will be installed:<br>
+<b>%1</b>
+</p>
+"), mergestring (apps, ", ")));
     }
     else if (tv && !tv_app_installed)
 	{
-        // Popup text (required application is %1):
-        InstallApplication ([tv_app], sformat(_("<p>To watch TV on your screen, the <b>%1</b> application is required.
-It is currently not installed. Install it now?</p>
-"), tv_app));
+        // Popup text (required application are %1):
+        InstallApplication (apps, sformat(_("<p>To enable watching TV on your computer,<br>
+these packages will be installed:<br>
+<b>%1</b>
+</p>
+"), mergestring (apps, ", ")));
     }
     else if (radio && !radio_app_installed && tv_app == "kwintv")
     {
@@ -471,7 +479,15 @@ It is currently not installed. Install it now?</p>"), "kradio"));
     not_ask = UI::QueryWidget(`id(`ch), `Value);
     UI::CloseDialog();
     if (ret == `ok)
-        Require::DoInstallAndRemove(apps, []);
+    {
+	list to_install = [];
+	// check if packages are avialable...
+	foreach (string app, apps, ``{
+	    if (Require::IsPackageAvailable (app))
+		to_install = add (to_install, app);
+	});
+        Require::DoInstallAndRemoveTarget (to_install, []);
+    }
     }
 
     /////////////////////////////////////////////////////////////////
