@@ -123,11 +123,11 @@ choose the type of your tuner.
 	    // Help: Manual addition of a card, part 3/4
 _("<P><B><BIG>Expert configuration:</BIG></B><BR>
 You can choose the exact kernel module and its parameters if you press
-<B>Details</B> button.
+<B>Expert settings</B> button.
 </P>") +
 	    // Help: Manual addition of a card: part 4/4
 _("<P><B><BIG>Radio card</BIG></B><BR>
-If you want to configure the radio card, you have to choose appropriate kernel module. To do that, press the <B>Details</B> button.
+If you want to configure the radio card, you have to choose appropriate kernel module. To do that, use the <B>Expert settings</B> button.
 </P>");
 }
 

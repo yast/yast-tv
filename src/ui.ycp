@@ -621,7 +621,7 @@ global define any ManualDialog (boolean warn) ``{
 							       CardsSelectionBox ( vendor_cards_db,
 										   current_card_parameters ))
 					   ),
-					   `Right(`PushButton(`id(`tuner_button),
+					   `Right(`PushButton(`id(`tuner_button),`opt (`key_F3),
                                 // PushButton label:
 								_("&Select tuner")))
 				     ),
@@ -631,9 +631,9 @@ global define any ManualDialog (boolean warn) ``{
 			 )
 		  ),
 		  `VSpacing(0.5),
-		  `HCenter(`PushButton(`id(`details_button),
+		  `HCenter(`PushButton(`id(`details_button), `opt(`key_F7),
                        // PushButton label:
-				       _("&Details...")))
+				       _("&Expert settings...")))
 	      ),
 	      `HSpacing(1.5)
 	);
@@ -848,7 +848,9 @@ of available kernel modules...")),
 			 )
 		  ),
 		  `VSpacing(0.5),
-          (allow_changeoftype ? `Left(`CheckBox(`id(`radio_ch), `opt(`notify), _("R&adio card modules"), radio)) : `VSpacing(0)),
+          (allow_changeoftype ? `Left(`CheckBox(`id(`radio_ch), `opt(`notify),
+            // checkbox label
+            `opt (`key_F7),  _("R&adio card modules"), radio)) : `VSpacing(0)),
 		  `VSpacing(0.5)
 	      ),
 	      `HSpacing(1.5)
@@ -1108,7 +1110,7 @@ global define any AudioDialog() ``{
 								_("Sound card name")),
 							sound_cards)
 					   ),
-					   `Right(`PushButton(`id(`configure_button),
+					   `Right(`PushButton(`id(`configure_button), `opt(`key_F4),
                                   // PushButton label:
 							      _("&Configure sound cards...")))
 				     ),
