@@ -74,21 +74,10 @@ global define any TvSequence () ``{
 	]
     ];
 
-    // Caption of initializing dialog
-    string caption = _("Initializing TV and Radio Card Configuration");
-    // Label text of initializing dialog
-    term contents = `Label (_("Initializing ..."));
-
     Wizard::CreateDialog ();
-    Wizard::SetContentsButtons ( caption,
-				 contents,
-				 "",
-				 Label::BackButton (),
-				 Label::NextButton ());
-
     any ret = WizardSequencer (aliases, sequence);
-
     UI::CloseDialog ();
+
     return ret;
 }
 
