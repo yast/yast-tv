@@ -117,6 +117,7 @@ define boolean IRCTestPopup (string config_file, string mod, boolean modified) `
     }
 
     // test if IRC device is present
+    /* FIXME device is created dynamically
     if (SCR::Execute(.target.bash, "echo 2>/dev/null < /dev/lirc") != 0)
     {
 	// error popup text
@@ -126,6 +127,7 @@ define boolean IRCTestPopup (string config_file, string mod, boolean modified) `
 	lirc_tmp_stop ();
 	return false;
     }
+    */
 
     // 3. run irw -> test
     SCR::Execute (.background.run_output, "/usr/bin/irw");
@@ -195,11 +197,15 @@ define any IRCDialog (boolean alone) ``{
     string irc_module	= Tv::irc_module;
     list mods		= Tv::irc_modules_list;
 
-    string startdir = "/usr/share/lirc/remotes/";
-
     if (irc_module == "")
 	irc_module = Tv::GetIRCModule();
+    // FIXME irc_module should be loaded when new TV card is chosen...
 
+    if (!alone && Tv::current_card["radio"]:false)
+	return `next;
+
+    /*
+    string startdir = "/usr/share/lirc/remotes/";
     list remotes_items = [];
     foreach (string control, (list<string>) Tv::remotes, ``{
 	list aslist = splitstring (control, "/");
@@ -213,6 +219,7 @@ define any IRCDialog (boolean alone) ``{
     if (irc_config == "/etc/lircd.conf")
 	remotes_items = add (remotes_items,
 	    `item(`id("/etc/lircd.conf"), _("current (/etc/lircd.conf)")));
+    */
 
     term con = `HBox (`HSpacing (3), `VBox (
         `VSpacing (2),
@@ -227,9 +234,10 @@ define any IRCDialog (boolean alone) ``{
 	),
         `VSpacing (0.5),
 	// frame label
-	`Frame (_("IRC Settings"), `HBox(`HSpacing (0.5),
+	`Frame (_("IRC Settings"), `HBox(`HSpacing (),
 	    `VBox(
-		`VSpacing (0.5),
+		`VSpacing (),
+		/*
 		`ReplacePoint (`id(`configs),
 		`HBox(
 		    // combobox label
@@ -241,6 +249,7 @@ define any IRCDialog (boolean alone) ``{
 			`PushButton(`id(`brow),`opt(`key_F7), _("M&ore..."))
 		    )
 		)),
+		*/
 		`ComboBox (`id(`mods), `opt(`notify, `hstretch),
 		    // combobox label
 		    _("Kernel Module"), mods),
@@ -255,7 +264,7 @@ define any IRCDialog (boolean alone) ``{
 		    // button label
 		    `PushButton (`id(`test), `opt(`key_F6), _("&Test"))),
 		`VSpacing (0.5)
-	    ), `HSpacing (0.5)
+	    ), `HSpacing ()
 	)),
 	`VStretch ()
     ), `HSpacing(3));
@@ -265,11 +274,11 @@ define any IRCDialog (boolean alone) ``{
 	Label::BackButton (), alone?Label::FinishButton():Label::NextButton ());
 
 
-    foreach (symbol widget, [`config, `brow, `mods, `test, `desc_ch],``{
+    foreach (symbol widget, [`mods, `test, `desc_ch],``{
 	UI::ChangeWidget (`id (widget), `Enabled, use_irc);
     });
 
-    UI::ChangeWidget (`id(`config), `Value, irc_config);
+//    UI::ChangeWidget (`id(`config), `Value, irc_config);
 
     if (contains (mods, irc_module))
 	UI::ChangeWidget (`id(`mods), `Value, irc_module);
@@ -279,7 +288,7 @@ define any IRCDialog (boolean alone) ``{
     {
 	ret = (symbol) tvUserInput();
 
-	irc_config = (string) UI::QueryWidget (`id(`config),  `Value);
+//	irc_config = (string) UI::QueryWidget (`id(`config),  `Value);
 
 	if (irc_module != (string) UI::QueryWidget (`id(`mods),  `Value))
 	{
@@ -329,10 +338,11 @@ Install it now?
 		use_irc = false;
 		UI::ChangeWidget (`id(`rd), `CurrentButton, `no);
 	    }
-	    foreach (symbol widget, [`config, `brow, `mods, `test, `desc_ch],``{
+	    foreach (symbol widget, [`mods, `test, `desc_ch],``{
 		UI::ChangeWidget (`id (widget), `Enabled, use_irc);
 	    });
 	}
+	/*
 	if (ret == `brow)
 	{
 	    string file = UI::AskForExistingFile (startdir, "*", "");
@@ -349,6 +359,7 @@ Install it now?
 	    }
 
 	}
+	*/
 	if (ret == `test)
 	{
 	    IRCTestPopup (irc_config, irc_module, (use_irc != Tv::use_irc ||

@@ -213,7 +213,15 @@ _("<p>The list of stations shown in this table is saved to <i>/etc/X11/xawtvrc</
 define string IRCDialogHelp () ``{
 
     return
-_("helptext for IRC config FIXME");
+    // IRC helptext 1/3
+_("<p>In this dialog you can configure the Infra-Red control of your TV card.</p>") +
+
+    // IRC helptext 2/3
+_("<p>If you know which kernel module to use with your TV card, select one from the list. You can see the desription of selected module when <b>Show Module Description</b> is checked.</p>") +
+
+    // IRC helptext 3/3
+_("<p>Press <b>Test</b> to test the functionality of your IR control.</p>");
+
 }
 
 /* EOF */

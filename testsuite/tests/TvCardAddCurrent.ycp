@@ -10,7 +10,8 @@
     import "Tv";
 
     define void TEST_It_Now(map curcard_totest) ``{
-	// Tv::cards == nil
+
+	DUMP ("-------------------------------------------");
 	Tv::cards = nil;
 	Tv::current_card = curcard_totest;
 	Tv::CardAddCurrent();
@@ -58,8 +59,8 @@
 		 "unique_key" : "hluk.HvsIesmXXX1",
 		 "sound_card_no" : 0
 	      ],
-	      nil,
-	      nil,
+	      $[],
+	      $[],
 	      $[ "module" : "xyz",
 		 "parameters" : $[ "par_other" : "testvalue2" ],
 		 "unique_key" : "j7F3.J8dhgs34fK2",
@@ -73,7 +74,6 @@
 
     // Tv::current_card == nil
     TEST_It_Now(nil);
-
     // Tv::current_card == $[]
     TEST_It_Now($[]);
 

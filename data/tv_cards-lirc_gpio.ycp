@@ -1,54 +1,70 @@
 /**
- * TV cards using lirc_gpio module for LIRC
+ * TV cards using ir-kbd-gpio module for LIRC
  * data gathered from lirc_gpio.c and bttv.h
  *
  * $Id$
  */
-[
-    //BTTV_UNKNOWN
-    0,
-    //BTTV_PXELVWPLTVPAK
-    50,
-    //BTTV_PXELVWPLTVPRO
-    37,
-    //BTTV_PV_BT878P_9B
-    72,
-    //BTTV_AVERMEDIA
-    6,
-    //BTTV_AVPHONE98
-    41,
-    //BTTV_AVERMEDIA98
-    13,
-    //BTTV_CHRONOS_VS2
-    35,
-    //BTTV_MIRO
-    1,
-    //BTTV_DYNALINK
-    48,
-    //BTTV_MAGICTVIEW061
-    24,
-    //BTTV_MAGICTVIEW063
-    38,
-    //BTTV_PHOEBE_TVMAS
-    22,
-    //BTTV_BESTBUY_EASYTV
-    55,
-    //BTTV_BESTBUY_EASYTV2
-    62,
-    //BTTV_FLYVIDEO
-    8,
-    //BTTV_FLYVIDEO_98
-    30,
-    //BTTV_FLYVIDEO_98FM
-    56,
-    //BTTV_WINFAST2000
-    34,
-    //BTTV_WINVIEW_601
-    17,
-    //BTTV_KWORLD
-    78,
-    //BTTV_TYPHOON_TVIEW
-    36,
-    //BTTV_GVBCTV5PCI
-    81
+$[
+    "bttv": [
+        //BTTV_UNKNOWN
+        0,
+        //BTTV_PXELVWPLTVPAK
+        50,
+        //BTTV_PXELVWPLTVPRO
+        37,
+        //BTTV_PV_BT878P_9B
+        72,
+        //BTTV_AVERMEDIA
+        6,
+        //BTTV_AVPHONE98
+        41,
+        //BTTV_AVERMEDIA98
+        13,
+        //BTTV_CHRONOS_VS2
+        35,
+        //BTTV_MIRO
+        1,
+        //BTTV_DYNALINK
+        48,
+        //BTTV_MAGICTVIEW061
+        24,
+        //BTTV_MAGICTVIEW063
+        38,
+        //BTTV_PHOEBE_TVMAS
+        22,
+        //BTTV_BESTBUY_EASYTV
+        55,
+        //BTTV_BESTBUY_EASYTV2
+        62,
+        //BTTV_FLYVIDEO
+        8,
+        //BTTV_FLYVIDEO_98
+        30,
+        //BTTV_FLYVIDEO_98FM
+        56,
+        //BTTV_WINFAST2000
+        34,
+        //BTTV_WINVIEW_601
+        17,
+        //BTTV_KWORLD
+        78,
+        //BTTV_TYPHOON_TVIEW
+        36,
+        //BTTV_GVBCTV5PCI
+        81
+    ],
+    "saa7134" : [
+	//SAA7134_BOARD_FLYVIDEO3000
+	2,
+	//SAA7134_BOARD_FLYVIDEO2000
+	3,
+	//SAA7134_BOARD_CINERGY400
+	8,
+	//SAA7134_BOARD_CINERGY600
+	11,
+	//SAA7134_BOARD_ECS_TVP3XP
+	30,
+	//SAA7134_BOARD_ECS_TVP3XP_4CB5
+	31
+    ]
 ]
