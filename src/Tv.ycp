@@ -376,7 +376,6 @@ It is currently not installed. Do you want to install it now?"),
 	if (cards_database == nil)
 	{
 	    Report::Error(_("Unable to read the TV card database."));
-		y2error("Unable to read the TV card database (tv_cards.ycp).");
 	    cards_database = [];
 	    return false;
 	}
@@ -399,7 +398,6 @@ It is currently not installed. Do you want to install it now?"),
 	if (tuners_database == nil)
 	{
 	    Report::Error(_("Unable to read the tuner database!"));
-		y2error("Unable to read the tuner database (tv_tuners.ycp).");
 	    tuners_database = $[];
 	    return false;
 	}
@@ -424,7 +422,6 @@ It is currently not installed. Do you want to install it now?"),
 	{
 	    Report::Warning(_("Unable to read the list of
 available kernel modules."));
-		y2error("Cannot read kernel modules: Dir(.modinfo.kernel.drivers.media.video) is nil.");
 	    return true;
 	}
 
@@ -433,7 +430,7 @@ available kernel modules."));
 	    kernel_modules = add (kernel_modules, mod, parm);
 	});
 
-	y2milestone ("All v4l kernel modules: %1", kernel_modules);
+	y2debug ("All v4l kernel modules: %1", kernel_modules);
 	return true;
     }
 
@@ -723,7 +720,6 @@ available kernel modules."));
 	{
 	    Report::Error (_("Unable to write parameters
 to /etc/modules.conf."));
-		y2error("Cannot write parameters: Write(.modules.options) returns false.");
 	    result = false;
 	}
 
@@ -740,7 +736,6 @@ to /etc/modules.conf."));
 	{
 	    result = false;
 	    Report::Error (_("Unable to write /etc/modules.conf."));
-		y2error("Unable to write /etc/modules.conf: Write(.modules) is false.");
 	}
 
 	return result;
