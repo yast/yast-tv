@@ -419,7 +419,7 @@ define any ManualDialog (boolean warn) ``{
 	current_card_parameters[module_name_tmp]:$[], module_name_tmp);
 
     all_vendors		= vendors_and_selected[0]:[];
-    selected_vendor	= (integer) select (vendors_and_selected, 1, nil);
+    selected_vendor	= (integer) vendors_and_selected[1]:nil;
 
     y2debug("Selected vendor: %1", selected_vendor);
 
@@ -1286,9 +1286,9 @@ define list ChannelsScanPopup (string norm, string freq) ``{
         if ((boolean)SCR::Read(.background.output_open) &&
 	    (integer)SCR::Read(.background.newlines)>0)
         {
+	    list<string> newout = (list<string>)SCR::Read(.background.newout);
             // read the output line from scantv
-            test_output =
-		(string) select ((list)SCR::Read(.background.newout), 0, nil);
+            test_output = (string) newout[0]:nil;
 	    if (test_output != nil)
 	    {
 		if (issubstring (test_output, "no station"))
@@ -1382,10 +1382,10 @@ define term StationPopup (string channel, string station, list items) ``{
 	    }
 	    string msg = "";
 	    foreach (term it, (list<term>) items, ``{
-		if (select (it, 1, "") == new_channel && new_channel != channel)
+		if (it[1]:"" == new_channel && new_channel != channel)
 		    // error message
 		    msg = _("Such a channel already exists in the table.");
-		if (select (it, 2, "") == new_station && new_station != station)
+		if (it[2]:"" == new_station && new_station != station)
 		    // error message
 		    msg = _("Such station name already exists in the table.");
 	    });
@@ -1548,7 +1548,7 @@ Install it now?")))
 	if (ret == `del && current != nil)
 	{
 	    tv_channels = filter (term it, (list<term>) tv_channels, ``(
-		select (it, 2, "") != current));
+		it[2]:"" != current));
 	    UI::ChangeWidget (`id(`channels), `Items, tv_channels);
 	    modified = true;
 	}
@@ -1560,22 +1560,22 @@ Install it now?")))
 		tv_channels = add (tv_channels, new);
 		UI::ChangeWidget (`id(`channels), `Items, tv_channels);
 		UI::ChangeWidget (`id(`channels), `CurrentItem,
-		    select (new,2,nil));
+		    new[2]:nil);
 		modified = true;
 	    }
 	}
 	if ((ret == `edit || ret == `channels) && current != nil)
 	{
 	    term it = (term) UI::QueryWidget (`id(`channels), `Item (current));
-	    term new = StationPopup (select (it,1,""), current, tv_channels);
+	    term new = StationPopup (it[1]:"", current, tv_channels);
 	    if (new != nil)
 	    {
 		tv_channels = filter (term i, (list<term>) tv_channels, ``(
-		    select (i, 2, "") != current));
+		    i[2]:"" != current));
 		tv_channels = add (tv_channels, new);
 		UI::ChangeWidget (`id(`channels), `Items, tv_channels);
 		UI::ChangeWidget (`id(`channels), `CurrentItem,
-		    select (new,2,nil));
+		    new[2]:nil);
 		modified = true;
 	    }
 	}
@@ -1606,10 +1606,10 @@ Install it now?")))
 	    "global":	channels_config["global"]:$[]
 	];
 	foreach (term i, (list<term>) tv_channels, ``{
-	    string name = select (i,2,"");
+	    string name = i[2]:"";
 	    // preserve station settings that yast doesn't configure
 	    map station = (map) eval (channels_config[name]:$[]);
-	    station["channel"] = select (i,1,"");
+	    station["channel"] = i[1]:"";
 	    xawtvrc = add (xawtvrc, name, station);
 	});
 	Tv::channels_config = (map) eval (xawtvrc);

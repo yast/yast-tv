@@ -337,8 +337,7 @@
 	else
 	{
 	    any state = SCR::Read (.target.ycp, file);
-	    if ((is (state, map)) &&
-		((boolean)lookup ((map)state,"dont_ask_for_application",false)))
+	    if ((is (state, map)) && ((map)state)["dont_ask_for_application"]:false)
 		return true;
 	}
 	return false;
@@ -755,7 +754,7 @@ available kernel modules."));
 		    if (name_and_uk != nil)
 		    {
 			card_name	= name_and_uk["name"]:"";
-			unique_key=(string)lookup(name_and_uk,"unique_key",nil);
+			unique_key=(string)name_and_uk["unique_key"]:nil;
 		    }
 
 		    map parameters = $[];
@@ -841,7 +840,7 @@ available kernel modules."));
 		    if (name_and_uk != nil)
 		    {
 			card_name	= name_and_uk["name"]:"";
-			unique_key=(string)lookup(name_and_uk,"unique_key",nil);
+			unique_key=(string)name_and_uk["unique_key"]:nil;
 		    }
 
 		    map parameters = $[];
@@ -1506,7 +1505,7 @@ to %1."), "/etc/modprobe.d/tv."));
 	import "Sound";
 	// unmute the sound cards
 	foreach (map card, (list<map<string,any> >) cards, ``{
-	    integer sound_card_no = (integer) lookup (card,"sound_card_no",nil);
+	    integer sound_card_no = (integer) card["sound_card_no"]:nil;
 	    if (sound_card_no != nil)
 	    {
 		Sound::SetVolume (sound_card_no, "Line", 80);
@@ -1570,15 +1569,15 @@ to %1."), "/etc/modprobe.d/tv."));
 		map result = $[];
 
 		// look for the name of the card
-		string card_name = lookup(tv_card, "sub_device", "");
+		string card_name = tv_card["sub_device"]:"";
 		if (card_name == nil || card_name == "")
 		{
-		    card_name = lookup(tv_card, "device", "");
+		    card_name = tv_card["device"]:"";
 		}
 		result = add(result, "name", card_name);
 
 		// look for the unique id
-		string unique_key = (string)lookup(tv_card, "unique_key", nil);
+		string unique_key = (string)tv_card["unique_key"]:nil;
 		if (unique_key != nil)
 		{
 		    result = add(result, "unique_key", unique_key);
@@ -1624,7 +1623,7 @@ to %1."), "/etc/modprobe.d/tv."));
 		}
 
 		// look for the module
-		list drivers = lookup(tv_card, "drivers", []);
+		list drivers = tv_card["drivers"]:[];
 
 		// don't override drivers data from DB
 		if (size(drivers) > 0 && !haskey(result, "module"))
@@ -1683,7 +1682,7 @@ to %1."), "/etc/modprobe.d/tv."));
 	    installed_list = maplist(map card, (list<map>) cards, ``{
 
 		string card_item = nil;
-		string name = (string) lookup (card, "name", nil);
+		string name = (string) card["name"]:nil;
 		if (name != nil)
 		{
 		    string installed_str = "";
@@ -2026,10 +2025,10 @@ to %1."), "/etc/modprobe.d/tv."));
 	list detected_list = maplist(map card, (list<map<string,any> >) detected_cards, ``{
 	    term ret = nil;
 
-	    string uk = (string)lookup(card, "unique_key", nil);
+	    string uk = (string)card["unique_key"]:nil;
 	    if (uk != nil && !contains(installed_uk, uk))
 	    {
-		ret = `item(`id(card_no), lookup(card, "name", ""), is_first);
+		ret = `item(`id(card_no), card["name"]:"", is_first);
 		is_first = false;
 	    }
 	    card_no = card_no + 1;
@@ -2729,7 +2728,7 @@ global define boolean InitializeStationsConfig() ``{
 	boolean radio = false;
 	while (i < size (cards))
 	{
-		if (select(cards,i,nil)!=nil)
+		if ((cards[i]:nil) != nil)
 		{
 			if (i<64) tv = true;
 			else radio = true;
@@ -2803,7 +2802,7 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	    settings = $[];
 	}
 
-	cards = lookup (settings, "cards", []);
+	cards = settings["cards"]:[];
 	return true;
     }
 
@@ -2828,7 +2827,7 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 
 	// add the not yet configured cards
 	foreach (map card, (list<map<string,any> >) detected_cards, ``{
-	    string uk = (string) lookup (card, "unique_key", nil);
+	    string uk = (string) card["unique_key"]:nil;
 
 	    list<string> cardmodules = (list<string>)card["module"]:[];
 	    if (uk != nil &&
