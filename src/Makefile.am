@@ -20,8 +20,11 @@ ynclude_DATA =			\
 config_DATA =			\
 	tv.y2cc
 
+desktop_DATA =			\
+	tv.desktop
+
 module_DATA =			\
 	Tv.ycp			\
 	ModulesComments.ycp
 
-EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(config_DATA) $(module_DATA)
+EXTRA_DIST = $(client_DATA) $(desktop_DATA) $(ynclude_DATA) $(config_DATA) $(module_DATA)
