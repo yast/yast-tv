@@ -1,4 +1,4 @@
 Dump	[]
 Dump	[]
-Dump	[`item (`id (0), "0", "")]
-Dump	[`item (`id (0), "0", ""), `item (`id (3), "3", "My TV_card")]
+Dump	[`item (`id (0), "0 - TV", "")]
+Dump	[`item (`id (0), "0 - TV", ""), `item (`id (3), "3 - TV", "My TV_card")]
