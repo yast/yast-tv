@@ -13,6 +13,8 @@
 {
 
     import "Sound";
+    import "Tv";
+    import "Popup";
 
     /**
      * Compares parameters of a card with the current_card. It is needed for
@@ -59,6 +61,64 @@
 			     lookup(card, "name", ""));
 	    });
     }
+
+/**
+ * Enhanced version of UserInput which asks if really abort after
+ * pressing [Abort].
+ * @return any The value of the resulting UserInput.
+ */
+global define any tvUserInput() ``{
+    any ret = nil;
+
+    do
+    {
+	ret = UI::UserInput();
+    } while ((ret == `cancel || ret == `abort) &&
+	     (Tv::IsDirty()? !Popup::ReallyAbort (true): false));
+
+    return (ret == `cancel)? `abort: ret;
+}
+
+/**
+ * Error popup with the possibility of showing additional information
+ * about the problem
+ * @param error basic error message
+ * @param details more informations, e.g. stderr of some script
+ */
+global define void ErrorWithDetails (string error, string details) ``{
+
+    UI::OpenDialog (`HBox(`HSpacing (0.5),
+	`VBox(
+	    `VSpacing (0.5),
+	    // label
+	    `Left(`Heading (Label::ErrorMsg())),
+	    `Label (error),
+	    `ReplacePoint (`id(`rp), `Empty()),
+	    `VSpacing (0.5),
+	    `Left(`CheckBox (`id(`details), `opt (`notify),
+	        // checkbox label
+		_("&Show Details"), false)),
+	    `PushButton (`id(`ok), `opt(`key_F10,`default), Label::OKButton())
+	),
+	`HSpacing(0.5))
+    );
+    symbol ret = nil;
+
+    do
+    {
+	ret = UI::UserInput();
+	if (ret == `details)
+	{
+	    if (UI::QueryWidget (`id(`details), `Value))
+		UI::ReplaceWidget (`id(`rp), `VBox (`Label (details)));
+	    else
+		UI::ReplaceWidget (`id(`rp), `Empty());
+	}
+    }
+    while (ret != `ok && ret != `cancel);
+    UI::CloseDialog();
+}
+
 
 /* EOF */
 }

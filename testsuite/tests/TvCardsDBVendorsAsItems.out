@@ -14,3 +14,6 @@ Dump	[[`item (`id (0), "Autodetected card", true), `item (`id (1), "Other vendor
 Dump	---------------
 Dump	[[`item (`id (0), "Autodetected card", false)], nil]
 Dump	[[`item (`id (0), "Autodetected card", false), `item (`id (1), "Other vendors", false), `item (`id (2), "ATI", true)], 2]
+Dump	---------------
+Dump	[[`item (`id (0), "Autodetected card", false)], nil]
+Dump	[[`item (`id (0), "Autodetected card", false), `item (`id (1), "Other vendors", true), `item (`id (2), "ATI", false)], 1]

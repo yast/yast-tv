@@ -29,23 +29,6 @@ include "tv/irc_ui.ycp";
 
 
 /**
- * Enhanced version of UserInput which asks if really abort after
- * pressing [Abort].
- * @return any The value of the resulting UserInput.
- */
-global define any tvUserInput() ``{
-    any ret = nil;
-
-    do
-    {
-	ret = UI::UserInput();
-    } while ((ret == `cancel || ret == `abort) &&
-	     (Tv::IsDirty()? !Popup::ReallyAbort (true): false));
-
-    return (ret == `cancel)? `abort: ret;
-}
-
-/**
  * Whole configuration of tv
  * @return Sequence result of WizardSequencer().
  */
@@ -195,7 +178,7 @@ global define any MainSequence () ``{
 	    `abort            : `abort,
 	    `details_button   : "man_details",
 	    `next             : "man_audio",
-	    `channels		: "man_channels", //FIXME warn_channels?
+	    `channels		: "man_channels",
 	],
 	"man_details" : $[
 	    `abort            : `abort,
@@ -203,7 +186,6 @@ global define any MainSequence () ``{
 	],
 	"man_audio" : $[
 	    `abort            : `abort,
-//	    `next             : "man_doit"
 	    `next             : "man_irc"
 	],
 	"man_irc" : $[
@@ -216,12 +198,10 @@ global define any MainSequence () ``{
 
 	"det_audio" : $[
 	    `abort            : `abort,
-//	    `next             : "det_doit"
 	    `next             : "det_irc"
 	],
 	"det_irc" : $[
 	    `abort            : `abort,
-//	    `next             : "det_doit"
 	    `next             : "det_channels"
 	],
 	"det_channels" : $[
@@ -248,7 +228,6 @@ global define any MainSequence () ``{
 	],
 	"add_audio" : $[
 	    `abort            : `abort,
-//	    `next             : "add_doit"
 	    `next             : "add_irc"
 	],
 	"add_irc" : $[
@@ -275,7 +254,6 @@ global define any MainSequence () ``{
 	],
 	"rep_audio" : $[
 	    `abort            : `abort,
-//	    `next             : "rep_doit"
 	    `next             : "rep_irc"
 	],
 	"rep_irc" : $[
@@ -372,7 +350,7 @@ global define any DetectedDialog() ``{
 
 	    if (detected_no == nil)
 	    {
-		// For translators: The user chose [Configure...] but did not select a card
+		// The user chose [Configure...] but did not select a card
 		Popup::Message(_("Please select a card to configure first."));
 		continue;
 	    }
@@ -387,7 +365,7 @@ global define any DetectedDialog() ``{
 	    {
 		Tv::current_card = Tv::DetectedCardGet(detected_no);
 		Tv::current_card_no = nil;
-		if (lookup(Tv::current_card, "module", "") == "")
+		if (Tv::current_card["module"]:"" == "")
 		{
 		    ret = `add_manually_warn;
 		}
@@ -502,36 +480,35 @@ of \"%1\"?"), lookup(Tv::current_card, "name", "")));
  * Constructs the cards selection box for the selected vendor.
  * @param vendor_cards_db List of cards provided by the selected vendor.
  * @param parameters The current parameters to preselect the right model.
+ * @param mod kernel module for the selected card (nil for none/not known)
  * @return term The selection box.
  */
 global define term CardsSelectionBox ( list vendor_cards_db,
-				       map  parameters ) ``{
+				       map  parameters, string mod ) ``{
     integer card_no = 0;
     boolean some_is_selected = false;
-    list vendor_cards_items =
-	maplist ( `card, vendor_cards_db, ``{
-	    boolean select_this = false;
-	    if (!some_is_selected)
-	    {
-		select_this = CmpParameters(lookup(card, "parameters", $[]),parameters);
-	    }
+    list vendor_cards_items = maplist (map card, vendor_cards_db, ``{
 
-	    term ret = `item ( `id (card_no),
-			       lookup ( card, "name", "" ),
-			       select_this && !some_is_selected );
+	boolean select_this = false;
+	if (!some_is_selected && (mod == nil || mod == card["module"]:""))
+	{
+	    select_this = CmpParameters (card["parameters"]:$[],parameters);
+	}
 
-	    if (select_this)
-	    {
-		some_is_selected = true;
-	    }
-	    card_no = card_no + 1;
-	    return ret;
-	});
+	term ret = `item ( `id (card_no), card["name"]:"",
+	    select_this && !some_is_selected );
 
+	if (select_this)
+	{
+	    some_is_selected = true;
+	}
+	card_no = card_no + 1;
+	return ret;
+    });
 
-    return `SelectionBox ( `id (`cards_selbox), `opt (`notify),
-               // SelectionBox label:
-			   _("&Cards:"), vendor_cards_items );
+    // SelectionBox label:
+    return `SelectionBox ( `id (`cards_selbox), `opt (`notify), _("&Cards:"),
+	vendor_cards_items );
 }
 
 /**
@@ -606,11 +583,10 @@ global define any ManualDialog (boolean warn) ``{
     map selected_card = Tv::current_card;
 
     // Parameters and module name of the current card
-    map    current_card_parameters = lookup(Tv::current_card, "parameters", $[]);
-    string module_name_tmp =         lookup(Tv::current_card, "module", nil);
-
+    map current_card_parameters = Tv::current_card["parameters"]:$[];
+    string module_name_tmp	= Tv::current_card["module"]:nil;
     // The selected tuner
-	map	selected_tuner = Tv::GetTuner (module_name_tmp, current_card_parameters["tuner"]:"-1");
+    map	selected_tuner = Tv::GetTuner (module_name_tmp, current_card_parameters["tuner"]:"-1");
 
     // We must remember the current card if it was autodetected
     map autodetected_card = $[];
@@ -619,7 +595,6 @@ global define any ManualDialog (boolean warn) ``{
     {
 	autodetected_card = Tv::current_card;
     }
-
     // The currently selected vendor
     integer selected_vendor = nil;
 
@@ -631,12 +606,14 @@ global define any ManualDialog (boolean warn) ``{
 
     // Initialize all_vendors and selected_vendor
     list vendors_and_selected = Tv::CardsDBVendorsAsItems (autodetected_card,
-							   current_card_parameters);
+	current_card_parameters, module_name_tmp);
+
     all_vendors = select(vendors_and_selected, 0, []);
     selected_vendor = select(vendors_and_selected, 1, nil);
 
     if (selected_vendor != nil)
     {
+    // FIXME check the module if available!
 	vendor_cards_db = Tv::CardsDBVendorGetCards(autodetected_card, selected_vendor);
     }
 
@@ -644,42 +621,44 @@ global define any ManualDialog (boolean warn) ``{
         // PushButton label:
 	_("&Select tuner")));
 
-    term contents =
-	`HBox(`HSpacing(1.5),
-	      `VBox(
-		  `VSpacing(1.0),
-          // Frame label
-		  `Frame(_("Select the type of your card:"),
-			 `HBox(`HSpacing(0.5),
-			       `VBox(`VSpacing(0.2),
-				     `VBox(`HBox(`SelectionBox(`id(`vendors_selbox),
-						`opt(`notify),
-						// SelectioBox label:
-						_("&Vendors:"), all_vendors),
-					`ReplacePoint(`id(`cards_rep),
-                    CardsSelectionBox(vendor_cards_db,current_card_parameters))
-					   ),
-                       `ReplacePoint(`id(`tuners_rep), tuner_button)
-				     ),
-				     `VSpacing(0.2)
-			       ),
-			       `HSpacing(0.5)
-			 )
-		  ),
-		  `VSpacing(0.5),
-		  `HCenter(
-		  `HBox(
-		    `PushButton(`id(`details_button), `opt(`key_F7),
-			// PushButton label:
-			_("&Expert settings...")),
-		    `PushButton(`id(`channels), `opt(`key_F8),
-			// PushButton label:
-			_("TV channels..."))
-		    )
-		  )
-	      ),
-	      `HSpacing(1.5)
-	);
+    term contents = `HBox(`HSpacing(1.5),
+	`VBox(
+	    `VSpacing(1.0),
+	    // Frame label
+	    `Frame(_("Select the type of your card:"),
+	      `HBox(
+	        `HSpacing(0.5),
+		`VBox(
+		    `VSpacing(0.2),
+		    `VBox(
+			`HBox(
+			    `SelectionBox(`id(`vendors_selbox),
+				// SelectioBox label:
+				`opt(`notify), _("&Vendors:"), all_vendors),
+			    `ReplacePoint(`id(`cards_rep),
+				CardsSelectionBox ( vendor_cards_db,
+				    current_card_parameters, module_name_tmp))
+			),
+			`ReplacePoint(`id(`tuners_rep), tuner_button)
+		    ),
+		    `VSpacing(0.2)
+		),
+		`HSpacing(0.5)
+	      )
+	    ),
+	    `VSpacing(0.5),
+	    `HCenter(
+	      `HBox(
+		`PushButton(`id(`details_button), `opt(`key_F7),
+		    // PushButton label:
+		    _("&Expert settings...")),
+		// PushButton label:
+		`PushButton (`id(`channels), `opt(`key_F8), _("TV channels..."))
+	      )
+	    )
+	),
+	`HSpacing(1.5)
+    );
 
     Wizard::SetContentsButtons ( caption,
 				 contents,
@@ -726,15 +705,16 @@ the list in the following dialog."));
 	// Update the list of the cards
 	if (ret == `vendors_selbox)
 	{
-        integer current_vendor = selected_vendor;
-	selected_vendor = UI::QueryWidget(`id(`vendors_selbox), `CurrentItem);
-        if (selected_vendor != current_vendor)
-        {
+	    integer current_vendor = selected_vendor;
+	    selected_vendor= UI::QueryWidget(`id(`vendors_selbox),`CurrentItem);
+	    if (selected_vendor != current_vendor)
+	    {
 		vendor_cards_db = Tv::CardsDBVendorGetCards (autodetected_card,
-							 selected_vendor);
-	        UI::ReplaceWidget(`id(`cards_rep), CardsSelectionBox(vendor_cards_db, nil));
+		    selected_vendor);
+	        UI::ReplaceWidget(`id(`cards_rep),
+		    CardsSelectionBox (vendor_cards_db, nil, nil));
 	        selected_tuner = $[];
-        }
+	    }
 	}
 
 	integer sel_no = UI::QueryWidget(`id(`cards_selbox), `CurrentItem);
@@ -749,16 +729,17 @@ the list in the following dialog."));
 	// Update the selection
 	if (ret == `cards_selbox)
 	{
-        map new_card = $[];
-	if (sel_no != nil)
+	    map new_card = $[];
+	    if (sel_no != nil)
 		new_card = select(vendor_cards_db, sel_no, $[]);
 
-        if (new_card["parameters", "card"]:"" != selected_card["parameters","card"]:"")
-        {
+	    if (new_card["parameters", "card"]:"" != selected_card["parameters","card"]:"" ||
+		new_card["module"]:"" != selected_card["module"]:"")
+	    {
 		selected_card = new_card;
 		selected_tuner = $[];
-	        y2debug("Selected card: %1", selected_card);
-        }
+		y2debug("Selected card: %1", selected_card);
+	    }
 	}
 
 	// Show a popup with the selection of the tuner
@@ -796,16 +777,15 @@ for the selected card."));
     if (ret != `back && ret != `abort)
     {
 	// add the card
-	Tv::current_card = union (Tv::current_card, selected_card);
+	Tv::current_card	= union (Tv::current_card, selected_card);
 
-	map card_parameters = lookup (selected_card, "parameters", $[]);
-	map tuner_parameters = lookup (selected_tuner, "parameters", $[]);
+	map card_parameters	= selected_card["parameters"]:$[];
+	map tuner_parameters	= selected_tuner["parameters"]:$[];
 
-	Tv::current_card = add (Tv::current_card,
-				"parameters",
+	Tv::current_card	= add (Tv::current_card, "parameters",
 				union (card_parameters, tuner_parameters));
 
-	y2debug("Tv::current_card was updated to %1", Tv::current_card);
+	y2milestone("Tv::current_card was updated to %1", Tv::current_card);
     }
 
     return ret;
@@ -1549,7 +1529,7 @@ global define list ChannelsScanPopup (string norm, string freq) ``{
     if (start != "")
     {
 	// error message
-	ErrorWithDetails (_("The kernel module for TV support could not be loaded"), start);
+	ErrorWithDetails (_("The kernel module for TV support could not be loaded."), start);
 	UI::CloseDialog();
 	return nil;
     }
@@ -1593,14 +1573,13 @@ global define list ChannelsScanPopup (string norm, string freq) ``{
 	retlist = [ xawtvrc, stations ];
 	UI::ChangeWidget (`id(`scantv), `LastLine,
 	    // label: summary of scanning for stations
-	    sformat(_("Number of TV stations found: %1"), size (stations)));
+	    sformat(_("Number of TV stations found: %1."), size (stations)));
 
 	ret = UI::UserInput();
     }
     UI::CloseDialog();
 
     // TODO unload the modules?
-    // Tv::tv_tmp_stop();
     return retlist;
 }
 
@@ -1620,46 +1599,6 @@ global define list GetStationsAsItems (map xawtvrc) ``{
 	}
     });
     return stations;
-}
-
-/**
- * Error popup with the possibility of showing additional information
- * about the problem
- * @param error basic error message
- * @param details more informations, e.g. stderr of some script
- */
-global define void ErrorWithDetails (string error, string details) ``{
-
-    UI::OpenDialog (`HBox(`HSpacing (0.5),
-	`VBox(
-	    `VSpacing (0.5),
-	    // label
-	    `Left(`Heading (Label::ErrorMsg())),
-	    `Label (error),
-	    `ReplacePoint (`id(`rp), `Empty()),
-	    `VSpacing (0.5),
-	    `Left(`CheckBox (`id(`details), `opt (`notify),
-	        // checkbox label
-		_("&Show Details"), false)),
-	    `PushButton (`id(`ok), `opt(`key_F10,`default), Label::OKButton())
-	),
-	`HSpacing(0.5))
-    );
-    symbol ret = nil;
-
-    do
-    {
-	ret = UI::UserInput();
-	if (ret == `details)
-	{
-	    if (UI::QueryWidget (`id(`details), `Value))
-		UI::ReplaceWidget (`id(`rp), `VBox (`Label (details)));
-	    else
-		UI::ReplaceWidget (`id(`rp), `Empty());
-	}
-    }
-    while (ret != `ok && ret != `cancel);
-    UI::CloseDialog();
 }
 
 /* EOF */

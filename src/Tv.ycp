@@ -146,11 +146,103 @@
     // TV application
     string tv_app = "motv";
 
-    // configuration of TV stations (contents of /etc/X11/xawtvrc file)
+    /**
+     * yast temporary directory
+     */
+    global string tmpdir = "/tmp";
+
+    /**
+     * Were TV stations modified?
+     */
+    global boolean stations_modified = false;
+
+    /**
+     * Configuration of TV stations (contents of /etc/X11/xawtvrc file)
+     */
     global map channels_config = $[];
 
-    // temporary directory
-    global string tmpdir = "/tmp";
+    //---------------------------------------- IRC related variables
+
+    /**
+     * kerenel module used for lirc
+     */
+    global string irc_module = "";
+
+    /**
+     * configuration file for IR control
+     */
+    global string irc_config = "";
+
+    /**
+     * Is IRC used?
+     */
+    global boolean use_irc = false;
+
+    /**
+     * Is IRC modified?
+     */
+    global boolean irc_modified = false;
+
+    /**
+     * Kernel modules for LIRC
+     */
+    global list irc_modules_list = [ "lirc_i2c", "lirc_gpio", "lirc_bt829",
+	"lirc_it87", "lirc_parallel", "lirc_serial", "lirc_sir" ];
+
+    /**
+     * Map of lirc modules, together with their description (from modinfo)
+     */
+    global map irc_modules = $[];
+
+    /**
+     * Paths to config files of various remote controls
+     */
+    global list remotes = [];
+
+    /**
+     * TV cards using lirc_gpio module (matching card numbers from tv_cards.ycp)
+     */
+    list cards_with_lirc_gpio = [];
+
+    /**
+     * id's of TV cards, using lirc_gpio module
+     * gathered from lirc_gpio.c and bttv-cards.c
+     */
+    list card_ids_lirc_gpio = [
+	//BTTV_PXELVWPLTVPAK
+        //BTTV_PXELVWPLTVPRO
+        //BTTV_PV_BT878P_9B
+        //BTTV_AVERMEDIA
+        //BTTV_AVPHONE98
+        0x00011461,0x00031461,
+        //BTTV_AVERMEDIA98
+        0x00021461, 0x00041461,
+        //BTTV_CHRONOS_VS2
+        0x18501851,
+        //BTTV_MIRO
+        //BTTV_DYNALINK
+        //BTTV_MAGICTVIEW061
+        0x3002144f, 0x3005144f, 0x5000144f, 0x300014ff,
+        //BTTV_MAGICTVIEW063
+        0x3000144f,
+        //BTTV_PHOEBE_TVMAS
+        0x300214ff,
+        //BTTV_BESTBUY_EASYTV
+        //BTTV_BESTBUY_EASYTV2
+        //BTTV_FLYVIDEO
+        //BTTV_FLYVIDEO_98
+        //BTTV_FLYVIDEO_98FM
+        //BTTV_WINFAST2000
+        0x6606107d, 0x6607107d, 0x217d6606,
+	//BTTV_WINVIEW_601
+        //BTTV_KWORLD
+        //BTTV_TYPHOON_TVIEW
+        0x18521852,
+        //BTTV_GVBCTV5PCI
+        0x407010fc,
+	// FIXME many ID's are missing!
+    ];
+
 
     /**
      * Read all TV card settings from the SCR
@@ -1035,7 +1127,7 @@ to /etc/modules.conf."));
 	}
 
 	detected_cards =
-	    maplist(`tv_card, probe_tv, ``{
+	    maplist(map tv_card, probe_tv, ``{
 		map result = $[];
 
 		// look for the name of the card
@@ -1071,6 +1163,14 @@ to /etc/modules.conf."));
 		    {
 			result = add(result, "module", module_name);
 		    }
+		}
+		integer subdevice = tv_card["sub_device_id"]:nil;
+		integer subvendor = tv_card["sub_vendor_id"]:nil;
+		if (subdevice != nil && subvendor != nil)
+		{
+		    integer card_id = (subdevice << 16) | subvendor;
+		    card_id = (card_id & 0xffff0000) + (card_id & 0xffff);
+		    result = add (result, "card_id", card_id);
 		}
 		return result;
 	    });
@@ -1367,17 +1467,18 @@ to /etc/modules.conf."));
     /////////////////////////////////////////////////////////////////
 
     /**
-     * Create a list of items for the "Vendors:" SelectionBox in the ManualDialog()
-     * screen.
+     * Create a list of items for the "Vendors:" SelectionBox in the
+     * ManualDialog() screen.
      * @param autodetected The autodetected card must be present in the database
      *                     so we add it if needed.
      * @param parameters Parameters of card that should be preselected.
+     * @param mod Kernel module the reselected card uses
      * @return list List of list of `item()s and number of the vendor to preselect
      */
-    global define list CardsDBVendorsAsItems(map autodetected, map parameters) ``{
+    global define list CardsDBVendorsAsItems (map autodetected, map parameters, string mod) ``{
+
 	integer preselect_vendor = nil;
 	integer vendor_no = 0;
-
 	// Handle the autodetected card
 	if (autodetected != nil && autodetected != $[])
 	{
@@ -1388,33 +1489,30 @@ to /etc/modules.conf."));
 	    vendor_no = vendor_no + 1;
 	}
 
-	list vendors =
-	    maplist(`vendor, cards_database, ``{
-		if (preselect_vendor == nil)
-		{
-		    foreach(`card, lookup(vendor, "cards", []), ``{
-			if (preselect_vendor == nil
-			    && CmpParameters(lookup(card, "parameters", $[]), parameters))
-			{
-			    preselect_vendor = vendor_no;
-			}
-		    });
-		}
+	list vendors = maplist(map vendor, cards_database, ``{
 
-		term ret = `item(`id(vendor_no),
-				 lookup(vendor, "name", ""),
-				 preselect_vendor == vendor_no);
-
-		vendor_no = vendor_no + 1;
-		return ret;
-	    });
+	    if (preselect_vendor == nil)
+	    {
+		foreach (map card, vendor["cards"]:[], ``{
+		    if (preselect_vendor == nil &&
+			(mod == nil || mod == card["module"]:nil) &&
+			CmpParameters(card["parameters"]:$[], parameters))
+		    {
+			preselect_vendor = vendor_no;
+		    }
+		});
+	    }
+	    term ret = `item(`id(vendor_no), vendor["name"]:"",
+		preselect_vendor == vendor_no);
+	    vendor_no = vendor_no + 1;
+	    return ret;
+	});
 
 	if (autodetected != nil && autodetected != $[])
 	{
-	    vendors = prepend (vendors, `item ( `id (0),
-                        // Item of cards list:
-						_("Autodetected card"),
-						preselect_vendor == 0 ));
+            // Item of cards list:
+	    vendors = prepend (vendors, `item ( `id (0), _("Autodetected card"),
+		preselect_vendor == 0 ));
 	}
 	return [ vendors, preselect_vendor ];
     }
@@ -1635,23 +1733,8 @@ to /etc/modules.conf."));
 	return filter (`val, param_list, ``(val != nil));
     }
 
-
-//---------------------------------------- new functions TODO comment
-
-global string irc_module = "";
-global string irc_config = "";
-global boolean use_irc = false;
-global boolean irc_modified = false;
-global boolean stations_modified = false;
-// id's of TV cards using lirc_gpio module
-global list cards_with_lirc_gpio = [];
-
-global list irc_modules_list = [ "lirc_i2c", "lirc_gpio", "lirc_bt829",
-    "lirc_it87", "lirc_parallel", "lirc_serial", "lirc_sir" ];
-global map irc_modules = $[];
-
-// path to config files of various remote controls
-global list remotes = [];
+///////////////////////////////////////////////////////////////////////////
+//-------------------------------------------------- LIRC related functions
 
 /**
  * Read IRC settings
@@ -1664,16 +1747,15 @@ global define any ReadIRC () ``{
     irc_module = SCR::Read (.sysconfig.lirc.LIRC_MODULE);
     if (irc_module == nil) irc_module = "";
 
-    // FIXME how to read irc config properly???
     if (SCR::Read (.target.size, "/etc/lircd.conf") != -1)
     {
 	irc_config = "/etc/lircd.conf";
     }
 
-    // FIXME: all files???
+    // TODO: which config files?
     map out = SCR::Execute (.target.bash_output,
 	"/usr/bin/find  /usr/share/lirc/remotes/ -name *lircd*");
-    remotes = splitstring (out["stdout"]:"", "\n");
+    remotes = sort (splitstring (out["stdout"]:"", "\n"));
 
     return `next;
 }
@@ -1721,6 +1803,59 @@ global define any WriteIRC () ``{
     }
     return `next;
 }
+
+/**
+ * Load the desription of irc kernel modules (modinfo)
+ */
+global define void LoadIRCModulesDescription () ``{
+
+    irc_modules = listmap (string mod, irc_modules_list, ``{
+	map modinfo = SCR::Read (add (.modinfo.kernel.misc, mod));
+	return [ mod, modinfo["module_description"]:"" ];
+    });
+}
+
+/**
+ * Decides which LIRC module can be used accoring to current TV card
+ * @return module name
+ */
+global define string GetIRCModule () ``{
+
+    string ret = "lirc_i2c";
+
+    map card = current_card;
+    if (card == $[])
+	card = CardGet (0);
+    if (card == nil && detected_cards == [])
+	return ret;
+
+    integer cardnr = tointeger (card["parameters", "card"]:-1);
+    if (cardnr == -1)
+    {
+	// autodetected
+	integer card_id = -1;
+	if (card == nil)
+	    card = detected_cards [0]:$[];
+	// find the ID of current card (saved in detected_cards list)
+	foreach (map det_card, detected_cards, ``{
+	    if (card["module"]:nil == det_card["module"]:"" &&
+		card["name"]:nil == det_card["name"]:"")
+		card_id = det_card["card_id"]:-1;
+	});
+	if (contains (card_ids_lirc_gpio, card_id))
+	   ret = "lirc_gpio";
+    }
+    else
+    {
+	// manualy set card
+	if (contains (cards_with_lirc_gpio, cardnr))
+	    ret = "lirc_gpio";
+    }
+    return ret;
+}
+
+///////////////////////////////////////////////////////////////////////////
+//------------------------------------------- TV stations related functions
 
 /**
  * Read the whole contents of xawtvrc file and return it as a map
@@ -1796,15 +1931,6 @@ global define string tv_tmp_start() ``{
     return res["stderr"]:"";
 }
 
-// FIXME not necesary?
-global define string tv_tmp_stop() ``{
-
-    string modname = current_card["module"]:"";
-    string cmd = sformat("/sbin/modprobe -r %1", modname);
-    map res = SCR::Execute(.target.bash_output, cmd, $[]);
-    return res["stderr"]:"";
-}
-
 /**
  * Initialize stations configuration (read global config etc.)
  */
@@ -1846,16 +1972,6 @@ global define boolean InitializeStationsConfig() ``{
     return true;
 }
 
-/**
- * Load the desription of irc kernel modules (modinfo)
- */
-global define void LoadIRCModulesDescription () ``{
-
-    irc_modules = listmap (string mod, irc_modules_list, ``{
-	map modinfo = SCR::Read (add (.modinfo.kernel.misc, mod));
-	return [ mod, modinfo["module_description"]:"" ];
-    });
-}
 
 /* EOF */
 }

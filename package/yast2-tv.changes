@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Thu Oct 23 16:24:47 CEST 2003 - jsuchome@suse.cz
+
+- LIRC: check if autedetected card uses lirc_gpio (using subdevice
+  and sebvendor id's)
+- LIRC: show modinfo description on demand
+- fix in manual dialog (cards with same number but different module)
+- some code cleanup (common ui functions to misc.ycp)
+- adapted testsuite
+
+-------------------------------------------------------------------
 Fri Oct 17 19:25:14 CEST 2003 - jsuchome@suse.cz
 
 - initial configuration of LIRC (linux infra red control)
