@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Mar  9 12:35:14 CET 2004 - jsuchome@suse.cz
+
+- LIRC fixes for 2.6 kernel (use new modules)
+- updated list of saa7134 cards
+- 2.9.6
+
+-------------------------------------------------------------------
 Mon Mar  8 18:09:32 CET 2004 - jsuchome@suse.cz
 
 - more type fixes

@@ -186,8 +186,7 @@
     /**
      * Kernel modules for LIRC
      */
-    global list irc_modules_list = [ "lirc_i2c", "lirc_gpio", "lirc_bt829",
-	"lirc_it87", "lirc_parallel", "lirc_serial", "lirc_sir" ];
+    global list irc_modules_list = [ "ir-kbd-gpio", "ir-kbd-i2c" ];
 
     /**
      * Map of lirc modules, together with their description (from modinfo)
@@ -200,15 +199,16 @@
     global list remotes = [];
 
     /**
-     * TV cards using lirc_gpio module (matching card numbers from tv_cards.ycp)
+     * TV cards using irc_kbd_gpio module
+     * (matching card numbers from tv_cards.ycp)
      */
-    list cards_with_lirc_gpio = [];
+    map cards_with_ir_kbd_gpio = $[];
 
     /**
-     * id's of TV cards, using lirc_gpio module
+     * id's of TV cards, using irc_kbd_gpio module
      * gathered from lirc_gpio.c and bttv-cards.c
      */
-    list card_ids_lirc_gpio = [
+    list card_ids_ir_kbd_gpio = [
 	//BTTV_PXELVWPLTVPAK
         //BTTV_PXELVWPLTVPRO
         //BTTV_PV_BT878P_9B
@@ -240,7 +240,17 @@
         0x18521852,
         //BTTV_GVBCTV5PCI
         0x407010fc,
-	// FIXME many ID's are missing!
+	// SAA7134_BOARD_FLYVIDEO3000
+	0x01385168, 0x01384e42,
+	// SAA7134_BOARD_FLYVIDEO2000
+	0x01385168,
+	// SAA7134_BOARD_CINERGY400
+	0xa0061894,
+	// SAA7134_BOARD_CINERGY600
+	// SAA7134_BOARD_ECS_TVP3XP
+	0x4cb41019,
+	// SAA7134_BOARD_ECS_TVP3XP_4CB5
+	0x4cb51019
     ];
 
     // ------------------- function prototypes for include files:
@@ -543,7 +553,7 @@ available kernel modules."));
 		    integer param_no = modules_counts[module_name]:0;
 		    modules_counts = add (modules_counts,
 					 module_name, param_no + 1);
-		    parameters = mapmap(string key, map value, (map<string,map<string,any> >) parameters, ``{
+		    parameters = mapmap(string key, map value, (map<string,map>) parameters, ``{
 			string ret = value[param_no]:"";
 			return $[ key : ret ];
 		    });
@@ -553,7 +563,7 @@ available kernel modules."));
 		    // fill the spaces in the cards
 		    while (size(cards) < card_no)
 		    {
-			cards = add(cards, nil);
+			cards = add(cards, $[]);
 		    }
 
 		    boolean radio = false;
@@ -890,7 +900,6 @@ to /etc/modules.conf."));
 		  $["module":"bttv", "name":"Bt848 TV Kendy's special", "unique_key":"hluk.HvsIesmXXX1"]
 		];
 	}
-
 	y2milestone("Detected cards: %1", detected_cards);
 	return true;
     }
@@ -975,7 +984,8 @@ to /etc/modules.conf."));
 	    integer cards_s = size (cards);
 	    while (cards_s < 65)
 	    {
-		cards = add (cards, nil);
+//		cards = add (cards, nil);
+		cards = add (cards, $[]);
 		cards_s = cards_s + 1;
 	    }
 	}
@@ -985,7 +995,7 @@ to /etc/modules.conf."));
 		i = i + 1;
 		return card;
 	    }
-	    if (card == nil && index == nil)
+	    if (card == $[] && index == nil)
 	    {
 		index = i;
 		return current_card;
@@ -1046,7 +1056,7 @@ to /etc/modules.conf."));
 
 	integer i = 0;
 	cards = maplist (map card, (list<map<string,any> >)cards, ``{
-	    if (i == index && card != nil)
+	    if (i == index && card != nil && card != $[])
 	    {
 		cards_to_del = add(cards_to_del, card);
 		card = nil;
@@ -1097,7 +1107,7 @@ to /etc/modules.conf."));
 
 	list conf_list = maplist (map card, (list<map<string,any> >) cards, ``{
 	    term ret = nil;
-	    if (card != nil)
+	    if (card != nil && card != $[])
 	    {
 		ret = `item(`id(card_no),sformat("%1",card_no),card["name"]:"");
 	    }
@@ -1434,7 +1444,7 @@ to /etc/modules.conf."));
  */
 global define any ReadIRC () ``{
 
-    cards_with_lirc_gpio = (list)
+    cards_with_ir_kbd_gpio = (map)
 	SCR::Read (.target.yast2, "tv_cards-lirc_gpio.ycp");
     use_irc = Service::Status ("lirc") == 0;
     irc_module = (string) SCR::Read (.sysconfig.lirc.LIRC_MODULE);
@@ -1444,11 +1454,13 @@ global define any ReadIRC () ``{
     {
 	irc_config = "/etc/lircd.conf";
     }
+    else
+	irc_config = "/usr/share/lirc/remotes/input-layer-lircd.conf";
 
-    // TODO: which config files?
     map out = (map) SCR::Execute (.target.bash_output,
 	"/usr/bin/find  /usr/share/lirc/remotes/ -name *lircd*");
     remotes = sort (splitstring (out["stdout"]:"", "\n"));
+    // FIXME choose from remotes
 
     return `next;
 }
@@ -1502,7 +1514,16 @@ global define any WriteIRC () ``{
  */
 global define void LoadIRCModulesDescription () ``{
 
+    map ir_desc = $[
+	// description for ir-kbd-gpio module
+	"ir-kbd-gpio": _("input driver for bt8x8 gpio IR remote controls"),
+	// description for ir-kbd-i2c module
+	"ir-kbd-i2c" : _("input driver for i2c IR remote controls")
+    ];
+
     irc_modules = listmap (string mod, (list<string>) irc_modules_list, ``{
+	if (ir_desc[mod]:"" != "")
+	    return $[ mod: ir_desc[mod]:"" ];
 	map modinfo = (map) SCR::Read (add (.modinfo.kernel.misc, mod));
 	return $[ mod: (modinfo["module_description"]:"") ];
     });
@@ -1514,7 +1535,7 @@ global define void LoadIRCModulesDescription () ``{
  */
 global define string GetIRCModule () ``{
 
-    string ret = "lirc_i2c";
+    string ret = "ir-kbd-i2c";
 
     map card = current_card;
     if (card == $[])
@@ -1522,7 +1543,7 @@ global define string GetIRCModule () ``{
     if (card == nil && detected_cards == [])
 	return ret;
 
-    integer cardnr = tointeger (card["parameters", "card"]:-1);
+    integer cardnr = tointeger (card["parameters", "card"]:"-1");
     if (cardnr == -1)
     {
 	// autodetected
@@ -1535,14 +1556,15 @@ global define string GetIRCModule () ``{
 		card["name"]:nil == det_card["name"]:"")
 		card_id = det_card["card_id"]:-1;
 	});
-	if (contains (card_ids_lirc_gpio, card_id))
-	   ret = "lirc_gpio";
+	if (contains (card_ids_ir_kbd_gpio, card_id))
+	   ret = "ir-kbd-gpio";
     }
     else
     {
 	// manualy set card
-	if (contains (cards_with_lirc_gpio, cardnr))
-	    ret = "lirc_gpio";
+	string mod = card["module"]:"bttv";
+	if (contains (cards_with_ir_kbd_gpio[mod]:[], cardnr))
+	    ret = "ir-kbd-gpio";
     }
     return ret;
 }

@@ -181,7 +181,7 @@ define any OverviewDialog() ``{
 
     contents = Wizard_hw::SpacingAround (contents, 1.5, 1.5, 1.0, 1.0);
 
-    symbol ret = nil;
+    symbol ret = `not_next;
     do
     {
 	Wizard::SetContentsButtons ( caption, contents, OverviewDialogHelp (),
@@ -211,7 +211,7 @@ define any OverviewDialog() ``{
 	    {
 		// The user chose [Edit...] but did not select a card
 		Popup::Message(_("Please select a card to edit first."));
-		ret = nil;
+		ret = `not_next;
 	    }
 	}
 	// Add a card manually
