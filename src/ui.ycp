@@ -275,7 +275,13 @@ of \"%1\"?"), Tv::current_card["name"]:""));
  * @return term The selection box.
  */
 define term CardsSelectionBox ( list vendor_cards_db,
-				       map  parameters, string mod ) ``{
+				       map  parameters, list<string> modules ) ``{
+
+    y2debug("vendor_cards_db: %1", vendor_cards_db);
+    y2debug("parameters: %1", parameters);
+    y2debug("mod: %1", mod);
+
+
     integer card_no = 0;
     boolean some_is_selected = false;
     list vendor_cards_items = maplist (map card, (list<map>) vendor_cards_db, ``{
@@ -283,11 +289,16 @@ define term CardsSelectionBox ( list vendor_cards_db,
 	boolean select_this = false;
 
 	list<string> card_modules = card["module"]:[];
-	string current_module = card_modules[size(card_modules) - 1]:"";
 
-	if (!some_is_selected && (mod == nil || mod == current_module))
+	if (!some_is_selected && (modules == nil || modules == card_modules))
 	{
-	    select_this = CmpParameters (card["parameters"]:$[],parameters);
+//	    select_this = CmpParameters (card["parameters",current_module]:$[],parameters);
+	    select_this = card["parameters"]:$[] == parameters;
+	    if (select_this)
+	    {
+		y2debug("card: %1", card["parameters",current_module]:$[]);
+		y2debug("parameters: %1", parameters);
+	    }
 	}
 
 	term ret = `item ( `id (card_no), card["name"]:"",
@@ -385,12 +396,13 @@ define any ManualDialog (boolean warn) ``{
     string module_name_tmp = module_names_tmp[size(module_names_tmp) - 1]:"";
 
     // The selected tuner
-    map	selected_tuner = Tv::GetTuner (module_name_tmp, current_card_parameters["tuner"]:"-1");
+    // TODO: module "tuner" instead of module_name_tmp??
+    map	selected_tuner = Tv::GetTuner (module_name_tmp, current_card_parameters[module_name_tmp, "tuner"]:"-1");
 
     // We must remember the current card if it was autodetected
     map autodetected_card = $[];
     if (module_name_tmp != nil && module_name_tmp != "" &&
-         (current_card_parameters["card"]:"-1" == "-1"))
+         (current_card_parameters["bttv", "card"]:"-1" == "-1"))
     {
 	autodetected_card = Tv::current_card;
     }
@@ -405,7 +417,7 @@ define any ManualDialog (boolean warn) ``{
 
     // Initialize all_vendors and selected_vendor
     list vendors_and_selected = Tv::CardsDBVendorsAsItems (autodetected_card,
-	current_card_parameters, module_name_tmp);
+	current_card_parameters[module_name_tmp]:$[], module_name_tmp);
 
     all_vendors		= vendors_and_selected[0]:[];
     selected_vendor	= (integer) select (vendors_and_selected, 1, nil);
@@ -436,7 +448,7 @@ define any ManualDialog (boolean warn) ``{
 				`opt(`notify), _("&Vendors:"), all_vendors),
 			    `ReplacePoint(`id(`cards_rep),
 				CardsSelectionBox ( vendor_cards_db,
-				    current_card_parameters, module_name_tmp))
+				    current_card_parameters, module_names_tmp))
 			),
 			`ReplacePoint(`id(`tuners_rep), tuner_button)
 		    ),
@@ -502,12 +514,17 @@ the list in the following dialog."));
 	// User input
 	ret = tvUserInput();
 
+	y2debug("UI: %1", ret);
+
 	// Update the list of the cards
 	if (ret == `vendors_selbox)
 	{
 	    integer current_vendor = selected_vendor;
 	    selected_vendor = (integer)
 		UI::QueryWidget(`id(`vendors_selbox),`CurrentItem);
+
+	    y2debug("selected_vendor: %1", selected_vendor);
+	    y2debug("current_vendor: %1", current_vendor);
 	    if (selected_vendor != current_vendor)
 	    {
 		vendor_cards_db = Tv::CardsDBVendorGetCards (autodetected_card,
@@ -515,6 +532,8 @@ the list in the following dialog."));
 	        UI::ReplaceWidget(`id(`cards_rep),
 		    CardsSelectionBox (vendor_cards_db, nil, nil));
 	        selected_tuner = $[];
+
+		y2debug("CardsSelectionBox called with nil params");
 	    }
 	}
 
@@ -535,8 +554,8 @@ the list in the following dialog."));
 	    if (sel_no != nil)
 		new_card = vendor_cards_db[sel_no]:$[];
 
-	    if (new_card["parameters", "card"]:"" !=
-		    selected_card["parameters","card"]:"" ||
+	    if (new_card["parameters", "bttv", "card"]:"" !=
+		    selected_card["parameters", "bttv", "card"]:"" ||
 		new_card["module"]:[] != selected_card["module"]:[])
 	    {
 		selected_card = new_card;
@@ -585,8 +604,16 @@ for the selected card."));
 	map card_parameters	= selected_card["parameters"]:$[];
 	map tuner_parameters	= selected_tuner["parameters"]:$[];
 
-	Tv::current_card	= add (Tv::current_card, "parameters",
-				union (card_parameters, tuner_parameters));
+	y2debug("card_parameters: %1", card_parameters);
+	y2debug("tuner_parameters: %1", tuner_parameters);
+
+	list<string> module_names = selected_card["module"]:[];
+	string module_name = module_names[size(module_names) - 1]:"";
+
+	card_parameters[module_name] = union(card_parameters[module_name]:$[], tuner_parameters);
+	y2debug("card_parameters: %1", card_parameters);
+
+	Tv::current_card	= add (Tv::current_card, "parameters", card_parameters);
 
 	y2milestone("Tv::current_card was updated to %1", Tv::current_card);
     }
