@@ -401,11 +401,15 @@ global define any OverviewDialog() ``{
 				     FinishButtonLabel () );
 	UI::ChangeWidget(`id(`table), `Items, Tv::CardsAsItems());
 
+    UI::SetFocus (`id (`table));
+
 	ret = tvUserInput();
 
 	integer sel_no = UI::QueryWidget (`id(`table), `CurrentItem);
 
 	// Edit the selected card
+    if (ret == `table)
+        ret = `edit_button;
 	if (ret == `edit_button)
 	{
 	    if (sel_no != nil)
@@ -472,7 +476,7 @@ global define term CardsSelectionBox ( list vendor_cards_db,
 	    boolean select_this = false;
 	    if (!some_is_selected)
 	    {
-		select_this = CmpParameters(lookup(card, "parameters", $[]), parameters);
+		select_this = CmpParameters(lookup(card, "parameters", $[]),parameters);
 	    }
 
 	    term ret = `item ( `id (card_no),
@@ -486,6 +490,7 @@ global define term CardsSelectionBox ( list vendor_cards_db,
 	    card_no = card_no + 1;
 	    return ret;
 	});
+
 
     return `SelectionBox ( `id (`cards_selbox), `opt (`notify),
                // SelectionBox label:
@@ -545,6 +550,7 @@ global define map ChooseTuner(string kernel_module, map selected_tuner) ``{
 
     if (ret == `ok)
     {
+    y2debug ("selected tuner: %1", sel_tuner);
 	return sel_tuner;
     }
     return nil;
@@ -562,17 +568,17 @@ global define any ManualDialog (boolean warn) ``{
     // The selected card
     map selected_card = Tv::current_card;
 
-    // The selected tuner
-    map selected_tuner = Tv::current_card;
-
     // Parameters and module name of the current card
     map    current_card_parameters = lookup(Tv::current_card, "parameters", $[]);
     string module_name_tmp =         lookup(Tv::current_card, "module", nil);
 
+    // The selected tuner
+	map	selected_tuner = Tv::GetTuner (module_name_tmp, current_card_parameters["tuner"]:"-1");
+
     // We must remember the current card if it was autodetected
     map autodetected_card = $[];
     if ( module_name_tmp != nil && module_name_tmp != "" &&
-	 (current_card_parameters == nil || current_card_parameters == $[]) )
+         (current_card_parameters["card"]:"-1" == "-1"))
     {
 	autodetected_card = Tv::current_card;
     }
@@ -597,6 +603,10 @@ global define any ManualDialog (boolean warn) ``{
 	vendor_cards_db = Tv::CardsDBVendorGetCards(autodetected_card, selected_vendor);
     }
 
+    term tuner_button = `Right(`PushButton(`id(`tuner_button),`opt (`key_F3),
+        // PushButton label:
+	_("&Select tuner")));
+
     term contents =
 	`HBox(`HSpacing(1.5),
 	      `VBox(
@@ -606,17 +616,13 @@ global define any ManualDialog (boolean warn) ``{
 			 `HBox(`HSpacing(0.5),
 			       `VBox(`VSpacing(0.2),
 				     `VBox(`HBox(`SelectionBox(`id(`vendors_selbox),
-							       `opt(`notify),
-                                   // SelectioBox label:
-							       _("&Vendors:"),
-							       all_vendors),
-						 `ReplacePoint(`id(`cards_rep),
-							       CardsSelectionBox ( vendor_cards_db,
-										   current_card_parameters ))
+						`opt(`notify),
+						// SelectioBox label:
+						_("&Vendors:"), all_vendors),
+					`ReplacePoint(`id(`cards_rep),
+                    CardsSelectionBox(vendor_cards_db,current_card_parameters))
 					   ),
-					   `Right(`PushButton(`id(`tuner_button),`opt (`key_F3),
-                                // PushButton label:
-								_("&Select tuner")))
+                       `ReplacePoint(`id(`tuners_rep), tuner_button)
 				     ),
 				     `VSpacing(0.2)
 			       ),
@@ -625,8 +631,8 @@ global define any ManualDialog (boolean warn) ``{
 		  ),
 		  `VSpacing(0.5),
 		  `HCenter(`PushButton(`id(`details_button), `opt(`key_F7),
-                       // PushButton label:
-				       _("&Expert settings...")))
+			// PushButton label:
+			_("&Expert settings...")))
 	      ),
 	      `HSpacing(1.5)
 	);
@@ -648,6 +654,9 @@ the list in the following dialog."));
     }
 
     any ret = nil;
+
+    UI::SetFocus (`id (`vendors_selbox));
+
     do
     {
 	// Disable/enable the [Select tuner] button
@@ -658,9 +667,31 @@ the list in the following dialog."));
 	{
 	    selected_tuner = $[];
 	}
+	if (selected_tuner != $[])
+		UI::ReplaceWidget (`id(`tuners_rep), `HBox(
+		  `HSpacing (0.5),
+		  // label, %1 is tuner type
+		  `Label( sformat (_("Tuner: %1"), selected_tuner["name"]:"")),
+			tuner_button));
+	else
+		UI::ReplaceWidget (`id(`tuners_rep), `HBox(tuner_button));
 
 	// User input
 	ret = tvUserInput();
+
+	// Update the list of the cards
+	if (ret == `vendors_selbox)
+	{
+        integer current_vendor = selected_vendor;
+	selected_vendor = UI::QueryWidget(`id(`vendors_selbox), `CurrentItem);
+        if (selected_vendor != current_vendor)
+        {
+		vendor_cards_db = Tv::CardsDBVendorGetCards (autodetected_card,
+							 selected_vendor);
+	        UI::ReplaceWidget(`id(`cards_rep), CardsSelectionBox(vendor_cards_db, nil));
+	        selected_tuner = $[];
+        }
+	}
 
 	integer sel_no = UI::QueryWidget(`id(`cards_selbox), `CurrentItem);
 
@@ -671,53 +702,44 @@ the list in the following dialog."));
 	    ret = nil;
 	}
 
-	// Update the list of the cards
-	if (ret == `vendors_selbox)
-	{
-	    selected_vendor = UI::QueryWidget(`id(`vendors_selbox), `CurrentItem);
-	    vendor_cards_db = Tv::CardsDBVendorGetCards (autodetected_card,
-							 selected_vendor);
-	    UI::ReplaceWidget(`id(`cards_rep), CardsSelectionBox(vendor_cards_db, nil));
-	}
-
 	// Update the selection
 	if (ret == `cards_selbox)
 	{
-	    if (sel_no != nil)
-	    {
-		selected_card = select(vendor_cards_db, sel_no, $[]);
-	    }
-	    else
-	    {
-		selected_card = $[];
-	    }
-	    selected_tuner = $[];
-	    y2debug("Selected card: %1", selected_card);
+        map new_card = $[];
+	if (sel_no != nil)
+		new_card = select(vendor_cards_db, sel_no, $[]);
+
+        if (new_card["parameters", "card"]:"" != selected_card["parameters","card"]:"")
+        {
+		selected_card = new_card;
+		selected_tuner = $[];
+	        y2debug("Selected card: %1", selected_card);
+        }
 	}
 
 	// Show a popup with the selection of the tuner
 	if (ret == `tuner_button)
 	{
-	    if (has_tuners)
-	    {
-		map new_tuner = ChooseTuner (module_name, selected_tuner);
-
-		if (new_tuner != nil)
-		{
-		    selected_tuner = new_tuner;
-		}
-	    }
-	    else if (sel_no == nil)
-	    {
-		// For translators: The user chose [Select tuner] but did not select his card
+	  if (sel_no == nil)
+	  {
+		// message popup
 		UI::MessagePopup (_("Please select your card first."));
-	    }
-	    else
-	    {
-		// For translators: The user chose [Next] but did not select a card
-		UI::MessagePopup (_("There is no tuner available
+	  }
+          else
+          {
+	        if (has_tuners)
+	        {
+		  map new_tuner = ChooseTuner (module_name, selected_tuner);
+		  if (new_tuner != nil)
+			selected_tuner = new_tuner;
+	        }
+	        else
+	        {
+		  // message popup
+		  UI::MessagePopup (_("There is no tuner available
 for the selected card."));
-	    }
+	        }
+          }
 	}
     } while (ret != `details_button &&
 	     ret != `back && ret != `abort && ret != `next);

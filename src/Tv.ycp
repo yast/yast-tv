@@ -123,6 +123,17 @@
     map tuners_database = nil;
 
     /**
+     * Tuner database organized in map of the form $[ tuner_id : tuner_map]
+     * @example
+     *   $[ "bttv" :
+     *       $[ "9": $[ "name" : "Alps HSBH1",
+     *                  "parameters" : $[ "tuner" : "9" ]]
+     *       ]
+     *   ]
+     */
+    map tuners_by_id = $[];
+
+    /**
      * Map of available TV kernel modules and their parameters.
      */
     global map kernel_modules = nil;
@@ -515,6 +526,16 @@ It is currently not installed. Install it now?"), "kradio"));
 	if (tuners_database == nil)
 	{
 	    tuners_database = SCR (`Read (.target.yast2, "tv_tuners.ycp"));
+        foreach (`modul, `tuners, tuners_database, ``{
+          tuners_by_id = add (tuners_by_id, modul, $[
+                "-1": $[ "name" :
+                            // Default item of tuners list:
+                            _("Default (detected)"),
+				        "parameters" : $[ "tuner": "-1" ]] ]);
+          foreach (`tuner, tuners, ``{
+            tuners_by_id [modul, tuner["parameters", "tuner"]:"-2"] = tuner;
+          });
+        });
 	}
 	if (tuners_database == nil)
 	{
@@ -526,6 +547,7 @@ It is currently not installed. Install it now?"), "kradio"));
 
 	// translate it
 	tuners_database = eval (tuners_database);
+	tuners_by_id = eval (tuners_by_id);
 
 	return true;
     }
@@ -1317,7 +1339,7 @@ to /etc/modules.conf."));
 	// Handle the autodetected card
 	if (autodetected != nil && autodetected != $[])
 	{
-	    if (parameters == nil || parameters == $[])
+	    if (parameters["card"]:"-1" == "-1")
 	    {
 		preselect_vendor = vendor_no;
 	    }
@@ -1388,6 +1410,18 @@ to /etc/modules.conf."));
     /////////////////////////////////////////////////////////////////
     // Functions working with "tuners_database"
     /////////////////////////////////////////////////////////////////
+
+    /**
+     * Returns the tuner map according to its ID
+     * @param kernel_name Name of the main module for this card.
+     * @param tuner_id ID of selected tuner
+     * @return map Tuner
+     */
+    global define map GetTuner (string kernel_name, string tuner_id) ``{
+
+        return tuners_by_id [kernel_name, tuner_id]:$[];
+    }
+
 
     /**
      * Are there any tuners for the <B>kernel_module</B>?
