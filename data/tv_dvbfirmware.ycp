@@ -1,6 +1,8 @@
 /*
  * Yast2 firmware database for DVB cards
  *
+ * See /usr/src/linux/Documentation/dvb/get_dvb_firmware script
+ *
  * $Id$
  */
 
@@ -8,9 +10,16 @@
 textdomain "tv";
 
 return $[
-    "tda1004x" :
+// FIXME: disabled because it needs small part of the library (FW only)
+//    "tda1004x" :
 	// source : target firmware file
-	$["ttlcdacc.dll" : "/usr/lib/hotplug/firmware/tda1004x.bin"]
+//	$["ttlcdacc.dll" : "/usr/lib/hotplug/firmware/dvb-fe-tda10045.fw"],
+
+    "alps_tdlb7" :
+	$["SC_MAIN.MC" : "/usr/lib/hotplug/firmware/dvb-fe-tdlb7.fw"],
+
+    "sp887x" :
+	$["sc_main.mc" : "/usr/lib/hotplug/firmware/dvb-fe-sp887x.fw"],
 ];
 
 }
