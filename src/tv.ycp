@@ -261,7 +261,8 @@ define boolean ShowCardHandler (map options) {
 	if (card["parameters", option]:nil != nil)
 	{
 	    // label (current value of sound module parameter)
-	    out = out + sformat(_("\n\tCurrent value: %1"),
+	    out = out + sformat(_("\n\tCurrent Value: %1
+"),
 		card["parameters", option]:"");
 	}
     });
@@ -320,11 +321,11 @@ define boolean IRCHandler (map<string,string> options) {
     {
 	if (!Tv::use_irc)
 	    // status text
-	    CommandLine::Print (_("Infrared Control is disabled."));
+	    CommandLine::Print (_("Infrared control is disabled."));
 	else
 	    // status text
 	    CommandLine::Print (sformat (
-	    _("Infrared Control is enabled, using module %1."),Tv::irc_module));
+	    _("Infrared control is enabled using module %1."),Tv::irc_module));
 	return false;
     }
 
@@ -411,7 +412,7 @@ map cmdline = $[
 	"irc": $[
 	    "handler"	: IRCHandler,
 	    // translators: command line help text for test action
-	    "help"	: _("Enable/Diable Infra Red Control")
+	    "help"	: _("Enable or Disable Infrared Control")
 	],
     ],
     "options"		: $[
@@ -427,7 +428,7 @@ map cmdline = $[
 	],
 	"module"	:$[
 	    // translators: command line help text for the 'module' option
-	    "help"	: _("Kernel module (driver) for the TV/audio card"),
+	    "help"	: _("Kernel module (driver) for the TV or radio card"),
 	    "type"	: "string"
 	],
 	"card"	:$[
