@@ -266,14 +266,13 @@ _("If you want to watch TV on your screen, you need the KWinTV application.
 It is currently not installed. Do you want to install it now?"),
 		YesButtonLabel(), NoButtonLabel());
 
-    // we do not need this anymore; kwintv runs v4l-conf itself
-    /*
+    // kwintv should run v4l-conf itself
 	if (kwintv_is_installed)
 	{
 	    // Initialize setup
 	    SCR::Execute(.target.bash, "/usr/X11R6/bin/v4l-conf");
 	}
-    */
+
 	// increase the progress to "finish"
 	Progress::NextStage ();
 
@@ -663,6 +662,7 @@ available kernel modules."));
 	    else
 	    {
 		// Write it...
+        y2milestone ("pars=%1, name=%2", parameters, module_name);
 		result = result && SCR::Write(.modules.options, parameters, module_name);
 	    }
 	});
@@ -678,6 +678,9 @@ available kernel modules."));
 	// common settings
 	y2milestone ("Writing char-major-81 (videodev) to modules.conf");
 	SCR::Write (.modules.alias, "videodev", "char-major-81");
+
+    // fix of bug #18033:
+	SCR::Write (.modules.options, $["bit_test":"1"], "i2c-algo-bit");
 
 	// reset the old settings (all char-major-81-* aliases)
 	foreach (`alias, GetMajor81Aliases(), ``{
