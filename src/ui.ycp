@@ -778,7 +778,7 @@ of available kernel modules...")),
     // For translators: Label for the TextEntry. %1 means name of the kernel module's parameter.
     string parameter_label = _("&Parameter \"%1\":");
     // For translators: Label for the TextEntry, when kernel module has no parameters.
-    string parameter_label_nil = _("(no parameters)");
+    string parameter_label_nil = _("&Parameter: (none)");
 
     term contents =
 	`HBox(`HSpacing(1.5),
@@ -833,8 +833,16 @@ of available kernel modules...")),
     // Initialize the "Parameter: xyz" label and its value
     selected_parameter = UI::QueryWidget (`id(`parameters_table), `CurrentItem);
     string value = lookup (parameters, selected_parameter, "");
-    UI::ChangeWidget (`id(`parameter_entry), `Label, sformat(parameter_label, selected_parameter));
-    UI::ChangeWidget (`id(`parameter_entry), `Value, value);
+	if (selected_parameter!=nil) {
+		UI::ChangeWidget (`id(`parameter_entry), `Label, sformat(parameter_label, selected_parameter));
+	    UI::ChangeWidget (`id(`parameter_entry), `Value, value);
+	}
+	else {
+		UI::ChangeWidget (`id(`parameter_entry), `Label, sformat(parameter_label_nil));
+        UI::ChangeWidget (`id(`parameter_entry), `Enabled, false);
+        UI::ChangeWidget (`id(`set_button), `Enabled, false);
+        UI::ChangeWidget (`id(`reset_button), `Enabled, false);
+	}
 
     any ret = nil;
     do
