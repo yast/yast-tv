@@ -1,9 +1,9 @@
 @HEADER-COMMENT@
 
-# neededforbuild  yast2-devtools yast2-testsuite yast2-core yast2-core-devel
+# neededforbuild  yast2-devel-packages yast2-packager yast2-config-sound yast2-runlevel yast2-config-package-manager
 
 @HEADER@
-Requires:	yast2 yast2-lib-wizard yast2-lib-sequencer yast2-lib-hardware yast2-config-sound yast2-config-package-manager
+Requires:	yast2 yast2-packager yast2-sound
 BuildArchitectures:	noarch
 
 Summary:	Configuration of TV cards
