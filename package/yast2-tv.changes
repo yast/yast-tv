@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Aug 20 14:27:28 CEST 2003 - jsuchome@suse.de
+
+- removed redundant "initialization dialog" (#28779)
+- 2.8.4 
+
+-------------------------------------------------------------------
 Wed Aug 13 16:27:50 CEST 2003 - jsuchome@suse.de
 
 - updated card database for new kernel
