@@ -34,6 +34,7 @@ include "wizard/sequencer.ycp";
 include "tv/helps.ycp";
 include "tv/misc.ycp";
 
+
 /**
  * Enhanced version of UserInput which asks if really abort after
  * pressing [Abort].
@@ -275,8 +276,6 @@ global define any ReadDialog () ``{
     // Read the configuration
     boolean was_ok = Tv::Read ( callback );
 
-    // TODO FIXME possibly handle the abort
-
     return ( was_ok? `next : `abort );
 }
 
@@ -287,16 +286,10 @@ global define any ReadDialog () ``{
 global define any WriteDialog () ``{
     // Set help text
     Wizard::RestoreHelp (WriteDialogHelp ());
+    Wizard::DisableAbortButton();
 
-    // A callback function for abort
-    block callback = ``{
-	return UI::PollInput () == `abort;
-    };
-
-    // Read the configuration
-    boolean was_ok = Tv::Write ( callback );
-
-    // TODO FIXME possibly handle the abort
+    // Write the configuration
+    boolean was_ok = Tv::Write ( ``{ return false;} );
 
     return ( was_ok? `next : `abort );
 }

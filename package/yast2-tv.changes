@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Thu Mar 20 14:45:35 CET 2003 - jsuchome@suse.de
+
+- propose different applications for TV view / radio listen (#25277)
+- proposing application: "do not ask again" checkbox
+- write data only when modified
+- 2.8.0
+
+-------------------------------------------------------------------
 Thu Mar 13 16:23:06 CET 2003 - jsuchome@suse.de
 
 - do not check for kwintv if kde is not installed (#25277)

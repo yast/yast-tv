@@ -44,18 +44,11 @@ now.
      * @return The help text.
      */
     global define string WriteDialogHelp () ``{
-	// TODO FIXME: Modify it to your needs!
 	return
-	    // For translators: tv write dialog help, part 1 of 2
+	    // For translators: tv write dialog help
 _("<P><B><BIG>Saving TV and Radio Configuration</BIG></B><BR>
 Please wait...
 <BR></P>
-") +
-	    // For translators: tv write dialog help, part 2 of 2
-_("<P><B><BIG>Aborting saving:</BIG></B><BR>
-Abort the saving by pressing <B>Abort</B>.
-An additional dialog will inform you whether it is safe to do so.
-</P>
 ");
     }
 
