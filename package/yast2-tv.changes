@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Wed Sep 25 10:49:12 CEST 2002 - jsuchome@suse.cz
+
+- corrected bug 20091 (empty name instead of "user defined")
+
+-------------------------------------------------------------------
 Tue Sep 10 16:49:53 CEST 2002 - jsuchome@suse.cz
 
 - hacked cards selection in ncurses (first card selected if not
