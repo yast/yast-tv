@@ -266,12 +266,15 @@ _("If you want to watch TV on your screen, you need the KWinTV application.
 It is currently not installed. Do you want to install it now?"),
 		YesButtonLabel(), NoButtonLabel());
 
+    // we do not need this anymore; kwintv runs v4l-conf itself
+    /*
 	if (kwintv_is_installed)
 	{
-	    // Initialize setup - kv4lsetup was removed
+	    // Initialize setup
 	    SCR::Execute(.target.bash, "/usr/X11R6/bin/v4l-conf");
 	}
-	// increase the progress to "finish" -- problems ???
+    */
+	// increase the progress to "finish"
 	Progress::NextStage ();
 
 	return true;
