@@ -760,7 +760,7 @@ available kernel modules."));
 	// common settings
 	y2milestone ("Writing char-major-81 (videodev) to modules.conf");
 //	SCR::Write (.modules.alias, "videodev", "char-major-81");
-	SCR::Write (.modules.alias.videodev, "char-major-81");
+	SCR::Write (.modules.alias."char-major-81", "videodev");
 
 	// fix of bug #18033: (slow initialization on some machines)
 //	SCR::Write (.modules.options, $["bit_test":"1"], "i2c-algo-bit");
@@ -773,6 +773,8 @@ available kernel modules."));
 	});
 
     // fix of bug #19122:
+    // message "modprobe: Can't locate module char-major-81-1" when no second
+    // tv card present -> setting non-existing cards as "off"
     integer i = 0;
     while (i<4) {
         string alias = sformat ("char-major-81-%1", i);
