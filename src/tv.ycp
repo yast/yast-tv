@@ -123,7 +123,7 @@ define boolean TvRemoveCardHandler (map options ) ``{
     if (card_no == -1)
     {
 	//error message
-	Report::Error( _("You must specify card number."));
+	Report::Error( _("Specify the card number."));
 	return false;
     }
     if (Tv::CardGet (card_no) == nil)
@@ -160,7 +160,7 @@ define boolean TvWrite () ``{
 map cmdline = $[
     "id"		: "tv",
     // translators: command line help text for Tv module
-    "help"		: _("Tv card configuration module."),
+    "help"		: _("TV card configuration module."),
     "guihandler"	: TvSequence,
     "initialize"	: TvRead,
     "finish"		: TvWrite,
@@ -178,13 +178,13 @@ map cmdline = $[
 	"remove" :$[
 	    "handler"	: TvRemoveCardHandler,
 	    // translators: command line help text for remove action
-	    "help"	: _("Remove TV/radio card")
+	    "help"	: _("Remove TV or radio card")
 	],
     ],
     "options"		: $[
 	"no"	:$[
 	    // translators: command line help text for the 'no' option
-	    "help"	: _("Number of TV/radio card"),
+	    "help"	: _("Number of TV or radio card"),
 	    "type"	: "string"
 	],
 	"tuner"	:$[

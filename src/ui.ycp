@@ -426,7 +426,7 @@ define any ManualDialog (boolean warn) ``{
 		    // PushButton label:
 		    _("&Expert settings...")),
 		// PushButton label:
-		`PushButton (`id(`channels), `opt(`key_F8), _("TV channels..."))
+		`PushButton (`id(`channels), `opt(`key_F8), _("TV Channels..."))
 	      )
 	    )
 	),
@@ -1215,10 +1215,10 @@ define term StationPopup (string channel, string station, list items) ``{
 	    foreach (term it, items, ``{
 		if (select (it, 1, "") == new_channel && new_channel != channel)
 		    // error message
-		    msg = _("There already exist such channel in the table.");
+		    msg = _("Such a channel already exists in the table.");
 		if (select (it, 2, "") == new_station && new_station != station)
 		    // error message
-		    msg = _("There already exist such station name in the table.");
+		    msg = _("Such station name already exists in the table.");
 	    });
 	    if (msg != "")
 	    {
@@ -1305,7 +1305,7 @@ define any ChannelsDialog () ``{
         `VSpacing (2),
 	`HBox (
 	    // combobox label
-	    `ComboBox (`id(`norms), _("Tv Norm"), norms),
+	    `ComboBox (`id(`norms), _("TV Norm"), norms),
 	    // combobox label
 	    `ComboBox (`id(`freq), _("Frequency Table"), freqs_items),
 	    `HStretch (),
