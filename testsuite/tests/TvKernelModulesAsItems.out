@@ -1,10 +1,3 @@
-Read	.target.tmpdir "/tmp"
-Read	.target.size "/etc/install.inf" -1
-Read	.probe.architecture nil
-Read	.probe.has_apm nil
-Read	.probe.has_pcmcia nil
-Read	.probe.has_smp nil
-Read	.probe.system nil
 Dump	---------------
 Dump	[]
 Dump	[`item (`id ("bttv"), "bttv: bttv - v4l driver module for bt848/878 based cards", false), `item (`id ("zoran"), "zoran: Zoran ZR36120 based framegrabber", false)]

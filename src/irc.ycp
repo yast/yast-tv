@@ -20,7 +20,7 @@
     include "tv/irc_ui.ycp";
 
     Wizard::CreateDialog();
-    Wizard::SetDesktopIcon("tv");
+    Wizard::SetDesktopIcon("tv"); //FIXME need irc icon
 
     block<boolean> callback = ``{ return UI::PollInput () == `abort;};
     Tv::Read (callback);

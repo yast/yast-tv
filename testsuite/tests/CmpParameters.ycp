@@ -1,4 +1,5 @@
 {
+    // testedfiles: Tv.ycp tv/misc.ycp
 
     include "testsuite.ycp";
 
