@@ -3,13 +3,12 @@
     include "testsuite.ycp";
 
     map READ = $[
-	"etc" : $[ "install_inf" : $[] ],
-	"target" : $[ "ycp" : $[] ],
-	"probe" : $[ "system" : []],
+	    "target" : $[ "size": -1 ]
     ];
 
     TESTSUITE_INIT([READ], nil);
 
+    import "Tv"; // moves "Read    .target.size "/etc/install.inf" -1" line up
     include "tv/misc.ycp";
 
 

@@ -2,11 +2,7 @@
 
     include "testsuite.ycp";
 
-    map READ = $[
-	"etc" : $[ "install_inf" : $[] ],
-	"target" : $[ "ycp" : $[] ],
-	"probe" : $[ "system" : []],
-    ];
+    map READ = $[ "target" : $[ "size" : -1 ] ];
 
     TESTSUITE_INIT([READ], nil);
     import "Tv";
