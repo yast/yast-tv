@@ -659,7 +659,6 @@ available kernel modules."));
 	});
 
 	// necessary variables
-	list tv_unique_inf = [];
 	boolean result = true;
 
 	// save the status (configured/unconfigured)
@@ -709,9 +708,6 @@ available kernel modules."));
 		    UniqueKeys::StoreToComment (card_name, unique_key);
 		SCR::Write (.modules.alias.comment, comment, alias);
 
-		// add to unique.inf FIXME: store some more useful info...
-		tv_unique_inf = add (tv_unique_inf, $[ "unique": unique_key,
-						       "state": "configured" ]);
 		// set the appropriate unique key as configured
 		probe_status[unique_key] = `yes;
 	    }
@@ -727,12 +723,6 @@ to /etc/modules.conf."));
 	}
 
 	// write unique keys
-	if (!UniqueKeys::WriteSection ("tv", tv_unique_inf))
-	{
-	    // TODO Report:: it!
-	    // the error is written in the function
-	    result = false;
-	}
 	foreach (`uk, `status, probe_status, ``{
 	    if (uk != nil)
 	    {
