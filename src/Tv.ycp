@@ -1455,7 +1455,9 @@ global define any ReadIRC () ``{
 	irc_config = "/etc/lircd.conf";
     }
     else
+    {
 	irc_config = "/usr/share/lirc/remotes/input-layer-lircd.conf";
+    }
 
     map out = (map) SCR::Execute (.target.bash_output,
 	"/usr/bin/find  /usr/share/lirc/remotes/ -name *lircd*");
@@ -1484,9 +1486,9 @@ global define any WriteIRC () ``{
 	    SCR::Execute (.target.bash,
 		"/bin/cp /etc/lircd.conf /etc/lircd.conf.YaST2save");
 	}
-	if (irc_config != "/etc/lircd.conf")
+	if (irc_config != "/etc/lircd.conf" &&
+	    SCR::Read (.target.size, irc_config) != -1)
 	{
-	    SCR::Execute (.target.bash, "/bin/touch /etc/lircd.conf");
 	    SCR::Execute (.target.bash, sformat ("/bin/cp %1 /etc/lircd.conf",
 		irc_config));
 	    y2milestone("config file: %1 copied to /etc/lircd.conf",irc_config);

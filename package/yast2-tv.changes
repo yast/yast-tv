@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Apr  5 15:27:30 CEST 2004 - jsuchome@suse.cz
+
+- do not touch destination /etc/lircd.conf file
+  (could break later configuration)
+- 2.9.9
+
+-------------------------------------------------------------------
 Fri Apr  2 15:51:52 CEST 2004 - jsuchome@suse.cz
 
 - changed license to GPL
