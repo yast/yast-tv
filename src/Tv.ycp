@@ -771,18 +771,42 @@ available kernel modules."));
 			tv_cards = add (tv_cards, $[]);
 		    }
 
-		    boolean radio = false;
-
-		    // add the card to the cards
-		    tv_cards = add (tv_cards, $[
+		    map readcard = $[
 			"name"       : card_name,
 			"module"     : module_names,
 			// !!! TODO: parameters for each kernel module
 			"parameters" : parameters,
 			"dvb"        : true,
 			"unique_key" : unique_key,
-			"radio"      : radio ]
+			"radio"      : false ];
+
+		    foreach(map vendor, (list<map>) dvb_cards_database, ``{
+			    list<map> cards = (list<map>) vendor["cards"]:[];
+
+			    foreach(map card, cards, ``{
+				    string found_card = card_name;
+				    string db_card = (string) card["name"]:nil;
+
+				    if (found_card == db_card)
+				    {
+					// add card info without name
+					y2milestone("found card in DB: %1", card["name"]:nil);
+					card = remove(card, "name");
+
+					foreach(string key, any value, (map<string,any>)card, ``{
+						readcard[key] = value;
+					    }
+					);
+
+					y2debug("readcard: %1", readcard);
+				    }
+				}
+			    );
+			}
 		    );
+
+		    // add the card to the cards
+		    tv_cards = add (tv_cards, readcard);
 		}
 	    }
 	    card_no = card_no + 1;
@@ -1037,26 +1061,37 @@ available kernel modules."));
 
 	// for cards choosed to delete...
 	foreach (map card, (list<map<string,any> >) cards_to_del, ``{
-	    string module_name = card["module"]:"";
-	    if (module_name == "") return;
-	    if (contains (SCR::Dir (.modprobe_tv.options), module_name))
+	    list<string> module_names = card["module"]:[];
+
+	    foreach(string module_name, module_names, {
+		    if (module_name == "") return;
+		    if (contains (SCR::Dir (.modprobe_tv.options), module_name))
+		    {
+			y2milestone ("Deleting module %1 from /etc/modprobe.d/tv",
+			    module_name);
+			// ... delete module's options from modprobe file
+			SCR::Write (add (.modprobe_tv.options, module_name), nil);
+		    }
+		    // ... and unload the module from kernel
+		    SCR::Execute(.target.bash,
+			sformat("/sbin/rmmod %1", module_name), $[]);
+		}
+	    );
+
+	    if (size(module_names) > 1)
 	    {
-		y2milestone ("Deleting module %1 from /etc/modprobe.d/tv",
-		    module_name);
-		// ... delete module's options from modprobe file
-		SCR::Write (add (.modprobe_tv.options, module_name), nil);
+		// remove install line
 	    }
-	    // ... and unload the module from kernel
-	    SCR::Execute(.target.bash,
-		sformat("/sbin/rmmod %1", module_name), $[]);
 	});
+
+	// FIXME remove DVB cards
 
 	boolean result = true;
 
 	// save the status (configured/unconfigured)
 	map probe_status =
 	    listmap (map card, (list<map<string,any> >) detected_cards,
-	    ``( $[ (string) lookup (card, "unique_key", nil): `no ] ));
+	    ``( $[ (string) card["unique_key"]:nil: `no ] ));
 
 	// store the parameters to write to this variable
 	// $[ "module" :
@@ -1756,6 +1791,11 @@ to %1."), "/etc/modprobe.d/tv."));
      * @return boolean Are there available tuners for it?
      */
     global define boolean TunersDBHasTunersFor(string kernel_module) ``{
+	if (kernel_module == nil)
+	{
+	    return false;
+	}
+
 	return haskey (tuners_database, kernel_module);
     }
 
@@ -2256,9 +2296,16 @@ global define boolean InitializeStationsConfig() ``{
 	// no "eval (abort)" is currently called. May need
 	// improvement when the writing sequence gets longer.
 
+	y2internal("cards: %1", cards);
+
 	// Write the settings
 	Progress::NextStage ();
 	if (cards_dirty && !WriteSettings())
+	{
+	    return false;
+	}
+
+	if (cards_dirty && !InstallFW())
 	{
 	    return false;
 	}

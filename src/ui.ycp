@@ -374,7 +374,10 @@ define any ManualDialog (boolean warn) ``{
 
     // Parameters and module name of the current card
     map current_card_parameters = Tv::current_card["parameters"]:$[];
-    string module_name_tmp = (string) lookup (Tv::current_card, "module", nil);
+
+    list<string> module_names_tmp= (list<string>) Tv::current_card["module"]:nil;
+    string module_name_tmp = module_names_tmp[size(module_names_tmp) - 1]:"";
+
     // The selected tuner
     map	selected_tuner = Tv::GetTuner (module_name_tmp, current_card_parameters["tuner"]:"-1");
 
@@ -456,7 +459,7 @@ define any ManualDialog (boolean warn) ``{
 				 Label::BackButton (),
 				 Label::NextButton () );
 
-    if (warn && lookup (Tv::current_card, "module", nil) == nil)
+    if (warn && (Tv::current_card["module"]:nil) == nil) // FIXME??
     {
 	// For translators: A warning popup
 	Popup::Message(_("The selected card does not provide full
@@ -473,7 +476,8 @@ the list in the following dialog."));
     do
     {
 	// Disable/enable the [Select tuner] button
-	string module_name = lookup (selected_card, "module", "");
+	list<string> module_names = selected_card["module"]:[];
+	string module_name = module_names[size(module_names) - 1]:"";
 
 	boolean has_tuners = Tv::TunersDBHasTunersFor (module_name);
 	if (!has_tuners)
@@ -611,14 +615,16 @@ of available kernel modules...")),
     string caption = _("Manual TV and Radio Card Selection: Details");
 
     // Currently selected module. None => select bttv
-    string selected_module = lookup (Tv::current_card, "module", nil);
+    list<string> selected_modules = Tv::current_card["module"]:[];
+
+    string selected_module = (string) selected_modules[size(selected_modules) - 1]:nil;
     if (selected_module == nil)
     {
 	selected_module = "bttv";
     }
 
     // And its parameters.
-    map parameters = lookup (Tv::current_card, "parameters", $[]);
+    map parameters = Tv::current_card["parameters"]:$[];
 
     // A list of all the (media/video) kernel modules for the ComboBox widget
     list all_modules = Tv::ModulesAsItems(Tv::kernel_modules, selected_module);
@@ -919,11 +925,21 @@ your want to edit first."));
 	    // because the user changed kernel module parameters and so we
 	    // do not have a good name...
 	    Tv::current_card ["name"]	= _("User-Defined Radio Card");
-	else
+	else if (!dvb) // DVB modules don't use card type option
 	    // For translators: The name of the card is set to "User defined"...
 	    Tv::current_card ["name"]	= _("User-Defined TV Card");
 
-	Tv::current_card ["module"]	= selected_module;
+
+	if (size(selected_modules) > 1)
+	{
+	    selected_modules[size(selected_modules) - 1] = selected_module;
+	    Tv::current_card["module"] = selected_modules;
+	}
+	else
+	{
+	    Tv::current_card["module"]	= [ selected_module ];
+	}
+
 	Tv::current_card ["parameters"]	= parameters;
 	Tv::current_card ["radio"]	= radio;
     }
@@ -939,7 +955,7 @@ define any AudioDialog() ``{
     string caption = _("TV and Radio Card Audio");
 
     // Name of the TV card being currently configured
-    string current_card_name = lookup(Tv::current_card, "name", "");
+    string current_card_name = Tv::current_card["name"]:"";
     if (current_card_name == nil)
     {
 	current_card_name = "";
@@ -949,7 +965,7 @@ define any AudioDialog() ``{
     list sound_cards = SoundCardsAsItems();
 
     // Try to read already stored values
-    integer current_sound_card = lookup(Tv::current_card, "sound_card_no", -1);
+    integer current_sound_card = Tv::current_card["sound_card_no"]:-1;
     symbol current_rb = `rb_yes;
     if (current_sound_card == nil || size(sound_cards) == 0)
     {
