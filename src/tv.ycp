@@ -24,6 +24,7 @@
     import "Mode";
 
     include "tv/ui.ycp";
+    include "commandline/commandline.ycp";
 
     /**
      * Should we suppress Read() and Write()? It is necessary in proposals...
@@ -45,13 +46,159 @@
     }
 
     /* main ui function */
-    any ret = no_io? TvSequenceNoIO (): TvSequence ();
+    // any ret = no_io? TvSequenceNoIO (): TvSequence ();
+
+// --------------------------------------------------------------------------
+// --------------------------------- cmd-line handlers
+
+/**
+ * Print summary of basic options
+ * @return boolean false
+ */
+global define boolean TvSummaryHandler (map options ) ``{
+
+    CommandLine::Print (RichText::Rich2Plain(Tv::Summary ()));
+    return false; // do not call Write...
+}
+
+
+/**
+ * Handler for adding a card via command line
+ * @param options parameters passed as cmdline args
+ * @return boolean true on success
+ */
+global define boolean TvAddCardHandler (map options ) ``{
+
+    integer card_no = tointeger (options["no"]:"0");
+
+    // add the detected card
+    if (options == $[])
+    {
+	card_no = 0; // first detected card
+    }
+
+    Tv::current_card = Tv::DetectedCardGet (card_no);
+    Tv::current_card_no = nil;
+
+    if (Tv::current_card == $[])
+    {
+	//error message
+	Report::Error(_("There is no such card to add."));
+	return false;
+    }
+    if (contains (Tv::CardsUniqueKeys(),Tv::current_card["unique_key"]:nil))
+    {
+	//error message, %1 is name
+	Report::Message(sformat(_("The card '%1' is already configured."),
+	    Tv::current_card["name"]:""));
+	return false;
+    }
+
+    // add some parameters
+    string tuner_id = options["tuner"]:nil;
+    if (tuner_id != nil)
+    {
+	if (!haskey (Tv::current_card, "parameters"))
+	    Tv::current_card ["parameters"] = $[];
+	Tv::current_card["parameters", "tuner"] = tuner_id;
+    }
+
+    // TODO add sound card number automatically?
+    //    Tv::current_card ["sound_card_no"] = ...
+
+    Tv::CardAddCurrent (); // return value is card index
+
+    return true;
+}
+
+/**
+ * Handler for adding a card via command line
+ * @param options parameters passed as cmdline args
+ * @return boolean true on success
+ */
+global define boolean TvRemoveCardHandler (map options ) ``{
+
+    integer card_no = tointeger (options["no"]:"-1");
+    if (card_no == -1)
+    {
+	//error message
+	Report::Error( _("You must specify card number."));
+	return false;
+    }
+    if (Tv::CardGet (card_no) == nil)
+    {
+	//error message, %1 is number
+	Report::Error(sformat(_("There is no card with number %1."), card_no));
+	return false;
+    }
+    return Tv::CardRemove (card_no);
+}
+
+/* the command line description map */
+map cmdline = $[
+    "id"		: "tv",
+    // translators: command line help text for Tv module
+    "help"		: _("Tv card configuration module."),
+    "guihandler"	: ``(TvSequence()),
+    "initialize"	: ``(Tv::Read(``{return false;})),
+    "finish"		: ``(Tv::Write(``{return false;})),
+    "actions"		: $[
+	"summary" :$[
+	    "handler"	: ``(TvSummaryHandler()),
+	    // translators: command line help text for summary action
+	    "help"	: _("Configuration summary of TV cards")
+	],
+	"add" :$[
+	    "handler"	: ``(TvAddCardHandler()),
+	    // translators: command line help text for add action
+	    "help"	: _("Add TV/radio card. Without parameters, add first detected card.")
+	],
+	"remove" :$[
+	    "handler"	: ``(TvRemoveCardHandler()),
+	    // translators: command line help text for remove action
+	    "help"	: _("Remove TV/radio card")
+	],
+    ],
+    "options"		: $[
+	"no"	:$[
+	    // translators: command line help text for the 'no' option
+	    "help"	: _("Number of TV/radio card"),
+	    "type"	: "string"
+	],
+	"tuner"	:$[
+	    // translators: command line help text for the 'tuner' option
+	    "help"	: _("TV tuner type"),
+	    "type"	: "string"
+	],
+    ],
+    "mappings"		: $[
+	"summary"	: [],
+	"add"		: [ "no", "tuner"],// "card", "module"],
+	"remove"	: [ "no" ],
+    ]
+];
+
+// --------------------------------------------------------------------------
+
+
+    any ret = nil;
+    if (no_io)
+    {
+	ret = TvSequenceNoIO ();
+    }
+    else
+    {
+	ret = CommandLineRun( cmdline );
+    }
+
     y2debug ("ret == %1", ret);
 
     /* Finish */
     y2milestone ("Tv module finished");
     y2milestone ("----------------------------------------");
     return ret;
+
+
 
 /* EOF */
 }

@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Oct 31 16:33:31 CET 2003 - jsuchome@suse.cz
+
+- basic command-line interface
+- 2.9.1
+
+-------------------------------------------------------------------
 Thu Oct 23 16:24:47 CEST 2003 - jsuchome@suse.cz
 
 - LIRC: check if autedetected card uses lirc_gpio (using subdevice

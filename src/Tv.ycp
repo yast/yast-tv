@@ -493,7 +493,7 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	boolean any_tv_configured = false;
 
 	// add the not yet configured cards
-	foreach (`card, detected_cards, ``{
+	foreach (map card, detected_cards, ``{
 	    string uk = lookup(card, "unique_key", nil);
 
 	    if (uk != nil &&
@@ -514,7 +514,7 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	if (any_tv_configured)
 	{
 	    import "Sound";
-	    foreach (`card, Sound::GetSoundCardList (), ``{
+	    foreach (map card, Sound::GetSoundCardList (), ``{
 		integer sound_card_no = lookup(card, "card_no", nil);
 		if (sound_card_no != nil)
 		{
@@ -538,25 +538,19 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	list installed_list = InstalledCardsSummary();
 
 	// list of the unique keys of the already installed cards
-	list installed_uk =
-	    maplist(`card, cards, ``{
-		return lookup(card, "unique_key", nil);
-	    });
-	installed_uk = filter(`item, installed_uk, ``(item != nil));
+	list installed_uk = add (maplist (map card, cards, ``{
+	    return card["unique_key"]:nil;
+	}), nil);
 
 	// list of the not configured tv cards
-	list detected_list =
-	    maplist (`card, detected_cards, ``{
-		string uk = lookup (card, "unique_key", nil);
-		if (uk != nil && !contains(installed_uk, uk))
-		{
-		    return Summary::Device ( lookup (card, "name", ""),
-					     Summary::NotConfigured () );
-		}
-		return nil;
-	    });
-	// filter out nils
-	detected_list = filter(`item, detected_list, ``(item != nil));
+	list detected_list = [];
+	foreach (map card, detected_cards, ``{
+	    if (!contains (installed_uk, card["unique_key"]:nil))
+	    {
+		detected_list = add (detected_list,
+		    Summary::Device (card["name"]:"",Summary::NotConfigured()));
+	    }
+	});
 
 	return Summary::DevicesList( union (detected_list, installed_list) );
     }
@@ -968,15 +962,15 @@ available kernel modules."));
 	    SCR::Write ( add (.modules.alias, alias) , nil);
 	});
 
-    // fix of bug #19122:
-    // message "modprobe: Can't locate module char-major-81-1" when no second
-    // tv card present -> setting non-existing cards as "off"
-    integer i = 0;
-    while (i<4) {
-        string alias = sformat ("char-major-81-%1", i);
-        SCR::Write ( add (.modules.alias, alias), "off");
-        i = i + 1;
-    }
+	// fix of bug #19122:
+        // message "modprobe: Can't locate module char-major-81-1" when second
+        // tv card not present -> setting non-existing cards as "off"
+        integer i = 0;
+	while (i<4) {
+	    string alias = sformat ("char-major-81-%1", i);
+	    SCR::Write ( add (.modules.alias, alias), "off");
+	    i = i + 1;
+	}
 
 	// for cards choosed to delete...
 	foreach (`card, cards_to_del, ``{
@@ -1006,8 +1000,9 @@ available kernel modules."));
 	// do this for each card...
 	integer tv_card_no = 0;
 	integer radio_card_no = 64;
-	foreach (`card, cards, ``{
-        boolean radio = lookup (card, "radio", false);
+	foreach (map card, cards, ``{
+
+	    boolean radio = lookup (card, "radio", false);
 	    string module_name = lookup (card, "module", nil);
 	    string card_name = lookup (card, "name", "Manually added card");
 	    string unique_key = lookup (card, "unique_key",
@@ -1198,24 +1193,26 @@ to /etc/modules.conf."));
 	if (size(cards) > 0)
 	{
 	    integer card_no = 0;
-	    installed_list =
-		maplist(`card, cards, ``{
-		    string card_item = nil;
-		    string name = lookup(card, "name", nil);
-		    if (name != nil)
-		    {
-            string installed_str = "";
-            if (lookup(card, "radio", false))
-                // Summary text (%1 is number)
-                installed_str = sformat(_("Installed as radio card number %1."), card_no);
-            else
-                // Summary text (%1 is number)
-                installed_str = sformat(_("Installed as TV card number %1."), card_no);
-			card_item = Summary::Device(name, installed_str);
-		    }
-		    card_no = card_no + 1;
-		    return card_item;
-		});
+	    installed_list = maplist(map card, cards, ``{
+
+		string card_item = nil;
+		string name = card["name"]:nil;
+		if (name != nil)
+		{
+		    string installed_str = "";
+		    if (card["radio"]:false)
+			installed_str = sformat(
+			    // Summary text (%1 is number)
+			    _("Installed as radio card number %1."), card_no);
+		    else
+			installed_str = sformat(
+			    // Summary text (%1 is number)
+			    _("Installed as TV card number %1."), card_no);
+		    card_item = Summary::Device(name, installed_str);
+		}
+		card_no = card_no + 1;
+		return card_item;
+	    });
 
 	    // Filter out nils
 	    installed_list = filter(`item, installed_list, ``(item != nil));
@@ -1239,7 +1236,7 @@ to /etc/modules.conf."));
 	    return nil;
 	}
 
-	return select(cards, index, nil);
+	return cards[index]:nil;
     }
 
     /**
@@ -1256,37 +1253,35 @@ to /etc/modules.conf."));
 
 	// try to fill holes after a remove
 	integer i = 0;
-    boolean radio = lookup(current_card, "radio", false);
-    if (radio && size (cards)<65)
-    {
-        integer cards_s = size (cards);
-        while (cards_s < 65)
-        {
-            cards = add (cards, nil);
-            cards_s = cards_s + 1;
-        }
-    }
-	cards =
-	    maplist(`card, cards, ``{
-        if (radio && i<64 )
-        {
-            i = i + 1;
-            return card;
-        }
-		if (card == nil && index == nil)
-		{
-		    index = i;
-		    return current_card;
-		}
+	boolean radio = current_card["radio"]:false;
+	if (radio && size (cards)<65)
+	{
+	    integer cards_s = size (cards);
+	    while (cards_s < 65)
+	    {
+		cards = add (cards, nil);
+		cards_s = cards_s + 1;
+	    }
+	}
+	cards = maplist(map card, cards, ``{
+	    if (radio && i<64 )
+	    {
 		i = i + 1;
 		return card;
-	    });
+	    }
+	    if (card == nil && index == nil)
+	    {
+		index = i;
+		return current_card;
+	    }
+	    i = i + 1;
+	    return card;
+	});
 	if (index == nil)
 	{
 	    cards = add(cards, current_card);
 	    index = size(cards) - 1;
 	}
-
 	cards_dirty = true;
 	return index;
     }
@@ -1334,20 +1329,18 @@ to /etc/modules.conf."));
 	boolean success = false;
 
 	integer i = 0;
-	cards =
-	    maplist(`card, cards, ``{
-		if (i == index)
-		{
-			cards_to_del = add(cards_to_del, card);
-		    card = nil;
-		    success = true;
+	cards = maplist(map card, cards, ``{
+	    if (i == index)
+	    {
+		cards_to_del = add(cards_to_del, card);
+		card = nil;
+		success = true;
 
-		    cards_dirty = true;
-		}
-		i = i + 1;
-		return card;
-	    });
-
+		cards_dirty = true;
+	    }
+	    i = i + 1;
+	    return card;
+	});
 	return success;
     }
 
@@ -1440,20 +1433,18 @@ to /etc/modules.conf."));
 
 	// create the list of `item()s (nil if it is already installed)
 	integer card_no = 0;
-	list detected_list =
-	    maplist(`card, detected_cards, ``{
-		term ret = nil;
+	list detected_list = maplist(map card, detected_cards, ``{
+	    term ret = nil;
 
-		string uk = lookup(card, "unique_key", nil);
-		if (uk != nil && !contains(installed_uk, uk))
-		{
-		    ret = `item(`id(card_no), lookup(card, "name", ""), is_first);
-		    is_first = false;
-		}
-
-		card_no = card_no + 1;
-		return ret;
-	    });
+	    string uk = lookup(card, "unique_key", nil);
+	    if (uk != nil && !contains(installed_uk, uk))
+	    {
+		ret = `item(`id(card_no), lookup(card, "name", ""), is_first);
+		is_first = false;
+	    }
+	    card_no = card_no + 1;
+	    return ret;
+	});
 
 	// filter out the nils
 	detected_list = filter(`card, detected_list, ``(card != nil));
