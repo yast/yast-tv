@@ -1,0 +1,10 @@
+Read	.target.ycp ["/var/lib/YaST2/installmap.ycp", $[]] $[]
+Read	.probe.architecture nil
+Read	.probe.has_apm nil
+Read	.probe.has_pcmcia nil
+Read	.probe.has_smp nil
+Read	.probe.system []
+Dump	[]
+Dump	[]
+Dump	[`item (`id (0), "0", "")]
+Dump	[`item (`id (0), "0", ""), `item (`id (3), "3", "My TV_card")]
