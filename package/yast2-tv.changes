@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Mar 31 11:19:34 CEST 2003 - jsuchome@suse.de
+
+- show currently selected tuner
+- correctly focus to vendor/card when editing
+
+-------------------------------------------------------------------
 Thu Mar 20 14:45:35 CET 2003 - jsuchome@suse.de
 
 - propose different applications for TV view / radio listen (#25277)
