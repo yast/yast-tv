@@ -27,7 +27,7 @@
     global define string ReadDialogHelp () ``{
 	return
 	    // For translators: tv read dialog help, part 1 of 2
-_("<P><B><BIG>Initializing TV / radio card configuration</BIG></B><BR>
+_("<P><B><BIG>Initializing TV and Radio Card Configuration</BIG></B><BR>
 Please wait...
 <BR></P>
 ") +
@@ -47,7 +47,7 @@ now.
 	// TODO FIXME: Modify it to your needs!
 	return
 	    // For translators: tv write dialog help, part 1 of 2
-_("<P><B><BIG>Saving TV and radio configuration</BIG></B><BR>
+_("<P><B><BIG>Saving TV and Radio Configuration</BIG></B><BR>
 Please wait...
 <BR></P>
 ") +
@@ -66,15 +66,17 @@ An additional dialog will inform you whether it is safe to do so.
     global define string DetectedDialogHelp() ``{
 	return
 	    // Help: Detected cards, part 1 of 3
-_("<P><B><BIG>TV and radio card setup</BIG></B><BR>
-Here you can configure your TV and radio card(s).
-<BR></P>") +
+_("<P><B><BIG>TV and Radio Card Setup</BIG></B><BR>
+Here, configure your TV and radio cards.
+<BR></P>
+") +
 	    // Help: Detected cards, part 2 of 3
-_("<P><B><BIG>Adding a TV or radio card:</BIG></B><BR>
-Choose the card from the list of the detected cards. If your card was
+_("<P><B><BIG>Adding a TV or Radio Card:</BIG></B><BR>
+Select the card from the list of the detected cards. If your card was
 not autodetected, use <B>Other (not detected)</B>. Then press
 <B>Configure</B>.
-</P>") +
+</P>
+") +
 	    // Help: Detected cards, part 3 of 3
 	_("<P><B><BIG>Editing or deleting:</BIG></B><BR>
 If you press <B>Edit</B>, an additional dialog (where you
@@ -89,19 +91,22 @@ can change the configuration) will open.
     global define string OverviewDialogHelp() ``{
 	return
 	    // Help: Overview of the installed cards, part 1 of 3
-_("<P><B><BIG>TV and radio cards overview</BIG></B><BR>
-Here you can get an overview about installed TV and radio cards. Additionally
+_("<P><B><BIG>TV and Radio Card Overview</BIG></B><BR>
+Here, get an overview of installed TV and radio cards. Additionally,
 you can edit their configuration.
-<BR></P>") +
+<BR></P>
+") +
 	    // Help: Overview of the installed cards, part 2 of 3
-_("<P><B><BIG>Adding a TV or radio card:</BIG></B><BR>
-If you press <B>Add</B>, you can manually configure TV or radio card.
-</P>") +
+_("<P><B><BIG>Adding a TV or Radio Card:</BIG></B><BR>
+If you press <B>Add</B>, you can manually configure TV or radio cards.
+</P>
+") +
 	    // Help: Overview of the installed cards, part 3 of 3
-_("<P><B><BIG>Editing or deleting:</BIG></B><BR>
-Choose a card, whose configuration you want to change or remove.
+_("<P><B><BIG>Editing or Deleting:</BIG></B><BR>
+Select a card for which to change or remove the configuration.
 Then press the appropriate button: <B>Edit</B> or <B>Delete</B>.
-</P>");
+</P>
+");
     }
 
     /**
@@ -121,14 +126,16 @@ configuration, select your card, press <B>Select tuner</B> button and
 choose the type of your tuner.
 </P>") +
 	    // Help: Manual addition of a card, part 3/4
-_("<P><B><BIG>Expert configuration:</BIG></B><BR>
+_("<P><B><BIG>Expert Configuration:</BIG></B><BR>
 You can choose the exact kernel module and its parameters if you press
-<B>Expert settings</B> button.
-</P>") +
+the <B>Expert Settings</B> button.
+</P>
+") +
 	    // Help: Manual addition of a card: part 4/4
-_("<P><B><BIG>Radio card</BIG></B><BR>
-If you want to configure the radio card, you have to choose appropriate kernel module. To do that, use the <B>Expert settings</B> button.
-</P>");
+_("<P><B><BIG>Radio Card</BIG></B><BR>
+To configure the radio card, you must select the appropriate kernel module. To do that, use the <B>Expert Settings</B> button.
+</P>
+");
 }
 
     /**
@@ -140,14 +147,16 @@ If you want to configure the radio card, you have to choose appropriate kernel m
     global define string ManualDetailsDialogHelp(boolean allow_changeoftype) ``{
     string helptext =
 	    // Help: Manual addition of a card: Details, part 1/4
-_("<P><B><BIG>Manual selection: details</BIG></B><BR>
-Here you can control all the parameters of the driver of your TV or radio card.<BR>
+_("<P><B><BIG>Manual Selection: Details</BIG></B><BR>
+Here, you can control all the parameters of the driver of your TV or radio card.<BR>
 Beware: This is for experts!
-<BR></P>") +
+<BR></P>
+") +
 	    // Help: Manual addition of a card: Details, part 2/4
-_("<P><B><BIG>Kernel module:</BIG></B><BR>
-Choose the kernel module which is the driver of your card.
-</P>") +
+_("<P><B><BIG>Kernel Module:</BIG></B><BR>
+Select the kernel module -- the driver of your card.
+</P>
+") +
 	    // Help: Manual addition of a card: Details, part 3/4
 _("<P><B><BIG>Changing parameters:</BIG></B><BR>
 Choose the parameter you want to change, write its new value to
@@ -157,9 +166,10 @@ to default, press <B>Reset</B>.
     if (allow_changeoftype)
         helptext = helptext +
 	    // Help: Manual addition of a card: Details, part 4/4
-_("<P><B><BIG>Radio card</BIG></B><BR>
-If you want to select the module for your radio card, check <B>Radio card modules</B>.
-</P>");
+_("<P><B><BIG>Radio Card</BIG></B><BR>
+To select the module for your radio card, check <B>Radio Card Modules</B>.
+</P>
+");
     return helptext;
 }
 
@@ -170,10 +180,11 @@ If you want to select the module for your radio card, check <B>Radio card module
     global define string AudioDialogHelp() ``{
 	return
 	    // Help: Setup the audio of the card, part 1/3
-_("<P><B><BIG>TV / radio card audio</BIG></B><BR>
-If your TV / radio card has an audio output and it is connected to your sound
-card, YaST2 has to unmute the sound card's input.
-<BR></P>") +
+_("<P><B><BIG>Audio for a TV or Radio Card</BIG></B><BR>
+If your TV or radio card has an audio output and it is connected to your sound
+card, YaST2 must unmute the sound card's input.
+<BR></P>
+") +
 	    // Help: Setup the audio of the card, part 2/3
 _("<P><B><BIG>Selecting the sound card:</BIG></B><BR>
 Select <B>Yes</B> to enable the list of the sound cards and choose

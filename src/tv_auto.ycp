@@ -54,7 +54,7 @@
 	return UI::PollInput () == `abort;
     };
 
-    string caption = _("Initializing TV / radio card configuration");
+    string caption = _("Initializing TV and Radio Card Configuration");
     term contents = `Label (_("Initializing ..."));
 
     // Construct the dialogs

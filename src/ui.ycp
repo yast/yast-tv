@@ -82,7 +82,7 @@ global define any TvSequence () ``{
     ];
 
     // Caption of initializing dialog
-    string caption = _("Initializing TV / radio card configuration");
+    string caption = _("Initializing TV and Radio Card Configuration");
     // Label text of initializing dialog
     term contents = `Label (_("Initializing ..."));
 
@@ -105,7 +105,7 @@ global define any TvSequence () ``{
  * @return Sequence result of MainSequence().
  */
 global define any TvSequenceNoIO () ``{
-    string caption = _("Initializing TV / radio card configuration");
+    string caption = _("Initializing TV and Radio Card Configuration");
     term contents = `Label (_("Initializing ..."));
 
     Wizard::CreateDialog ();
@@ -307,11 +307,11 @@ global define any WriteDialog () ``{
  */
 global define any DetectedDialog() ``{
     // For translators: Caption of the dialog
-    string caption = _("TV and radio card setup");
+    string caption = _("TV and Radio Card Setup");
 
     term contents =
     // Caption of the detected cards list
-	Wizard_hw::DetectedContent(_("TV or radio cards to configure"),
+	Wizard_hw::DetectedContent(_("TV and Radio Cards to Configure"),
 				   Tv::DetectedCardsAsItems(),
 				   false,
 				   "");
@@ -331,7 +331,7 @@ global define any DetectedDialog() ``{
 	if (size(installed_list) > 0)
 	{
 	    // For translators: Overview of the installed cards
-	    installed_overview = sformat (_("<P><B>Already installed TV and radio cards:</B>%1</P>"),
+	    installed_overview = sformat (_("<P><B>Installed TV and Radio Cards:</B>%1</P>"),
 					  Summary::DevicesList(installed_list));
 	}
 	UI::ChangeWidget (`id(`configured_richtext), `Value, installed_overview);
@@ -384,7 +384,7 @@ global define any DetectedDialog() ``{
  */
 global define any OverviewDialog() ``{
     // For translators: Caption of the dialog
-    string caption = _("TV and radio cards overview");
+    string caption = _("TV and Radio Card Overview");
 
     // A list of the configured cards in the form allowed by the Table widet
     //list configured_cards = tvConfiguredCardsTableItems();
@@ -776,7 +776,7 @@ of available kernel modules...")),
     }
 
     // For translators: Caption of the dialog
-    string caption = _("Manual TV / radio card selection: details");
+    string caption = _("Manual TV and Radio Card Selection: Details");
 
     // Currently selected module. None => select bttv
     string selected_module = lookup (Tv::current_card, "module", nil);
@@ -848,7 +848,7 @@ of available kernel modules...")),
 		  `VSpacing(0.5),
           (allow_changeoftype ? `Left(`CheckBox(`id(`radio_ch), `opt(`notify),
             // checkbox label
-            _("R&adio card modules"), radio)) : `VSpacing(0)),
+            _("R&adio Card Modules"), radio)) : `VSpacing(0)),
 		  `VSpacing(0.5)
 	      ),
 	      `HSpacing(1.5)
@@ -1030,9 +1030,9 @@ your want to edit first."));
     if (radio)
 	// For translators: The name of the card is set to "User defined", because
 	// the user changed kernel module parameters and so we do not have a good name...
-	    Tv::current_card = add (Tv::current_card, "name", _("User defined radio card"));
+	    Tv::current_card = add (Tv::current_card, "name", _("User-Defined Radio Card"));
     else
-	    Tv::current_card = add (Tv::current_card, "name", _("User defined TV card"));
+	    Tv::current_card = add (Tv::current_card, "name", _("User-Defined TV Card"));
 	Tv::current_card = add (Tv::current_card, "module", selected_module);
 	Tv::current_card = add (Tv::current_card, "parameters", parameters);
 	Tv::current_card = add (Tv::current_card, "radio", radio);
@@ -1047,7 +1047,7 @@ your want to edit first."));
  */
 global define any AudioDialog() ``{
     // For translators: Caption of the dialog
-    string caption = _("TV / radio card audio");
+    string caption = _("TV and Radio Card Audio");
 
     // Name of the TV card being currently configured
     string current_card_name = lookup(Tv::current_card, "name", "");
@@ -1078,7 +1078,7 @@ global define any AudioDialog() ``{
 	      `VBox(
 		  `VSpacing(1.2),
           // Label text:
-		  `Left(`HBox(`Label(_("TV / radio card:")),
+		  `Left(`HBox(`Label(_("TV or Radio Card:")),
 			      `Label(`opt(`outputField), current_card_name)
 		  )),
 		  `VSpacing(0.7),
