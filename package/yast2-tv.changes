@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Fri Feb 28 13:39:33 CET 2003 - jsuchome@suse.de
+
+- fixed testsuite (didn't build on s390)
+- fixed: using empty values for autodetected cards in modules.conf
+  (bug #24132)
+- updated CARDLIST.bttv
+- 2.7.4
+
+-------------------------------------------------------------------
 Wed Feb 19 15:41:58 CET 2003 - jsuchome@suse.de
 
 - error output of rpm to /dev/null (#23808)
