@@ -12,12 +12,16 @@
 
     map READ_nil =
     $[ "probe":
-		$[ "tv": nil ]
+		$[ "tv": nil,
+		   "dvb": nil
+		]
 	];
 
     map READ_empty =
     $[ "probe":
-		$[ "tv": [ ] ]
+		$[ "tv": [ ],
+		   "dvb": [ ]
+		]
 	];
 
     map READ_det =
@@ -31,7 +35,8 @@
 		"device":"jmeno druhe",
 		"unique_key": "123xyz",
 		"drivers":[ $[ "modules": [ [ "bttv" ] ] ] ]
-	  ]]
+	  ]],
+	  "dvb" : []
 	]];
 
 

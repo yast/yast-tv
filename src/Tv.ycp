@@ -955,6 +955,15 @@ to %1."), "/etc/modprobe.d/tv."));
 	// probe for DVB cards
 	list<map> probe_dvb = (list<map>) SCR::Read(.probe.dvb);
 
+	if (probe_dvb == nil)
+	{
+        // Warning message popup (detection problem):
+	    Report::Warning(_("Unable to probe the DVB cards."));
+	    y2warning("Cannot probe TV cards: Read(.probe.tv) is nil.");
+		detected_cards = [];
+	    return true;
+	}
+
 	// add DVB flag to each DVB TV card
 	probe_dvb = maplist(map dvb_card, probe_dvb, ``{
 		dvb_card = add(dvb_card, "dvb", true);
