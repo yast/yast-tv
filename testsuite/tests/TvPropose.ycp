@@ -14,7 +14,7 @@
 	// Tv::cards == nil
 	Tv::cards = nil;
 	Tv::detected_cards = [ $["module":"bttv", "name":"Second detected", "unique_key":"123xyz"]];
-	TEST(``(Tv::Propose()), [], []);
+	TEST(``(Tv::Propose()), [], nil);
 	DUMP(Tv::cards);
 
 	// Tv::cards == card1
@@ -26,7 +26,7 @@
 	      ]
 	    ];
 	Tv::detected_cards = []; // detected_cards cannot have nil value
-	TEST(``(Tv::Propose()), [], []);
+	TEST(``(Tv::Propose()), [], nil);
 	DUMP(Tv::cards);
 
 	// Tv::cards == card1, nil, nil, card4
@@ -46,6 +46,6 @@
 	    ];
 	Tv::detected_cards = [ $["module":"zoran", "name":"First detected", "unique_key":"klic"],
 						   $["module":"bttv", "name":"Second detected", "unique_key":"123xyz"]];
-	TEST(``(Tv::Propose()), [], []);
+	TEST(``(Tv::Propose()), [], nil);
 	DUMP(Tv::cards);
 }
