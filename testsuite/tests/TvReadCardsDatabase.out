@@ -1,4 +1,5 @@
 Read	.target.yast2 "tv_cards.ycp" []
+Read	.target.yast2 "tv_dvbfirmware.ycp" $[]
 Read	.target.yast2 "tv_dvbcards.ycp" []
 Return	true
 Return	true

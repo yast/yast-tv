@@ -1,0 +1,16 @@
+/*
+ * Yast2 firmware database for DVB cards
+ *
+ * $Id$
+ */
+
+{
+textdomain "tv";
+
+return $[
+    "tda1004x" :
+	// source : target firmware file
+	$["ttlcdacc.dll" : "/usr/lib/hotplug/firmware/tda1004x.bin"]
+];
+
+}
