@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Sep 10 16:11:26 CEST 2003 - jsuchome@suse.cz
+
+- return empty list of cards when detection is skipped (#30394)
+- 2.8.7
+
+-------------------------------------------------------------------
 Tue Sep  2 12:39:19 CEST 2003 - jsuchome@suse.cz
 
 - fixed testsuite (constructor was changed in imported module)

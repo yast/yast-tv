@@ -1001,7 +1001,10 @@ to /etc/modules.conf."));
 
 	/* Confirmation: label text (detecting hardware: xxx) */
 	if (!Confirm::Detection (_("TV cards")))
+	{
+	    detected_cards = [];
 	    return true;
+	}
 
 	list probe_tv = SCR::Read(.probe.tv);
 	if (probe_tv == nil)
