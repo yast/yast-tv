@@ -30,7 +30,7 @@ include "tv/misc.ycp";
  * Dialog for testing IRC
  * @return boolean false when Abort was pressed or some problems occured
  */
-global define boolean IRCTestPopup (string config_file, string mod, boolean modified) ``{
+define boolean IRCTestPopup (string config_file, string mod, boolean modified) ``{
 
     string orig_module	= "";
     string orig_config	= "";
@@ -187,7 +187,7 @@ global define boolean IRCTestPopup (string config_file, string mod, boolean modi
  * Dialog for seting up IRC
  * @param run from irc.ycp client? (=not from tv module)
  */
-global define any IRCDialog (boolean alone) ``{
+define any IRCDialog (boolean alone) ``{
 
     // For translators: Caption of the dialog
     string caption = _("Infra red control configuration");

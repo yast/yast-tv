@@ -19,4 +19,5 @@
 	TEST(``(CmpParameters($[ "card":"0", "tuner":"0" ],$[ "card":"0", "tuner": "1" ])), [], nil);
 
 	TEST(``(CmpParameters($[ "card":"0", "tuner":nil ],$[ "card":"0" ])), [], nil);
+
 }

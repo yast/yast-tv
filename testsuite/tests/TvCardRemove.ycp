@@ -9,7 +9,7 @@
     TESTSUITE_INIT([READ], nil);
     import "Tv";
 
-    define TEST_It_Now(integer card_no_totest) ``{
+    define void TEST_It_Now(integer card_no_totest) ``{
 	// Tv::cards == nil
 	Tv::cards = nil;
 	Tv::CardRemove(card_no_totest);

@@ -7,6 +7,8 @@
     ];
 
     TESTSUITE_INIT([READ], nil);
+
+    textdomain "tv";
     import "Tv";
 
     map READ_nil =

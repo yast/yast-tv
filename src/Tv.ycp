@@ -614,7 +614,7 @@ available kernel modules."));
 		{
 		    string value = param_map[count]:"";
 		    // this is a hack for detected cards (see bug #24132)
-		    if (value == "")
+		    if (value == nil || value == "")
 			value = "-1";
 		    param_values = add(param_values, value);
 		    count = count + 1;
@@ -801,7 +801,7 @@ to /etc/modules.conf."));
 	    // NOTE: it is not important to save the attached sound card number!
 	});
 
-    return SaveVolume();
+	return SaveVolume();
     }
 
     /**
@@ -934,7 +934,7 @@ to /etc/modules.conf."));
      * @return any The 'index'th card or nil
      */
     global define any CardGet(integer index) ``{
-	if (index < 0 || index >= size(cards))
+	if (index == nil || cards == nil || index < 0 || index >= size(cards))
 	{
 	    return nil;
 	}
@@ -951,6 +951,10 @@ to /etc/modules.conf."));
 	if (cards == nil)
 	{
 	    cards = [];
+	}
+	if (current_card == nil)
+	{
+	    current_card = $[];
 	}
 	integer index = nil;
 
@@ -1032,8 +1036,8 @@ to /etc/modules.conf."));
 	boolean success = false;
 
 	integer i = 0;
-	cards = maplist(map card, cards, ``{
-	    if (i == index)
+	cards = maplist (map card, cards, ``{
+	    if (i == index && card != nil)
 	    {
 		cards_to_del = add(cards_to_del, card);
 		card = nil;

@@ -9,7 +9,7 @@
     TESTSUITE_INIT([READ], nil);
     import "Tv";
 
-	define TEST_It_Now(map auto, integer vendor) ``{
+    define void TEST_It_Now(map auto, integer vendor) ``{
 	DUMP("---------------");
 
 	// cards_database cannot be nil (see ReadCardsDatabase)
@@ -33,7 +33,7 @@
 	items = Tv::CardsDBVendorGetCards(auto, vendor);
 	DUMP(items);
 
-	}
+    }
 
     TEST_It_Now(nil, nil);
 

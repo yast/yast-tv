@@ -6,12 +6,12 @@ Read	.probe.has_pcmcia nil
 Read	.probe.has_smp nil
 Read	.probe.system nil
 Dir	.audio.alsa.cards: []
-Execute	.audio.alsa.store 0 0 0
-Return	true
+Execute	.audio.alsa.store 0 0 true
+Return	nil
 Dump	[$["module":"bttv", "name":"Second detected", "unique_key":"123xyz"]]
-Return	true
+Return	nil
 Dump	[$["module":"bttv", "parameters":$["param1":"testvalue"], "sound_card_no":0, "unique_key":"hluk.HvsIesmXXX1"]]
 Dir	.audio.alsa.cards: []
-Execute	.audio.alsa.store 0 0 0
-Return	true
+Execute	.audio.alsa.store 0 0 true
+Return	nil
 Dump	[$["module":"bttv", "parameters":$["param1":"testvalue"], "sound_card_no":0, "unique_key":"hluk.HvsIesmXXX1"], $["module":"zoran", "name":"First detected", "unique_key":"klic"], $["module":"bttv", "name":"Second detected", "unique_key":"123xyz"], $["module":"xyz", "parameters":$["par_other":"testvalue2"], "sound_card_no":1, "unique_key":"j7F3.J8dhgs34fK2"]]

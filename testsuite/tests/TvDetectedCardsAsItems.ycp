@@ -9,7 +9,7 @@
     TESTSUITE_INIT([READ], nil);
     import "Tv";
 
-	define TEST_It_Now(list detected) ``{
+    define void TEST_It_Now(list detected) ``{
 	Tv::detected_cards = detected;
 	DUMP("---------------");
 

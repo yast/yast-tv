@@ -54,7 +54,7 @@
  * Print summary of basic options
  * @return boolean false
  */
-global define boolean TvSummaryHandler (map options ) ``{
+define boolean TvSummaryHandler (map options ) ``{
 
     CommandLine::Print (RichText::Rich2Plain(Tv::Summary ()));
     return false; // do not call Write...
@@ -66,7 +66,7 @@ global define boolean TvSummaryHandler (map options ) ``{
  * @param options parameters passed as cmdline args
  * @return boolean true on success
  */
-global define boolean TvAddCardHandler (map options ) ``{
+define boolean TvAddCardHandler (map options ) ``{
 
     integer card_no = tointeger (options["no"]:"0");
 
@@ -116,7 +116,7 @@ global define boolean TvAddCardHandler (map options ) ``{
  * @param options parameters passed as cmdline args
  * @return boolean true on success
  */
-global define boolean TvRemoveCardHandler (map options ) ``{
+define boolean TvRemoveCardHandler (map options ) ``{
 
     integer card_no = tointeger (options["no"]:"-1");
     if (card_no == -1)
@@ -138,7 +138,7 @@ global define boolean TvRemoveCardHandler (map options ) ``{
  * Wrapper function for reading the settings (used by cmd-line)
  * @return boolean success
  */
-global define boolean TvRead () ``{
+define boolean TvRead () ``{
 
     block<boolean> abort_block = ``{return false;};
     return Tv::Read (abort_block);
@@ -148,7 +148,7 @@ global define boolean TvRead () ``{
  * Wrapper function for writing the settings (used by cmd-line)
  * @return boolean success
  */
-global define boolean TvWrite () ``{
+define boolean TvWrite () ``{
 
     block<boolean> abort_block = ``{return false;};
     return Tv::Write (abort_block);

@@ -9,7 +9,7 @@
     TESTSUITE_INIT([READ], nil);
     import "Tv";
 
-	define TEST_It_Now(string s_module) ``{
+    define void TEST_It_Now(string s_module) ``{
 	DUMP("---------------");
 
 	// kernel_modules_database cannot be nil (see ReadKernelModules)
@@ -30,7 +30,7 @@
 	items = Tv::KernelModulesAsItems(s_module);
 	DUMP(items);
 
-	}
+    }
 
     // testing with different values of selected_module
     TEST_It_Now(nil);

@@ -9,7 +9,7 @@
     TESTSUITE_INIT([READ], nil);
     import "Tv";
 
-    define TEST_It_Now(map curcard_totest, integer card_no_totest) ``{
+    define void TEST_It_Now(map curcard_totest, integer card_no_totest) ``{
 	// Tv::cards == nil
 	Tv::cards = nil;
 	Tv::current_card = curcard_totest;
@@ -71,7 +71,7 @@
 	DUMP(Tv::cards);
     }
 
-    define TEST_It_Now_CardNo(integer card_no_totest) ``{
+    define void TEST_It_Now_CardNo(integer card_no_totest) ``{
         // Tv::current_card == nil
 	TEST_It_Now(nil, card_no_totest);
 
