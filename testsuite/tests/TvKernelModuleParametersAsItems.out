@@ -1,0 +1,14 @@
+Read	.target.ycp ["/var/lib/YaST2/installmap.ycp", $[]] $[]
+Read	.probe.architecture nil
+Read	.probe.has_apm nil
+Read	.probe.has_pcmcia nil
+Read	.probe.has_smp nil
+Read	.probe.system []
+Dump	---------------
+Dump	[]
+Dump	[]
+Dump	[`item (`id ("tuner"), "tuner", "", "specify installed tuner type")]
+Dump	---------------
+Dump	[]
+Dump	[]
+Dump	[`item (`id ("tuner"), "tuner", "1", "specify installed tuner type")]

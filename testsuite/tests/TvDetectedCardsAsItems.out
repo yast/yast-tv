@@ -1,0 +1,21 @@
+Read	.target.ycp ["/var/lib/YaST2/installmap.ycp", $[]] $[]
+Read	.probe.architecture nil
+Read	.probe.has_apm nil
+Read	.probe.has_pcmcia nil
+Read	.probe.has_smp nil
+Read	.probe.system []
+Dump	---------------
+Dump	[`item (`id (-1), "Other (not detected)", true)]
+Dump	[`item (`id (-1), "Other (not detected)", true)]
+Dump	[`item (`id (-1), "Other (not detected)", true)]
+Dump	[`item (`id (-1), "Other (not detected)", true)]
+Dump	---------------
+Dump	[`item (`id (0), "First detected card", true), `item (`id (-1), "Other (not detected)", false)]
+Dump	[`item (`id (0), "First detected card", true), `item (`id (-1), "Other (not detected)", false)]
+Dump	[`item (`id (-1), "Other (not detected)", true)]
+Dump	[`item (`id (-1), "Other (not detected)", true)]
+Dump	---------------
+Dump	[`item (`id (0), "My TV_card", true), `item (`id (1), "Some other detected card", false), `item (`id (-1), "Other (not detected)", false)]
+Dump	[`item (`id (0), "My TV_card", true), `item (`id (1), "Some other detected card", false), `item (`id (-1), "Other (not detected)", false)]
+Dump	[`item (`id (0), "My TV_card", true), `item (`id (1), "Some other detected card", false), `item (`id (-1), "Other (not detected)", false)]
+Dump	[`item (`id (1), "Some other detected card", true), `item (`id (-1), "Other (not detected)", false)]

@@ -1,0 +1,15 @@
+Read	.target.ycp ["/var/lib/YaST2/installmap.ycp", $[]] $[]
+Read	.probe.architecture nil
+Read	.probe.has_apm nil
+Read	.probe.has_pcmcia nil
+Read	.probe.has_smp nil
+Read	.probe.system []
+Dump	---------------
+Dump	[[], nil]
+Dump	[[`item (`id (0), "Other vendors", false), `item (`id (1), "ATI", false)], nil]
+Dump	---------------
+Dump	[[`item (`id (0), "Autodetected card", true)], 0]
+Dump	[[`item (`id (0), "Autodetected card", true), `item (`id (1), "Other vendors", false), `item (`id (2), "ATI", false)], 0]
+Dump	---------------
+Dump	[[`item (`id (0), "Autodetected card", false)], nil]
+Dump	[[`item (`id (0), "Autodetected card", false), `item (`id (1), "Other vendors", false), `item (`id (2), "ATI", true)], 2]

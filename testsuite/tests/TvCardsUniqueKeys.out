@@ -1,0 +1,10 @@
+Read	.target.ycp ["/var/lib/YaST2/installmap.ycp", $[]] $[]
+Read	.probe.architecture nil
+Read	.probe.has_apm nil
+Read	.probe.has_pcmcia nil
+Read	.probe.has_smp nil
+Read	.probe.system []
+Dump	[]
+Dump	[]
+Dump	["hluk.HvsIesmXXX1"]
+Dump	["hluk.HvsIesmXXX1", "j7F3.J8dhgs34fK2"]

@@ -1,0 +1,34 @@
+{
+
+    include "testsuite.ycp";
+
+    map READ = $[
+	"etc" : $[ "install_inf" : $[] ],
+	"target" : $[ "ycp" : $[] ],
+	"probe" : $[ "system" : []],
+    ];
+
+    TESTSUITE_INIT([READ], nil);
+    import "Tv";
+
+	Tv::tuners_database = nil;
+	map tuner = Tv::TunersDBSelectTuner("bttv", 1);
+	DUMP(tuner);
+
+
+	Tv::tuners_database = $[];
+	tuner = Tv::TunersDBSelectTuner("bttv", 1);
+	DUMP(tuner);
+
+	Tv::tuners_database = $["bttv" :
+		[ $["name":"No tuner",
+			"parameters":$["tuner":"4"]],
+		  $["name":"Alps HSBH1",
+		    "parameters":$["tuner":"9"]]]
+	];
+	tuner = Tv::TunersDBSelectTuner("bttv", 2);
+	DUMP(tuner);
+
+	tuner = Tv::TunersDBSelectTuner("bttv", 3);
+	DUMP(tuner);
+}

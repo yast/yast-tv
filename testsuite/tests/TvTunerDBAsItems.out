@@ -1,0 +1,10 @@
+Read	.target.ycp ["/var/lib/YaST2/installmap.ycp", $[]] $[]
+Read	.probe.architecture nil
+Read	.probe.has_apm nil
+Read	.probe.has_pcmcia nil
+Read	.probe.has_smp nil
+Read	.probe.system []
+Dump	[]
+Dump	[`item (`id (0), "Default (detected)", true)]
+Dump	[`item (`id (0), "Default (detected)", false), `item (`id (1), "No tuner", false), `item (`id (2), "Alps HSBH1", false)]
+Dump	[`item (`id (0), "Default (detected)", false), `item (`id (1), "No tuner", false), `item (`id (2), "Alps HSBH1", true)]
