@@ -253,8 +253,9 @@ It is currently not installed. Do you want to install it now?"),
 
 	if (kwintv_is_installed)
 	{
-	    // Initialize kv4lsetup
-	    SCR::Execute(.target.bash, "/opt/kde2/bin/kv4lsetup");
+	    // Initialize setup - kv4lsetup was removed
+//	    SCR::Execute(.target.bash, "/opt/kde2/bin/kv4lsetup");
+	    SCR::Execute(.target.bash, "/usr/X11R6/bin/v4l-conf");
 	}
 	// increase the progress to "finish" -- problems ???
 	Progress::NextStage ();
