@@ -136,6 +136,7 @@
     global map kernel_modules = nil;
     global map radio_modules = nil;
     global map dvb_modules = nil;
+    global map dvb_core_drivers = nil;
 
     /**
      * Becomes true, when the module is initialized for proposal.
@@ -551,6 +552,26 @@ available kernel modules."));
 	});
 	y2debug("All dvb modules: %1", dvb_modules);
 
+	// read all DVB non-frontends drivers
+	path dvb_drivers_dir = .modinfo.kernel.drivers.media.dvb;
+	list<string> dvb_drivers = (list<string>)SCR::Dir(dvb_drivers_dir);
+	list<string> frontends = (list<string>)SCR::Dir(dvb_path);
+
+	dvb_drivers = filter(string d, dvb_drivers, {return !contains(frontends, d);});
+
+	if (dvb_drivers == nil)
+	{
+	    dvb_drivers = [];
+	}
+
+	dvb_core_drivers = $[];
+	foreach(string mod, dvb_drivers, {
+	    map parm = (map) SCR::Read(add(dvb_drivers_dir, mod));
+	    dvb_core_drivers = add(dvb_core_drivers, mod, parm);
+	});
+
+	y2debug("found dvb drivers: %1", dvb_core_drivers);
+
 	return true;
     }
 
@@ -779,7 +800,7 @@ available kernel modules."));
 
 		list<string> module_names = parse_module_string(read_module_name);
 
-		y2debug("Reading install %1: module name is '%2'",
+		y2milestone("Reading install %1: module name is '%2'",
 		    install, module_names);
 		if (read_module_name !=nil && read_module_name!="")
 		{
@@ -852,7 +873,10 @@ available kernel modules."));
 					card = remove(card, "name");
 
 					foreach(string key, any value, (map<string,any>)card, ``{
-						readcard[key] = value;
+						if (!haskey(readcard, key))
+						{
+						    readcard[key] = value;
+						}
 					    }
 					);
 
@@ -2778,6 +2802,12 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	    (list<string>) union (detected_list, installed_list) );
     }
 
+
+    boolean ProbeModules(list<string> modules) {
+	boolean ret = true;
+
+	return ret;
+    }
 
 /* EOF */
 }

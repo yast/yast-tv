@@ -594,7 +594,8 @@ for the selected card."));
  * radio card modules is shown
  * @return any The value of the resulting UserInput.
  */
-define any ManualDetailsDialog(boolean allow_changeoftype) ``{
+define any ManualDetailsDialog(boolean allow_changeoftype, integer index) ``{
+
     if (Tv::kernel_modules == nil)
     {
 	UI::OpenDialog (
@@ -617,7 +618,7 @@ of available kernel modules...")),
     // Currently selected module. None => select bttv
     list<string> selected_modules = Tv::current_card["module"]:[];
 
-    string selected_module = (string) selected_modules[size(selected_modules) - 1]:nil;
+    string selected_module = (string) selected_modules[index]:nil;
     if (selected_module == nil)
     {
 	selected_module = "bttv";
@@ -630,6 +631,7 @@ of available kernel modules...")),
     list all_modules = Tv::ModulesAsItems(Tv::kernel_modules, selected_module);
     list all_radio_modules = Tv::ModulesAsItems(Tv::radio_modules, selected_module);
     list all_dvb_modules = Tv::ModulesAsItems(Tv::dvb_modules, selected_module);
+    list all_dvb_core_drivers = Tv::ModulesAsItems(Tv::dvb_core_drivers, selected_module);
 
     // The currently selected parameter
     string selected_parameter = "";
@@ -702,12 +704,24 @@ of available kernel modules...")),
 
     if (dvb)
     {
-        UI::ReplaceWidget(`id(`modules_rp),
-            `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
-			    _("&Kernel module"), all_dvb_modules));
-        selected_module = (string) UI::QueryWidget (`id(`module_combo), `Value);
-        UI::ChangeWidget (`id(`parameters_table), `Items,
-            Tv::ModuleParametersAsItems(Tv::dvb_modules, selected_module, parameters));
+	if (index == 1)
+	{
+	    UI::ReplaceWidget(`id(`modules_rp),
+		`ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
+				_("&Kernel module"), all_dvb_modules));
+	    selected_module = (string) UI::QueryWidget (`id(`module_combo), `Value);
+	    UI::ChangeWidget (`id(`parameters_table), `Items,
+		Tv::ModuleParametersAsItems(Tv::dvb_modules, selected_module, parameters));
+	}
+	else
+	{
+	    UI::ReplaceWidget(`id(`modules_rp),
+		`ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
+				_("&Kernel module"), all_dvb_core_drivers));
+	    selected_module = (string) UI::QueryWidget (`id(`module_combo), `Value);
+	    UI::ChangeWidget (`id(`parameters_table), `Items,
+		Tv::ModuleParametersAsItems(Tv::dvb_core_drivers, selected_module, parameters));
+	}
     }
     else if (!radio)
     {
@@ -801,8 +815,18 @@ of available kernel modules...")),
 
 	    // Redraw the table
 	    if (dvb)
-		UI::ChangeWidget ( `id(`parameters_table), `Items,
-		Tv::ModuleParametersAsItems(Tv::dvb_modules, selected_module, parameters));
+	    {
+		if (index == 1)
+		{
+		    UI::ChangeWidget ( `id(`parameters_table), `Items,
+		    Tv::ModuleParametersAsItems(Tv::dvb_modules, selected_module, parameters));
+		}
+		else
+		{
+		    UI::ChangeWidget ( `id(`parameters_table), `Items,
+		    Tv::ModuleParametersAsItems(Tv::dvb_core_drivers, selected_module, parameters));
+		}
+	    }
 	    else if (!radio)
 		UI::ChangeWidget ( `id(`parameters_table), `Items,
 		Tv::ModuleParametersAsItems(Tv::kernel_modules, selected_module, parameters));
@@ -932,8 +956,12 @@ your want to edit first."));
 
 	if (size(selected_modules) > 1)
 	{
-	    selected_modules[size(selected_modules) - 1] = selected_module;
+	    selected_modules[index] = selected_module;
 	    Tv::current_card["module"] = selected_modules;
+	    if (index == 0)
+	    {
+		ret = `details1;
+	    }
 	}
 	else
 	{
@@ -1524,7 +1552,8 @@ define any MainSequence () ``{
 
 	    "man_manual"      : ``( ManualDialog (false) ),
 	    "man_manual_warn" : ``( ManualDialog (true) ),
-	    "man_details"     : ``( ManualDetailsDialog (true) ),
+	    "man_details0"     : ``( ManualDetailsDialog (true, 0) ),
+	    "man_details1"     : ``( ManualDetailsDialog (true, 1) ),
 	    "man_audio"       : ``( AudioDialog () ),
 	    "man_irc"		: ``( IRCDialog (false) ),
 	    "man_doit"        : ``( CardAddCurrentWrapper () ),
@@ -1536,14 +1565,16 @@ define any MainSequence () ``{
 	    "det_doit"        : ``( CardAddCurrentWrapper () ),
 
 	    "add_manual"      : ``( ManualDialog (false) ),
-	    "add_details"     : ``( ManualDetailsDialog (true) ),
+	    "add_details0"     : ``( ManualDetailsDialog (true, 0) ),
+	    "add_details1"     : ``( ManualDetailsDialog (true, 1) ),
 	    "add_audio"       : ``( AudioDialog () ),
 	    "add_irc"		: ``( IRCDialog (false) ),
 	    "add_doit"        : ``( CardAddCurrentWrapper () ),
 	    "add_channels"	: ``( ChannelsDialog ()),
 
 	    "rep_manual"      : ``( ManualDialog (false) ),
-	    "rep_details"     : ``( ManualDetailsDialog (false) ),
+	    "rep_details0"     : ``( ManualDetailsDialog (false, 0) ),
+	    "rep_details1"     : ``( ManualDetailsDialog (false, 1) ),
 	    "rep_audio"       : ``( AudioDialog () ),
 	    "rep_irc"		: ``( IRCDialog (false) ),
 	    "rep_doit"        : ``( CardReplaceWithCurrentWrapper () ),
@@ -1568,12 +1599,12 @@ define any MainSequence () ``{
 	    `next             : `next,
 	    `add_button       : "add_manual",
 	    `edit_button      : "rep_manual",
-	    `edit_button_radio: "rep_details",
+	    `edit_button_radio: "rep_details0",
 	],
 
 	"man_manual" : $[
 	    `abort            : `abort,
-	    `details_button   : "man_details",
+	    `details_button   : "man_details0",
 	    `next             : "man_audio",
 	    `channels		: "man_channels"
 	],
@@ -1583,11 +1614,16 @@ define any MainSequence () ``{
 	],
 	"man_manual_warn" : $[
 	    `abort            : `abort,
-	    `details_button   : "man_details",
+	    `details_button   : "man_details0",
 	    `next             : "man_audio",
 	    `channels		: "man_channels",
 	],
-	"man_details" : $[
+	"man_details0" : $[
+	    `abort            : `abort,
+	    `details1         : "man_details1",
+	    `next             : "man_audio"
+	],
+	"man_details1" : $[
 	    `abort            : `abort,
 	    `next             : "man_audio"
 	],
@@ -1621,7 +1657,7 @@ define any MainSequence () ``{
 
 	"add_manual" : $[
 	    `abort            : `abort,
-	    `details_button   : "add_details",
+	    `details_button   : "add_details0",
 	    `next             : "add_audio",
 	    `channels		: "add_channels"
 	],
@@ -1629,7 +1665,12 @@ define any MainSequence () ``{
 	    `abort            : `abort,
 	    `next             : "add_manual"
 	],
-	"add_details" : $[
+	"add_details0" : $[
+	    `abort            : `abort,
+	    `details1         : "add_details1",
+	    `next             : "add_audio"
+	],
+	"add_details1" : $[
 	    `abort            : `abort,
 	    `next             : "add_audio"
 	],
@@ -1647,7 +1688,7 @@ define any MainSequence () ``{
 
 	"rep_manual" : $[
 	    `abort            : `abort,
-	    `details_button   : "rep_details",
+	    `details_button   : "rep_details0",
 	    `next             : "rep_audio",
 	    `channels		: "rep_channels"
 	],
@@ -1655,7 +1696,12 @@ define any MainSequence () ``{
 	    `abort            : `abort,
 	    `next             : "rep_manual"
 	],
-	"rep_details" : $[
+	"rep_details0" : $[
+	    `abort            : `abort,
+	    `details1         : "rep_details1",
+	    `next             : "rep_audio"
+	],
+	"rep_details1" : $[
 	    `abort            : `abort,
 	    `next             : "rep_audio"
 	],
