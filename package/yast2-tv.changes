@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Aug 20 09:33:25 CEST 2002 - jsuchome@suse.cz
+
+- again adapted testsuite to extern changes
+
+-------------------------------------------------------------------
 Fri Aug 16 15:20:49 CEST 2002 - jsuchome@suse.cz
 
 - new default entry to modules.conf (#18033)
