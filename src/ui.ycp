@@ -652,6 +652,7 @@ the list in the following dialog."));
     }
 
     any ret = nil;
+    integer sel_no = 0;
     do
     {
 	// Disable/enable the [Select tuner] button
@@ -666,7 +667,7 @@ the list in the following dialog."));
 	// User input
 	ret = tvUserInput();
 
-	integer sel_no = UI::QueryWidget(`id(`cards_selbox), `CurrentItem);
+	sel_no = UI::QueryWidget(`id(`cards_selbox), `CurrentItem);
 
 	if (ret == `next && sel_no == nil)
 	{
@@ -725,6 +726,10 @@ for the selected card."));
 	}
     } while (ret != `details_button &&
 	     ret != `back && ret != `abort && ret != `next);
+
+    // hack for ncurses selection:
+    if (selected_card == $[])
+		selected_card = select(vendor_cards_db, sel_no, $[]);
 
     // Overwrite the Tv::current_card
     if (ret != `back && ret != `abort)
