@@ -1,0 +1,14 @@
+Read	.target.ycp ["/var/lib/YaST2/installmap.ycp", $[]] $[]
+Read	.probe.architecture nil
+Read	.probe.has_apm nil
+Read	.probe.has_pcmcia nil
+Read	.probe.has_smp nil
+Read	.probe.system []
+Dir	.modules.alias: []
+Return	[]
+Dir	.modules.alias: ["eth0", "fb0", "midi"]
+Return	[]
+Dir	.modules.alias: ["char-major-81-0", "eth0", "fb0"]
+Return	["char-major-81-0"]
+Dir	.modules.alias: ["char-major-81-0", "char-major-81-1", "eth0", "midi"]
+Return	["char-major-81-0", "char-major-81-1"]

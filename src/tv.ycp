@@ -1,0 +1,61 @@
+/**
+ * File:
+ *   clients/tv.ycp
+ *
+ * Package:
+ *   Configuration of TV cards
+ *
+ * Summary:
+ *   Main file
+ *
+ * Authors:
+ *   Jan Holesovsky <kendy@suse.cz>
+ *
+ * $Id$
+ *
+ * Main file for tv configuration. Uses all other files.
+ *
+ */
+
+{
+    /***
+     * <h3>Configuration of the TV cards</h3>
+     */
+
+    textdomain "tv";
+
+    import "Mode";
+
+    include "tv/ui.ycp";
+
+    /* The main () */
+    y2milestone ("Tv module started");
+    y2milestone ("----------------------------------------");
+
+    /**
+     * Should we suppress Read() and Write()? It is necessary in proposals...
+     */
+    boolean no_io = false;
+
+    integer i = 0;
+    while (i < size (Args()))
+    {
+	if (Args (i) == .noio)
+	{
+	    no_io = true;
+	}
+	else if (Args (i) == .test)
+	{
+	    Mode::test = true;
+	}
+	i = i + 1;
+    }
+
+    /* main ui function */
+    any ret = no_io? TvSequenceNoIO (): TvSequence ();
+    y2debug ("ret == %1", ret);
+
+    /* Finish */
+    y2milestone ("Tv module finished");
+    return ret;
+}

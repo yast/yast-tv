@@ -1,0 +1,14 @@
+Read	.target.ycp ["/var/lib/YaST2/installmap.ycp", $[]] $[]
+Read	.probe.architecture nil
+Read	.probe.has_apm nil
+Read	.probe.has_pcmcia nil
+Read	.probe.has_smp nil
+Read	.probe.system []
+Dir	.modinfo.kernel.drivers.media.video: []
+Return	true
+Dump	$[]
+Dir	.modinfo.kernel.drivers.media.video: ["bttv", "zoran"]
+Read	.modinfo.kernel.drivers.media.video."bttv" $["module_description":"bttv - v4l driver module for bt848/878 based cards", "module_filename":"/lib/modules/2.4.4-4GB/kernel/drivers/media/video/bttv.o", "tuner":"specify installed tuner type"]
+Read	.modinfo.kernel.drivers.media.video."zoran" $["module_description":"Zoran ZR36120 based framegrabber", "module_filename":"/lib/modules/2.4.4-4GB/kernel/drivers/media/video/zoran.o"]
+Return	true
+Dump	$["bttv":$["module_description":"bttv - v4l driver module for bt848/878 based cards", "module_filename":"/lib/modules/2.4.4-4GB/kernel/drivers/media/video/bttv.o", "tuner":"specify installed tuner type"], "zoran":$["module_description":"Zoran ZR36120 based framegrabber", "module_filename":"/lib/modules/2.4.4-4GB/kernel/drivers/media/video/zoran.o"]]

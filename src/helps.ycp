@@ -1,0 +1,176 @@
+/**
+ * File:
+ *   helps.ycp
+ *
+ * Module:
+ *   Configuration of TV cards
+ *
+ * Summary:
+ *   Functions returning help texts.
+ *
+ * Authors:
+ *   Jan Holesovsky <kendy@suse.cz>
+ *
+ * $Id$
+ *
+ * All the help texts for the dialogs.
+ *
+ */
+
+{
+    textdomain "tv";
+
+    /**
+     * Help for the ReadDialog () dialog.
+     * @return The help text.
+     */
+    global define string ReadDialogHelp () ``{
+	return
+	    // For translators: tv read dialog help, part 1 of 2
+_("<P><B><BIG>Initializing TV card configuration</BIG></B><BR>
+Please wait...
+<BR></P>
+") +
+	    // For translators: tv read dialog help, part 2 of 2
+_("<P><B><BIG>Aborting the initialization:</BIG></B><BR>
+Safely abort the configuration utility by pressing <B>Abort</B>
+now.
+</P>
+");
+    }
+
+    /**
+     * Help for the WriteDialog () dialog.
+     * @return The help text.
+     */
+    global define string WriteDialogHelp () ``{
+	// TODO FIXME: Modify it to your needs!
+	return
+	    // For translators: tv write dialog help, part 1 of 2
+_("<P><B><BIG>Saving TV configuration</BIG></B><BR>
+Please wait...
+<BR></P>
+") +
+	    // For translators: tv write dialog help, part 2 of 2
+_("<P><B><BIG>Aborting saving:</BIG></B><BR>
+Abort the saving by pressing <B>Abort</B>.
+An additional dialog will inform you whether it is safe to do so.
+</P>
+");
+    }
+
+    /**
+     * Help texts for DetectedDialog()
+     * @return The help text.
+     */
+    global define string DetectedDialogHelp() ``{
+	return
+	    // Help: Detected cards, part 1 of 3
+_("<P><B><BIG>TV card setup</BIG></B><BR>
+Here you can configure your TV card(s).
+<BR></P>") +
+	    // Help: Detected cards, part 2 of 3
+_("<P><B><BIG>Adding a TV card:</BIG></B><BR>
+Choose the card from the list of the detected cards. If your card was
+not autodetected, use <B>Other (not detected)</B>. Then press
+<B>Configure</B>.
+</P>") +
+	    // Help: Detected cards, part 3 of 3
+	_("<P><B><BIG>Editing or deleting:</BIG></B><BR>
+If you press <B>Edit</B>, an additional dialog (where you
+can change the configuration) will open.
+</P>");
+    }
+
+    /**
+     * Help texts for OverviewDialog()
+     * @return The help text.
+     */
+    global define string OverviewDialogHelp() ``{
+	return
+	    // Help: Overview of the installed cards, part 1 of 3
+_("<P><B><BIG>TV card overview</BIG></B><BR>
+Here you can get an overview about installed TV cards. Additionally
+you can edit their configuration.
+<BR></P>") +
+	    // Help: Overview of the installed cards, part 2 of 3
+_("<P><B><BIG>Adding a TV card:</BIG></B><BR>
+If you press <B>Add</B>, you can manually configure a TV card.
+</P>") +
+	    // Help: Overview of the installed cards, part 3 of 3
+_("<P><B><BIG>Editing or deleting:</BIG></B><BR>
+Choose a TV card, whose configuration you want to change or remove.
+Then press the appropriate button: <B>Edit</B> or <B>Delete</B>.
+</P>");
+    }
+
+    /**
+     * Help texts for ManualDialog()
+     * @return The help text.
+     */
+    global define string ManualDialogHelp() ``{
+	return
+	    // Help: Manual addition of a card, part 1/3
+_("<P><B><BIG>Manual TV card selection</BIG></B><BR>
+Please choose the type of your TV card.
+<BR></P>") +
+	    // Help: Manual addition of a card, part 2/3
+_("<P><B><BIG>Selecting tuner:</BIG></B><BR>
+If you have to specify the type of the tuner to get a working
+configuration, select your card, press <B>Select tuner</B> button and
+choose the type of your tuner.
+</P>") +
+	    // Help: Manual addition of a card, part 3/3
+_("<P><B><BIG>Expert configuration:</BIG></B><BR>
+You can choose the exact kernel module and its parameters if you press
+<B>Details</B> button.
+</P>");
+}
+
+    /**
+     * Help texts for ManualDetailsDialog()
+     * @return The help text.
+     */
+    global define string ManualDetailsDialogHelp() ``{
+	return
+	    // Help: Manual addition of a card: Details, part 1/3
+_("<P><B><BIG>Manual selection: details</BIG></B><BR>
+Here you can control all the parameters of the driver of your TV card.<BR>
+Beware: This is for experts!
+<BR></P>") +
+	    // Help: Manual addition of a card: Details, part 2/3
+_("<P><B><BIG>Kernel module:</BIG></B><BR>
+Choose the kernel module which is the driver of your TV card.
+</P>") +
+	    // Help: Manual addition of a card: Details, part 3/3
+_("<P><B><BIG>Changing parameters:</BIG></B><BR>
+Choose the parameter you want to change, write its new value to
+the input line and press <B>Set</B>. To set the parameter's value
+to default, press <B>Reset</B>.
+</P>");
+}
+
+    /**
+     * Help texts for AudioDialog()
+     * @return The help text.
+     */
+    global define string AudioDialogHelp() ``{
+	return
+	    // Help: Setup the audio of the card, part 1/3
+_("<P><B><BIG>TV card audio</BIG></B><BR>
+If your TV card has an audio output and it is connected to your sound
+card, YaST2 has to unmute the sound card's input.
+<BR></P>") +
+	    // Help: Setup the audio of the card, part 2/3
+_("<P><B><BIG>Selecting the sound card:</BIG></B><BR>
+Select <B>Yes</B> to enable the list of the sound cards and choose
+one of your configured sound cards.
+</P>") +
+	    // Help: Setup the audio of the card, part 3/3
+_("<P><B><BIG>Configuring sound card:</BIG></B><BR>
+If your sound card is not configured yet, press <B>Configure sound
+cards</B> button.
+</P>");
+}
+
+}

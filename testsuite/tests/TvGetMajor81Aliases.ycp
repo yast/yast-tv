@@ -1,0 +1,52 @@
+{
+
+    include "testsuite.ycp";
+
+    map READ = $[
+	"etc" : $[ "install_inf" : $[] ],
+	"target" : $[ "ycp" : $[] ],
+	"probe" : $[ "system" : []],
+    ];
+
+    TESTSUITE_INIT([READ], nil);
+    import "Tv";
+
+    // none alias
+    map READ_alias_nil =
+	$[ "modules" :
+	    $[ "alias" : nil ]
+	];
+
+    // no char-major-81 alias
+    map READ_no_alias_81 =
+	$[ "modules" :
+	    $[ "alias" :
+		$[ "eth0" : "" , "fb0" : "", "midi" : "" ]
+	    ]
+	];
+
+    // one char-major-81 alias
+    map READ_one_alias_81 =
+	$[ "modules" :
+	    $[ "alias" :
+		$[ "eth0" : "", "fb0" : "", "char-major-81-0" : "" ]
+	    ]
+	];
+
+    // more char-major-81 aliases
+    map READ_more_aliases_81 =
+	$[ "modules" :
+	    $[ "alias" :
+		$[ "eth0" : "", "char-major-81-0" : "", "char-major-81-1" : "", "midi" : "" ] 
+	    ]
+	];
+
+
+    TEST(``(Tv::GetMajor81Aliases()), [ READ_alias_nil , $[], $[] ], false);
+
+    TEST(``(Tv::GetMajor81Aliases()), [ READ_no_alias_81 , $[], $[] ], false);
+
+    TEST(``(Tv::GetMajor81Aliases()), [ READ_one_alias_81 , $[], $[] ], false);
+
+    TEST(``(Tv::GetMajor81Aliases()), [ READ_more_aliases_81 , $[], $[] ], false);
+}

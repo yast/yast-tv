@@ -1,0 +1,1065 @@
+/**
+ * File:
+ *   include/tv/ui.ycp
+ *
+ * Package:
+ *   Configuration of tv
+ *
+ * Summary:
+ *   User interface functions.
+ *
+ * Authors:
+ *   Jan Holesovsky <kendy@suse.cz>
+ *
+ * $Id$
+ *
+ * All user interface functions.
+ *
+ */
+
+{
+
+textdomain "tv";
+
+import "Wizard";
+import "Wizard_hw";
+import "Progress";
+import "Summary";
+import "Tv";
+
+include "ui/common_popups.ycp";
+include "ui/common_messages.ycp";
+include "wizard/sequencer.ycp";
+
+include "tv/helps.ycp";
+include "tv/misc.ycp";
+
+/**
+ * Enhanced version of UserInput which asks if really abort after
+ * pressing [Abort].
+ */
+global define any tvUserInput() ``{
+    any ret = nil;
+
+    do
+    {
+	ret = UI::UserInput();
+    } while ((ret == `cancel || ret == `abort) &&
+	     (Tv::IsDirty()? !UI::ReallyAbortPopup (true): false));
+
+    return (ret == `cancel)? `abort: ret;
+}
+
+/**
+ * Whole configuration of tv
+ */
+global define TvSequence () ``{
+    map aliases =
+	$[
+	    "read"	: [ ``( ReadDialog () ), true ],
+	    "main"	:   ``( MainSequence () ),
+	    "write"	: [ ``( WriteDialog () ), true ]
+	];
+
+    map sequence = $[
+	"ws_start" : "read",
+	"read" :
+	$[
+	    `abort	: `abort,
+	    `next	: "main"
+	],
+	"main" :
+	$[
+	    `abort	: `abort,
+	    `next	: "write"
+	],
+	"write" : $[
+	    `abort	: `abort,
+	    `next	: `next
+	]
+    ];
+
+    string caption = _("Initializing TV card configuration");
+    term contents = `Label (_("Initializing ..."));
+
+    Wizard::CreateDialog ();
+    Wizard::SetContentsButtons ( caption,
+				 contents,
+				 "",
+				 BackButtonLabel (),
+				 NextButtonLabel ());
+
+    any ret = WizardSequencer (aliases, sequence);
+
+    UI::CloseDialog ();
+    return ret;
+}
+
+/**
+ * Whole configuration of TV without reading and writing.
+ * It is needed for the proposal stuff.
+ */
+global define TvSequenceNoIO () ``{
+    string caption = _("Initializing TV card configuration");
+    term contents = `Label (_("Initializing ..."));
+
+    Wizard::CreateDialog ();
+    Wizard::SetContentsButtons ( caption,
+				 contents,
+				 "",
+				 BackButtonLabel (),
+				 NextButtonLabel ());
+
+    any ret = MainSequence ();
+
+    UI::CloseDialog ();
+    return ret;
+}
+
+/**
+ * Just a wrapper for Tv::CardAddCurrent() to be used in the wizard sequencer.
+ */
+global define CardAddCurrentWrapper() ``{
+    Tv::CardAddCurrent ();
+    return `next;
+}
+
+/**
+ * Just a wrapper for Tv::CardReplaceWithCurrent() to be used in the wizard sequencer.
+ */
+global define CardReplaceWithCurrentWrapper() ``{
+    Tv::CardReplaceWithCurrent (Tv::current_card_no);
+    return `next;
+}
+
+/**
+ * Main workflow of the tv configuration
+ */
+global define MainSequence () ``{
+    map aliases =
+	$[
+	    "detected"	      : ``( DetectedDialog () ),
+	    "overview"	      : ``( OverviewDialog () ),
+
+	    "man_manual"      : ``( ManualDialog (false) ),
+	    "man_manual_warn" : ``( ManualDialog (true) ),
+	    "man_details"     : ``( ManualDetailsDialog () ),
+	    "man_audio"       : ``( AudioDialog () ),
+	    "man_doit"        : ``( CardAddCurrentWrapper () ),
+
+	    "det_audio"       : ``( AudioDialog () ),
+	    "det_doit"        : ``( CardAddCurrentWrapper () ),
+
+	    "add_manual"      : ``( ManualDialog (false) ),
+	    "add_details"     : ``( ManualDetailsDialog () ),
+	    "add_audio"       : ``( AudioDialog () ),
+	    "add_doit"        : ``( CardAddCurrentWrapper () ),
+
+	    "rep_manual"      : ``( ManualDialog (false) ),
+	    "rep_details"     : ``( ManualDetailsDialog () ),
+	    "rep_audio"       : ``( AudioDialog () ),
+	    "rep_doit"        : ``( CardReplaceWithCurrentWrapper () )
+	];
+
+    map sequence = $[
+	"ws_start" : "detected",
+	"detected" :
+	$[
+	    `abort            : `abort,
+	    `next             : `next,
+	    `add_manually     : "man_manual",
+	    `add_manually_warn: "man_manual_warn",
+	    `add_detected     : "det_audio",
+	    `edit_button      : "overview"
+	],
+	"overview" :
+	$[
+	    `abort            : `abort,
+	    `next             : `next,
+	    `add_button       : "add_manual",
+	    `edit_button      : "rep_manual"
+	],
+
+	"man_manual" : $[
+	    `abort            : `abort,
+	    `details_button   : "man_details",
+	    `next             : "man_audio"
+	],
+	"man_manual_warn" : $[
+	    `abort            : `abort,
+	    `details_button   : "man_details",
+	    `next             : "man_audio"
+	],
+	"man_details" : $[
+	    `abort            : `abort,
+	    `next             : "man_audio"
+	],
+	"man_audio" : $[
+	    `abort            : `abort,
+	    `next             : "man_doit"
+	],
+	"man_doit" : $[
+	    `next             : "detected"
+	],
+
+	"det_audio" : $[
+	    `abort            : `abort,
+	    `next             : "det_doit"
+	],
+	"det_doit" : $[
+	    `next             : "detected"
+	],
+
+	"add_manual" : $[
+	    `abort            : `abort,
+	    `details_button   : "add_details",
+	    `next             : "add_audio"
+	],
+	"add_details" : $[
+	    `abort            : `abort,
+	    `next             : "add_audio"
+	],
+	"add_audio" : $[
+	    `abort            : `abort,
+	    `next             : "add_doit"
+	],
+	"add_doit" : $[
+	    `next             : "overview"
+	],
+
+	"rep_manual" : $[
+	    `abort            : `abort,
+	    `details_button   : "rep_details",
+	    `next             : "rep_audio"
+	],
+	"rep_details" : $[
+	    `abort            : `abort,
+	    `next             : "rep_audio"
+	],
+	"rep_audio" : $[
+	    `abort            : `abort,
+	    `next             : "rep_doit"
+	],
+	"rep_doit" : $[
+	    `next             : "overview"
+	]
+    ];
+
+    any ret = WizardSequencer (aliases, sequence);
+
+    return ret;
+}
+
+/**
+ * Read settings dialog
+ */
+global define ReadDialog () ``{
+    // Set help text
+    Wizard::RestoreHelp (ReadDialogHelp ());
+
+    // A callback function for abort
+    block callback = ``{
+	return UI::PollInput () == `abort;
+    };
+
+    // Read the configuration
+    boolean was_ok = Tv::Read ( callback );
+
+    // TODO FIXME possibly handle the abort
+
+    return ( was_ok? `next : `abort );
+}
+
+/**
+ * Write settings dialog
+ */
+global define WriteDialog () ``{
+    // Set help text
+    Wizard::RestoreHelp (WriteDialogHelp ());
+
+    // A callback function for abort
+    block callback = ``{
+	return UI::PollInput () == `abort;
+    };
+
+    // Read the configuration
+    boolean was_ok = Tv::Write ( callback );
+
+    // TODO FIXME possibly handle the abort
+
+    return ( was_ok? `next : `abort );
+}
+
+/**
+ * A dialog showing the detected cards and allowing to configure them.
+ * @return any The value of the resulting UserInput.
+ */
+global define any DetectedDialog() ``{
+    // For translators: Caption of the dialog
+    string caption = _("TV card setup");
+
+    term contents =
+	Wizard_hw::DetectedContent(_("TV cards to configure"),
+				   Tv::DetectedCardsAsItems(),
+				   false,
+				   "");
+
+    Wizard::SetContentsButtons ( caption,
+				 contents,
+				 DetectedDialogHelp (),
+				 BackButtonLabel (),
+				 FinishButtonLabel () );
+
+    any ret = nil;
+    do
+    {
+	// Update the content to the current values
+	string installed_overview = _("<P><B>No TV card installed yet.</B></P>");
+	list installed_list = Tv::InstalledCardsSummary ();
+	if (size(installed_list) > 0)
+	{
+	    // For translators: Overview of the installed cards
+	    installed_overview = sformat (_("<P><B>Already installed TV cards:</B>%1</P>"),
+					  Summary::DevicesList(installed_list));
+	}
+	UI::ChangeWidget (`id(`configured_richtext), `Value, installed_overview);
+
+	ret = tvUserInput();
+
+	// Configure the autodetected card
+	if (ret == `configure_button)
+	{
+	    integer detected_no = UI::QueryWidget(`id(`detected_selbox), `CurrentItem);
+
+	    if (detected_no == nil)
+	    {
+		// For translators: The user chose [Configure...] but did not select a card
+		UI::MessagePopup(_("Please select a card to configure first."));
+		continue;
+	    }
+
+	    if (detected_no < 0)
+	    {
+		Tv::current_card = $[];
+		Tv::current_card_no = nil;
+		ret = `add_manually;
+	    }
+	    else
+	    {
+		Tv::current_card = Tv::DetectedCardGet(detected_no);
+		Tv::current_card_no = nil;
+		if (lookup(Tv::current_card, "module", "") == "")
+		{
+		    ret = `add_manually_warn;
+		}
+		else
+		{
+		    ret = `add_detected;
+		}
+	    }
+	}
+    } while (ret != `back && ret != `abort && ret != `next &&
+	     ret != `add_manually && ret != `add_manually_warn &&
+	     ret != `add_detected &&
+	     ret != `edit_button);
+
+    return ret;
+}
+
+/**
+ * A dialog giving overview of all the configured cards.
+ * @return any The value of the resulting UserInput.
+ */
+global define any OverviewDialog() ``{
+    // For translators: Caption of the dialog
+    string caption = _("TV card overview");
+
+    // A list of the configured cards in the form allowed by the Table widet
+    //list configured_cards = tvConfiguredCardsTableItems();
+
+    term contents =
+					     // For translators: Header of the table with installed cards
+	Wizard_hw::ConfiguredContent(`header(_("Number"),
+					     // For translators: Header of the table with installed cards
+					     _("Card name")),
+					     [],
+					     nil, nil, nil, nil);
+    contents = Wizard_hw::SpacingAround (contents, 1.5, 1.5, 1.0, 1.0);
+
+    any ret = nil;
+    do
+    {
+	Wizard::SetContentsButtons ( caption,
+				     contents,
+				     OverviewDialogHelp (),
+				     BackButtonLabel (),
+				     FinishButtonLabel () );
+	UI::ChangeWidget(`id(`table), `Items, Tv::CardsAsItems());
+
+	ret = tvUserInput();
+
+	integer sel_no = UI::QueryWidget (`id(`table), `CurrentItem);
+
+	// Edit the selected card
+	if (ret == `edit_button)
+	{
+	    if (sel_no != nil)
+	    {
+		Tv::current_card = Tv::CardGet(sel_no);
+		Tv::current_card_no = sel_no;
+	    }
+	    else
+	    {
+		// For translators: The user chose [Edit...] but did not select a card
+		UI::MessagePopup(_("Please select a card to edit first."));
+		ret = nil;
+	    }
+	}
+	// Add a card manually
+	if (ret == `add_button)
+	{
+	    Tv::current_card = $[];
+	    Tv::current_card_no = nil;
+	}
+	// Delete the selected card
+	if (ret == `delete_button)
+	{
+	    if (sel_no != nil)
+	    {
+		Tv::current_card = Tv::CardGet(sel_no);
+		Tv::current_card_no = sel_no;
+		// For translators: The user chose [Delete] in the overview dialog
+		boolean really_del = UI::YesNoPopup(sformat(_("Do you really want to
+remove the configuration
+of \"%1\"?"), lookup(Tv::current_card, "name", "")));
+
+		if (really_del)
+		{
+		    Tv::CardRemove(sel_no);
+		}
+	    }
+	    else
+	    {
+		// For translators: The user chose [Delete] but did not select a card
+		UI::MessagePopup(_("Please select a card to delete first."));
+	    }
+	}
+    } while (ret != `back && ret != `abort && ret != `next &&
+	     ret != `add_button && ret != `edit_button);
+
+    return ret;
+}
+
+/**
+ * Constructs the cards selection box for the selected vendor.
+ * @param vendor_cards_db List of cards provided by the selected vendor.
+ * @param parameters The current parameters to preselect the right model.
+ * @return term The selection box
+ */
+global define term CardsSelectionBox ( list vendor_cards_db,
+				       map  parameters ) ``{
+    integer card_no = 0;
+    boolean some_is_selected = false;
+    list vendor_cards_items =
+	maplist ( `card, vendor_cards_db, ``{
+	    boolean select_this = false;
+	    if (!some_is_selected)
+	    {
+		select_this = CmpParameters(lookup(card, "parameters", $[]), parameters);
+	    }
+
+	    term ret = `item ( `id (card_no),
+			       lookup ( card, "name", "" ),
+			       select_this && !some_is_selected );
+
+	    if (select_this)
+	    {
+		some_is_selected = true;
+	    }
+	    card_no = card_no + 1;
+	    return ret;
+	});
+
+    return `SelectionBox ( `id (`cards_selbox), `opt (`notify),
+			   _("&Cards:"), vendor_cards_items );
+}
+
+/**
+ * A popup allowing to choose the tuner type.
+ * @param kernel_module Name of the kernel module for the selected TV card.
+ * @param selected_tuner The previously selected tuner (to be preselected again).
+ * @return map The selected tuner or nil if cancelled.
+ */
+global define map ChooseTuner(string kernel_module, map selected_tuner) ``{
+    // Currently selected tuner
+    map sel_tuner = $[];
+
+    term contents =
+	`VBox(`SelectionBox(`id(`tuners_selbox),
+			    _("C&hoose your tuner:"),
+			    Tv::TunersDBAsItems (kernel_module, selected_tuner)),
+	      `VSpacing(0.3),
+	      `HBox(`HStretch(),
+		    `PushButton(`id(`ok), OKButtonLabel()),
+		    `HSpacing(2),
+		    `PushButton(`id(`cancel), CancelButtonLabel()),
+		    `HStretch()
+	      )
+	);
+
+    UI::OpenDialog (
+	Wizard_hw::SizeAtLeast (contents, 40.0, 10.0)
+    );
+
+    any ret = nil;
+    do
+    {
+	ret = UI::UserInput ();
+
+	if (ret == `ok)
+	{
+	    integer sel_no = UI::QueryWidget(`id(`tuners_selbox), `CurrentItem);
+	    if (sel_no != nil)
+	    {
+		sel_tuner = Tv::TunersDBSelectTuner (kernel_module, sel_no);
+	    }
+	    else
+	    {
+		// For translators: The user chose [OK] but did not select a tuner
+		UI::MessagePopup (_("Please select your tuner first."));
+		ret = nil;
+	    }
+	}
+    } while (ret != `ok && ret != `cancel);
+
+    UI::CloseDialog ();
+
+    if (ret == `ok)
+    {
+	return sel_tuner;
+    }
+    return nil;
+}
+
+/**
+ * A dialog allowing the manual selection of the card.
+ * @param warn Display warning, that the card was not fully detected.
+ * @return any The value of the resulting UserInput.
+ */
+global define any ManualDialog (boolean warn) ``{
+    // For translators: Caption of the dialog
+    string caption = _("Manual TV card selection");
+
+    // The selected card
+    map selected_card = Tv::current_card;
+
+    // The selected tuner
+    map selected_tuner = Tv::current_card;
+
+    // Parameters and module name of the current card
+    map    current_card_parameters = lookup(Tv::current_card, "parameters", $[]);
+    string module_name_tmp =         lookup(Tv::current_card, "module", nil);
+
+    // We must remember the current card if it was autodetected
+    map autodetected_card = $[];
+    if ( module_name_tmp != nil && module_name_tmp != "" &&
+	 (current_card_parameters == nil || current_card_parameters == $[]) )
+    {
+	autodetected_card = Tv::current_card;
+    }
+
+    // The currently selected vendor
+    integer selected_vendor = nil;
+
+    // A list of all the vendors and all the cards for the SelectionBox widgets
+    list all_vendors = [];
+
+    // A list of the cards of the selected vendor
+    list vendor_cards_db = [];
+
+    // Initialize all_vendors and selected_vendor
+    list vendors_and_selected = Tv::CardsDBVendorsAsItems (autodetected_card,
+							   current_card_parameters);
+    all_vendors = select(vendors_and_selected, 0, []);
+    selected_vendor = select(vendors_and_selected, 1, nil);
+
+    if (selected_vendor != nil)
+    {
+	vendor_cards_db = Tv::CardsDBVendorGetCards(autodetected_card, selected_vendor);
+    }
+
+    term contents =
+	`HBox(`HSpacing(1.5),
+	      `VBox(
+		  `VSpacing(1.0),
+		  `Frame(_("Select the type of your card:"),
+			 `HBox(`HSpacing(0.5),
+			       `VBox(`VSpacing(0.2),
+				     `VBox(`HBox(`SelectionBox(`id(`vendors_selbox),
+							       `opt(`notify),
+							       _("&Vendors:"),
+							       all_vendors),
+						 `ReplacePoint(`id(`cards_rep),
+							       CardsSelectionBox ( vendor_cards_db,
+										   current_card_parameters ))
+					   ),
+					   `Right(`PushButton(`id(`tuner_button),
+								_("&Select tuner")))
+				     ),
+				     `VSpacing(0.2)
+			       ),
+			       `HSpacing(0.5)
+			 )
+		  ),
+		  `VSpacing(0.5),
+		  `HCenter(`PushButton(`id(`details_button),
+				       _("&Details...")))
+	      ),
+	      `HSpacing(1.5)
+	);
+
+    Wizard::SetContentsButtons ( caption,
+				 contents,
+				 ManualDialogHelp (),
+				 BackButtonLabel (),
+				 NextButtonLabel () );
+
+    if (warn && lookup (Tv::current_card, "module", nil) == nil)
+    {
+	// For translators: A warning popup
+	UI::MessagePopup(_("The selected card does not provide full
+information for the automatic detection.
+
+Please, select the exact type from
+the list in the following dialog."));
+    }
+
+    any ret = nil;
+    do
+    {
+	// Disable/enable the [Select tuner] button
+	string module_name = lookup (selected_card, "module", "");
+
+	boolean has_tuners = Tv::TunersDBHasTunersFor (module_name);
+	if (!has_tuners)
+	{
+	    selected_tuner = $[];
+	}
+
+	// User input
+	ret = tvUserInput();
+
+	integer sel_no = UI::QueryWidget(`id(`cards_selbox), `CurrentItem);
+
+	if (ret == `next && sel_no == nil)
+	{
+	    // For translators: The user chose [Next] but did not select a card
+	    UI::MessagePopup (_("Please select your card first."));
+	    ret = nil;
+	}
+
+	// Update the list of the cards
+	if (ret == `vendors_selbox)
+	{
+	    selected_vendor = UI::QueryWidget(`id(`vendors_selbox), `CurrentItem);
+	    vendor_cards_db = Tv::CardsDBVendorGetCards (autodetected_card,
+							 selected_vendor);
+	    UI::ReplaceWidget(`id(`cards_rep), CardsSelectionBox(vendor_cards_db, nil));
+	}
+
+	// Update the selection
+	if (ret == `cards_selbox)
+	{
+	    if (sel_no != nil)
+	    {
+		selected_card = select(vendor_cards_db, sel_no, $[]);
+	    }
+	    else
+	    {
+		selected_card = $[];
+	    }
+	    selected_tuner = $[];
+	    y2debug("Selected card: %1", selected_card);
+	}
+
+	// Show a popup with the selection of the tuner
+	if (ret == `tuner_button)
+	{
+	    if (has_tuners)
+	    {
+		map new_tuner = ChooseTuner (module_name, selected_tuner);
+
+		if (new_tuner != nil)
+		{
+		    selected_tuner = new_tuner;
+		}
+	    }
+	    else if (sel_no == nil)
+	    {
+		// For translators: The user chose [Select tuner] but did not select his card
+		UI::MessagePopup (_("Please select your card first."));
+	    }
+	    else
+	    {
+		// For translators: The user chose [Next] but did not select a card
+		UI::MessagePopup (_("There is no tuner available
+for the selected card."));
+	    }
+	}
+    } while (ret != `details_button &&
+	     ret != `back && ret != `abort && ret != `next);
+
+    // Overwrite the Tv::current_card
+    if (ret != `back && ret != `abort)
+    {
+	// add the card
+	Tv::current_card = union (Tv::current_card, selected_card);
+
+	map card_parameters = lookup (selected_card, "parameters", $[]);
+	map tuner_parameters = lookup (selected_tuner, "parameters", $[]);
+
+	Tv::current_card = add (Tv::current_card,
+				"parameters",
+				union (card_parameters, tuner_parameters));
+
+	y2debug("Tv::current_card was updated to %1", Tv::current_card);
+    }
+
+    return ret;
+}
+
+/**
+ * A dialog allowing the manual selection of the card.
+ * @return any The value of the resulting UserInput.
+ */
+global define any ManualDetailsDialog() ``{
+    if (Tv::kernel_modules == nil)
+    {
+	UI::OpenDialog (
+	    Wizard_hw::SpacingAround (
+		`Label(_("Please wait while getting list
+of available kernel modules...")),
+		1.5, 1.5, 0.5, 0.5
+	    )
+	);
+
+	Tv::ReadKernelModules ();
+
+	UI::CloseDialog ();
+    }
+
+    // For translators: Caption of the dialog
+    string caption = _("Manual TV card selection: details");
+
+    // Currently selected module. None => select bttv
+    string selected_module = lookup (Tv::current_card, "module", nil);
+    if (selected_module == nil)
+    {
+	selected_module = "bttv";
+    }
+
+    // And its parameters.
+    map parameters = lookup (Tv::current_card, "parameters", $[]);
+
+    // A list of all the (media/video) kernel modules for the ComboBox widget
+    list all_modules = Tv::KernelModulesAsItems (selected_module);
+
+    // The currently selected parameter
+    string selected_parameter = "";
+
+    // For translators: Label for the TextEntry. %1 means name of the kernel module's parameter.
+    string parameter_label = _("&Parameter \"%1\":");
+
+    term contents =
+	`HBox(`HSpacing(1.5),
+	      `VBox(
+		  `VSpacing(1.0),
+		  `ComboBox(`id(`module_combo),
+			    `opt(`hstretch, `notify),
+			    _("&Kernel module"),
+			    all_modules
+		  ),
+		  `Frame(_("Parameters of the module:"),
+			 `HBox(`HSpacing(0.5),
+			       `VBox(`VSpacing(0.2),
+				     `VBox(`Table(`id(`parameters_table),
+						  `opt(`notify, `immediate),
+				     // For tanslators: Header of a table with kernel module params.
+						  `header(_("Paramater"),
+				     // For tanslators: Header of a table with kernel module params.
+							  _("Value"),
+				     // For tanslators: Header of a table with kernel module params.
+							  _("Description")),
+						  Tv::KernelModuleParametersAsItems(selected_module,
+										    parameters)
+					   ),
+					   `VSquash(
+						`HBox(`TextEntry(`id(`parameter_entry),
+								 sformat(parameter_label,
+									 selected_parameter)),
+						      `Bottom(`PushButton(`id(`set_button),
+									  _("&Set"))),
+						      `Bottom(`PushButton(`id(`reset_button),
+									  _("R&eset")))
+						)
+					   )
+				     ),
+				     `VSpacing(0.2)
+			       ),
+			       `HSpacing(0.5)
+			 )
+		  ),
+		  `VSpacing(1.0)
+	      ),
+	      `HSpacing(1.5)
+	);
+
+    Wizard::SetContentsButtons ( caption,
+				 contents,
+				 ManualDetailsDialogHelp (),
+				 BackButtonLabel (),
+				 NextButtonLabel ());
+
+    // Initialize the "Parameter: xyz" label and its value
+    selected_parameter = UI::QueryWidget (`id(`parameters_table), `CurrentItem);
+    string value = lookup (parameters, selected_parameter, "");
+    UI::ChangeWidget (`id(`parameter_entry), `Label, sformat(parameter_label, selected_parameter));
+    UI::ChangeWidget (`id(`parameter_entry), `Value, value);
+
+    any ret = nil;
+    do
+    {
+	ret = tvUserInput();
+
+	// The user changes the module in the Combo Box
+	if (ret == `module_combo)
+	{
+	    selected_module = UI::QueryWidget (`id(`module_combo), `Value);
+	    parameters = $[];
+
+	    // Redraw the table
+	    UI::ChangeWidget ( `id(`parameters_table),
+			       `Items,
+			       Tv::KernelModuleParametersAsItems(selected_module, parameters));
+	}
+	// The user selects a parameter in the Table
+	if (ret == `parameters_table)
+	{
+	    selected_parameter = UI::QueryWidget (`id(`parameters_table), `CurrentItem);
+	    string value = lookup (parameters, selected_parameter, "");
+
+	    // Change the Text Entry widget
+	    UI::ChangeWidget (`id(`parameter_entry), `Label, sformat(parameter_label, selected_parameter));
+	    UI::ChangeWidget (`id(`parameter_entry), `Value, value);
+	}
+
+	// Set the value in the table
+	if (ret == `set_button)
+	{
+	    if (selected_parameter == nil || selected_parameter == "")
+	    {
+		// For translators: The user chose [Set] but did select a parameter she wants to set
+		UI::MessagePopup (_("Please select the parameter
+your want to edit first."));
+	    }
+	    else
+	    {
+		string value = UI::QueryWidget (`id(`parameter_entry), `Value);
+		if (value != filterchars (value, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-+0123456789"))
+		{
+		    // For translators: The user wants to set kernel parameters, but the string is wrong
+		    UI::MessagePopup (_("Please do not use other characters
+than a-z, A-Z, _, -, + and 0-9."));
+		}
+		else
+		{
+		    parameters = add (parameters, selected_parameter, value);
+
+		    // Redraw the table
+		    UI::ChangeWidget (`id(`parameters_table),
+				      `Items,
+				      Tv::KernelModuleParametersAsItems(selected_module, parameters));
+		    UI::ChangeWidget (`id(`parameters_table), `CurrentItem, selected_parameter);
+		}
+	    }
+	}
+	// Reset the value in the table
+	if (ret == `reset_button)
+	{
+	    if (selected_parameter == nil || selected_parameter == "")
+	    {
+		// For translators: The user chose [Set] but did select a parameter she wants to set
+		UI::MessagePopup (_("Please select the parameter
+your want to edit first."));
+	    }
+	    else
+	    {
+		parameters = add (parameters, selected_parameter, "");
+
+		// Redraw the table
+		UI::ChangeWidget ( `id(`parameters_table),
+				   `Items,
+				   Tv::KernelModuleParametersAsItems(selected_module, parameters));
+		UI::ChangeWidget ( `id(`parameters_table), `CurrentItem, selected_parameter);
+	    }
+	}
+    } while (ret != `back && ret != `abort && ret != `next);
+
+    // Store the values to Tv::current_card
+    if (ret != `back && ret != `abort)
+    {
+	// For translators: The name of the TV card is set to "User defined", because
+	// the user changed kernel module parameters and so we do not have a good name...
+	Tv::current_card = add (Tv::current_card, "name", _("User defined"));
+	Tv::current_card = add (Tv::current_card, "module", selected_module);
+	Tv::current_card = add (Tv::current_card, "parameters", parameters);
+    }
+
+    return ret;
+}
+
+/**
+ * A dialog asking if the card is connected to the sound card.
+ * @return any The value of the resulting UserInput.
+ */
+global define any AudioDialog() ``{
+    // For translators: Caption of the dialog
+    string caption = _("TV card audio");
+
+    // Name of the TV card being currently configured
+    string current_card_name = lookup(Tv::current_card, "name", "");
+    if (current_card_name == nil)
+    {
+	current_card_name = "";
+    }
+
+    // A list of the sound cards in the form allowed by the Table widet
+    list sound_cards = SoundCardsAsItems();
+
+    // Try to read already stored values
+    integer current_sound_card = lookup(Tv::current_card, "sound_card_no", -1);
+    symbol current_rb = `rb_yes;
+    if (current_sound_card == nil || size(sound_cards) == 0)
+    {
+	current_rb = `rb_no;
+    }
+    // We used -1 to get known, that we did not set the sound_card_no yet...
+    // Let's clean it up!
+    if (current_sound_card < 0 || current_sound_card == nil)
+    {
+	current_sound_card = 0;
+    }
+
+    term contents =
+	`HBox(`HSpacing(1.5),
+	      `VBox(
+		  `VSpacing(1.2),
+		  `Left(`HBox(`Label(_("TV card:")),
+			      `Label(`opt(`outputField), current_card_name)
+		  )),
+		  `VSpacing(0.7),
+		  `Frame(_("Is the audio output connected to a sound card?"),
+			 `HBox(`HSpacing(0.5),
+			       `VBox(`VSpacing(0.2),
+				     `RadioButtonGroup(
+					 `id(`rb_group),
+					 `VBox(`Left(`RadioButton(`id(`rb_no),
+								  `opt(`notify),
+								  _("N&o"),
+								  current_rb != `rb_yes)),
+					       `Left(`RadioButton(`id(`rb_yes),
+								  `opt(`notify),
+								  UI::YesButtonLabel(),
+								  current_rb == `rb_yes))
+					 )
+				     ),
+				     `VBox(`HBox(`HSpacing(3.0),
+						 `Table(`id(`sound_card_table),
+							`header(_("Number"),
+								_("Sound card name")),
+							sound_cards)
+					   ),
+					   `Right(`PushButton(`id(`configure_button),
+							      _("&Configure sound cards...")))
+				     ),
+				     `VSpacing(0.2)
+			       ),
+			       `HSpacing(0.5)
+			 )
+		  ),
+		  `VSpacing(1.2)
+	      ),
+	      `HSpacing(1.5)
+	);
+
+    Wizard::SetContentsButtons ( caption,
+				 contents,
+				 AudioDialogHelp (),
+				 BackButtonLabel (),
+				 NextButtonLabel ());
+
+    // Select the previously selected card
+    if (current_rb == `rb_yes)
+    {
+	UI::ChangeWidget(`id(`sound_card_table), `CurrentItem, current_sound_card);
+    }
+
+    any ret = nil;
+    do
+    {
+	symbol current_rb = UI::QueryWidget(`id(`rb_group), `CurrentButton);
+	UI::ChangeWidget(`id(`sound_card_table), `Enabled, (current_rb == `rb_yes));
+
+	ret = tvUserInput();
+
+	// Configure a sound card
+	if (ret == `configure_button)
+	{
+	    current_sound_card = UI::QueryWidget(`id(`sound_card_table), `CurrentItem);
+	    CallModule("sound", []);
+
+	    // Reread the list of the cards
+	    sound_cards = SoundCardsAsItems();
+	    UI::ChangeWidget(`id(`sound_card_table), `Items, sound_cards);
+	    if (current_sound_card > size(sound_cards))
+	    {
+		current_sound_card = 0;
+	    }
+	    UI::ChangeWidget(`id(`sound_card_table), `CurrentItem, current_sound_card);
+	    if (size(sound_cards) > 0)
+	    {
+		UI::ChangeWidget(`id(`rb_group), `CurrentButton, `rb_yes);
+	    }
+	}
+
+	// Check for selected soundcard
+	if (ret == `next &&
+	    UI::QueryWidget(`id(`rb_group), `CurrentButton) == `rb_yes &&
+	    UI::QueryWidget(`id(`sound_card_table), `CurrentItem) == nil)
+	{
+	    // For translators: The user chose [Next] but did not select a sound card
+	    UI::MessagePopup(_("Please select a sound card first."));
+	    ret = nil;
+	}
+    } while (ret != `back && ret != `abort && ret != `next);
+
+    // Store the values to Tv::current_card
+    if (ret != `back && ret != `abort)
+    {
+	symbol current_rb = UI::QueryWidget(`id(`rb_group), `CurrentButton);
+	integer sel_no = UI::QueryWidget(`id(`sound_card_table), `CurrentItem);
+
+	if (current_rb == `rb_yes && sel_no != nil && sel_no != -1)
+	{
+	    Tv::current_card = add (Tv::current_card, "sound_card_no", sel_no);
+	}
+	else
+	{
+	    Tv::current_card = add (Tv::current_card, "sound_card_no", nil);
+	}
+    }
+
+    return ret;
+}
+
+}

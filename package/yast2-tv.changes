@@ -1,0 +1,205 @@
+-------------------------------------------------------------------
+Tue Jun 25 14:04:14 CEST 2002 - kendy@suse.cz
+
+- Rename to yast2-tv
+- Merge with yast2-db-tv
+- 2.6.3
+
+-------------------------------------------------------------------
+Mon Jun 10 20:54:28 CEST 2002 - msvec@suse.cz
+
+- finally fixed testsuite
+- 2.6.2
+
+-------------------------------------------------------------------
+Fri May 31 14:38:20 CEST 2002 - msvec@suse.cz
+
+- use y2autoconf and create-spec
+- fixed testsuite
+- new config file
+- 2.6.1
+
+-------------------------------------------------------------------
+Mon Mar  4 17:08:38 CET 2002 - kendy@suse.cz
+
+- v. 2.5.13
+- bugfix 14080,14246: It was impossible to choose a tuner in proposal.
+
+-------------------------------------------------------------------
+Wed Feb 27 16:52:22 CET 2002 - kendy@suse.cz
+
+- v. 2.5.12
+- bugfix 13981: No write when nothing was proposed.
+
+-------------------------------------------------------------------
+Fri Feb 22 18:41:49 CET 2002 - kendy@suse.cz
+
+- v. 2.5.11
+- Use interface provided by Sound:: to be able to cooperate with sound
+  proposal
+- bugfix 13433: wrong correspondence between vendors and models
+- bugfix 13631: Display warning, that the user has to select a card from
+  list, one dialog later
+- Unmute sound cards only if there is a TV card
+- bugfix 13773: Saving of modules.conf was failing for the fully
+  autodeteced cards
+
+-------------------------------------------------------------------
+Mon Feb 18 17:11:46 CET 2002 - kendy@suse.cz
+
+- v. 2.5.10
+- Store the configuration status (to be used at the boot time)
+
+-------------------------------------------------------------------
+Fri Feb 15 18:19:15 CET 2002 - kendy@suse.cz
+
+- v. 2.5.9
+- Testmode uses Mode::test
+- Does a real proposal now
+- Forget settings if `back pressed in AskUser
+
+-------------------------------------------------------------------
+Wed Feb 13 16:13:37 CET 2002 - kendy@suse.cz
+
+- v. 2.5.8
+- bugfix 13177: Do not ask to manually configure the card, when all
+  autodetected info is available
+
+-------------------------------------------------------------------
+Fri Feb  8 14:26:29 CET 2002 - kendy@suse.cz
+
+- v. 2.5.7
+- fixed #neededforbuild
+
+-------------------------------------------------------------------
+Thu Feb  7 16:14:29 CET 2002 - kendy@suse.cz
+
+- v. 2.5.6
+- tests allowed (libycp with Y2ALLGLOBAL is in abuild)
+- bugfix 13078: improved speed of the module start-up
+- proposal should work
+
+-------------------------------------------------------------------
+Mon Jan 21 15:37:29 CET 2002 - kendy@suse.cz
+
+- v. 2.5.5
+- prepared for autoinstallation
+- tv_summary.ycp redone to proposal_tv.ycp to be compatible with
+  the new proposal scheme.
+- fixes
+
+-------------------------------------------------------------------
+Fri Jan 11 13:50:09 CET 2002 - kendy@suse.cz
+
+- v. 2.5.4
+- Huge internal changes:
+  - changed to be based on a Tv:: module, the Tv:: itself
+  - uses Report::, Progress::, UniqueKeys::, Summary::, ...
+  - minor UI changes (progress bar during startup and saving, ...)
+  - y2tool: y2autoconf, create-spec, ...
+  - some optimizations
+
+-------------------------------------------------------------------
+Tue Nov 13 14:07:23 CET 2001 - kendy@suse.cz
+
+- v. 2.5.3
+- Use Wizard:: and Wizard_hw::
+- Third parameters for lookup()s
+
+-------------------------------------------------------------------
+Tue Oct 16 09:57:56 CEST 2001 - kendy@suse.cz
+
+- Migration to the yast2 devtools
+
+-------------------------------------------------------------------
+Mon Oct 15 13:41:30 CEST 2001 - kendy@suse.cz
+
+- Adapted to the new database (with vendor and model parts)
+- The "Manual" screen adapted to that change (both bug 10067)
+
+-------------------------------------------------------------------
+Mon Oct  8 14:17:01 CEST 2001 - kendy@suse.cz
+
+- Preselect the first sound card, if installed (bugzilla #11137)
+- Version 2.5.0
+
+-------------------------------------------------------------------
+Tue Sep 18 14:52:09 CEST 2001 - kendy@suse.cz
+
+- Name of the icon changed to tv.ycp (bugzilla #10656)
+
+-------------------------------------------------------------------
+Fri Sep 14 18:26:19 CEST 2001 - kendy@suse.cz
+
+- Do not write the configuration after [Finish] if it was not
+  changed (bugzilla #10664).
+
+-------------------------------------------------------------------
+Tue Sep 11 17:11:25 CEST 2001 - kendy@suse.cz
+
+- Do you want to install kwintv? Prossibilities: [Yes] [No]
+  in stead of [Continue] [Cancel] (bugzilla #10331)
+- Initialize kv4lsetup if kwintv is installed
+
+-------------------------------------------------------------------
+Fri Aug 31 15:13:17 CEST 2001 - kendy@suse.cz
+
+- Writing "# YaST2 configured TV card" to modules.conf in front
+  of each char-major-81-x
+
+-------------------------------------------------------------------
+Wed Aug 29 14:35:11 CEST 2001 - kendy@suse.cz
+
+- added libycp-devel to # neededforbuild
+
+-------------------------------------------------------------------
+Mon Aug 27 15:07:15 CEST 2001 - kendy@suse.cz
+
+- When editing a detected card, add it to the list in the Manual
+  screen and preselect it.
+- Preselect sound card when editing.
+- Check for KWinTV after the configuration and try to install it.
+- More small fixes...
+
+-------------------------------------------------------------------
+Tue Aug 21 14:44:09 CEST 2001 - kendy@suse.cz
+
+- UI(`Blah()) and SCR(`Bleh()) changed to UI::Blah() and SCR::Bleh()
+- Preselect tuner in the Manual screen
+
+-------------------------------------------------------------------
+Mon Aug 20 11:46:52 CEST 2001 - kendy@suse.cz
+
+- Added a summary module (tv_summary.ycp)
+- More tests
+- Fixes in audio setting (and more minor fixes)
+
+-------------------------------------------------------------------
+Mon Aug 13 14:47:14 CEST 2001 - kendy@suse.cz
+
+- Detection of TV cards
+- Manual configuration: Details
+- Reading/writing parameters works
+- Editing a TV card
+- Working testsuite and lots of tests
+- Improved menuentry
+
+-------------------------------------------------------------------
+Mon Jul 30 17:31:55 CEST 2001 - kendy@suse.cz
+
+- Help texts
+- Deleting a TV card
+- Connection to .audio and Sound module (not working too much)
+- Beginning of Manual configuration: details (connection to ag_modinfo)
+- Selection of tuner
+
+-------------------------------------------------------------------
+Mon Jul 23 16:12:20 CEST 2001 - kendy@suse.cz
+
+- Basic workflow is implemented
+- Manual configuration is possible
+
+-------------------------------------------------------------------
+Fri Jul 13 18:24:05 2001 - kendy@suse.cz
+
+- initial version

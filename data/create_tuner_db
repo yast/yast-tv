@@ -1,0 +1,125 @@
+#! /usr/bin/perl -w
+#
+# creates tv_tuners.ycp - a database with the TV tuners
+#
+# $1 - the CARDLIST source file
+# ...more to come...
+
+if ($#ARGV != 0)
+{
+    die "Please, specify the source files as parameters!";
+}
+
+# Parameters
+$bttv_cardlist = $ARGV[0];
+# ... more to come ...
+
+# Names to translate
+%clean_names =
+    (
+	"NoTuner" => "No tuner"
+    );
+
+# This is for the sort function...
+sub get_name_cmp
+{
+    $ref = shift;
+    $name = $ref->{"name"};
+    
+    if ($name =~ /^_\(/)
+    {
+	$name = "!".$name; # To change the order...
+    }
+    $name =~ tr/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/;
+
+    return $name;
+}
+
+# Create the BTTV part of the database
+sub dbBTTV
+{
+    $name = shift;
+    open (DB, $name) or die "Cannot open $name!";
+
+    @tuner_array = ();
+
+    print "    \"bttv\" : [\n";
+
+    $tuners = 0;
+    while (<DB>)
+    {
+	# we end with a tuner.o line
+	if (/tuner\.o/)
+	{
+	    $tuners = 1;
+	    next;
+	}
+	# create the line
+	if ($tuners && /^\s*([^=]*)=(\S*)\s*-\s*(.*)$/)
+	{
+	    # Clean the name
+	    my $card_name = $3;
+	    if (defined $clean_names{$card_name})
+	    {
+		$card_name = "_(\"$clean_names{$card_name}\")";
+	    }
+	    else
+	    {
+		$card_name = "\"$card_name\"";
+	    }
+	    # Clean param
+	    my $param_name = $1;
+	    if ($param_name eq "type")
+	    {
+		$param_name = "tuner";
+	    }
+	    
+	    $item =
+		{ "name" => $card_name,
+		  "parameters" => "\$[ \"$param_name\" : \"$2\" ]"
+		};
+	    
+	    push @tuner_array, $item;
+	}
+    }
+
+    $first = 1;
+    foreach $ref (sort { get_name_cmp($a) cmp get_name_cmp($b) } @tuner_array)
+    {
+	# we do not add a "," before the first entry
+	if ($first)
+	{
+	    $first = 0;
+	}
+	else
+	{
+	    print ",\n";
+	}
+	
+	print "\t\$[ \"name\" : $ref->{\"name\"},\n";
+	print  "\t   \"parameters\" : $ref->{\"parameters\"}\n";
+	print  "\t]";
+    }
+    
+    print "\n    ]";
+    
+    close(DB);
+}
+
+# And do it!
+
+print "/* YaST2 TV tuners database\n";
+print " *\n";
+print " * Generated ".qx(date);
+print " * From: @ARGV\n";
+print "   Textdomain \"tv\"\n";
+print " */";
+print "\n";
+print "\$[\n";
+
+dbBTTV($bttv_cardlist);
+#...more to come...
+
+print "\n]\n";
+
+# The end...

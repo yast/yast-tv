@@ -1,0 +1,50 @@
+{
+
+    include "testsuite.ycp";
+
+    map READ = $[
+	"etc" : $[ "install_inf" : $[] ],
+	"target" : $[ "ycp" : $[] ],
+	"probe" : $[ "system" : []],
+    ];
+
+    TESTSUITE_INIT([READ], nil);
+    import "Tv";
+
+    // Read() return nil
+    map READ_nil =
+	$[ "modules" :
+	    $[ "options" : nil ]
+	];
+
+    // Read() returns empty map
+    map READ_empty =
+	$[ "modules" :
+	    $[ "options" : $[] ]
+	];
+
+    // Read() returns options for one card
+    map READ_one =
+	$[ "modules" :
+	    $[ "options" : $[ "card" : "2",
+			      "tuner" : "5" ]
+	    ]
+	];
+
+    // Read() returns options for three cards
+    map READ_three =
+	$[ "modules" :
+	    $[ "options" : $[ "card" :  ",,3",
+			      "tuner" : "a,b,c",
+			      "blah":   ",y," ]
+	    ]
+	];
+
+    TEST(``(Tv::ReadModuleParameters ("bttv")), [ READ_nil, $[], $[] ], false);
+
+    TEST(``(Tv::ReadModuleParameters ("bttv")), [ READ_empty , $[], $[] ], false);
+
+    TEST(``(Tv::ReadModuleParameters ("bttv")), [ READ_one , $[], $[] ], false);
+
+    TEST(``(Tv::ReadModuleParameters ("bttv")), [ READ_three , $[], $[] ], false);
+}

@@ -1,0 +1,33 @@
+{
+
+    include "testsuite.ycp";
+
+    map READ = $[
+	"etc" : $[ "install_inf" : $[] ],
+	"target" : $[ "ycp" : $[] ],
+	"probe" : $[ "system" : []],
+    ];
+
+    TESTSUITE_INIT([READ], nil);
+    import "Tv";
+
+    map READ_modules =
+	$[ "modinfo" :
+	    $[ "kernel" :
+		$[ "drivers" :
+		    $["media" :
+			$[ "video" :
+			    $[ "bttv" : $["module_filename" : "/lib/modules/2.4.4-4GB/kernel/drivers/media/video/bttv.o",
+				    "module_description" : "bttv - v4l driver module for bt848/878 based cards",
+				    "tuner":"specify installed tuner type"],
+				"zoran" : $["module_description" : "Zoran ZR36120 based framegrabber", 
+				    "module_filename" : "/lib/modules/2.4.4-4GB/kernel/drivers/media/video/zoran.o"]
+    ]]]]]];
+
+    // none kernel modules
+    TEST (``(Tv::ReadKernelModules()), [ $[], $[], $[] ], nil);
+    DUMP (Tv::kernel_modules);
+
+    TEST (``(Tv::ReadKernelModules()), [ READ_modules, $[], $[] ], nil);
+    DUMP (Tv::kernel_modules);
+}

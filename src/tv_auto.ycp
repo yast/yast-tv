@@ -1,0 +1,86 @@
+/**
+ * File:
+ *   tv_auto.ycp
+ *
+ * Package:
+ *   Configuration of tv
+ *
+ * Summary:
+ *   Client for autoinstallation
+ *
+ * Authors:
+ *   Jan Holesovsky <kendy@suse.cz>
+ *
+ * $Id$
+ *
+ * This is a client for autoinstallation. It takes its arguments,
+ * goes through the configuration and returns the settings.
+ * Does not do any changes to the configuration.
+ */
+
+/**
+ * @param first a map of tv settings
+ * @return boolean success of operation
+ * @example
+ *    map mm = $[ "cards" : [] ];
+ *    map ret = CallModule ("tv_auto", [ mm ]);
+ */
+
+{
+    textdomain "tv";
+
+    import "Tv";
+
+    include "tv/ui.ycp";
+
+    list args = Args ();
+    if ( size (args) <= 0 )
+    {
+	y2error ("Did not get the settings, probably some mistake...");
+	return false;
+    }
+    if ( !is ( Args (0), map ) )
+    {
+	y2error ("Bad argument for tv_auto: %1", Args (0));
+	return false;
+    }
+
+    // The settings are in the first argument
+    map settings = select (args, 0, $[]);
+    y2milestone("Imported: (%1)", settings);
+
+    // A callback function for abort
+    block callback = ``{
+	return UI::PollInput () == `abort;
+    };
+
+    string caption = _("Initializing TV card configuration");
+    term contents = `Label (_("Initializing ..."));
+
+    // Construct the dialogs
+    Wizard::CreateDialog();
+    Wizard::SetContentsButtons ( caption,
+				 contents,
+				 "",
+				 BackButtonLabel (),
+				 NextButtonLabel ());
+    Wizard::RestoreHelp (ReadDialogHelp ());
+
+    // Read the settings from the current system
+    if (! Tv::Read ( callback ))
+    {
+	return nil;
+    }
+    // and patch them with the imported data
+    Tv::Import ( settings );
+
+    if (MainSequence () == `next)
+    {
+	settings = Tv::Export ();
+    }
+    else
+    {
+	settings = $[];
+    }
+    return settings;
+}

@@ -1,0 +1,70 @@
+/**
+ * File:
+ *   misc.ycp
+ *
+ * Package:
+ *   Configuration of tv
+ *
+ * Summary:
+ *   Miscelanous functions for configuration of tv.
+ *
+ * Authors:
+ *   Jan Holesovsky <kendy@suse.cz>
+ *
+ * $Id$
+ *
+ * Functions that are not UI related, do not belong to modules/tv.ycp
+ * and are not common enough to be in a library.
+ *
+ */
+
+{
+    import "Sound";
+
+    /**
+     * Compares parameters of a card with the current_card. It is needed for
+     * decision whether to select the card.
+     * @param parameters The 'parameters' which change
+     * @param parameters_to_compare The reference 'parameters' (the ones I am searching for)
+     * @return boolean Should I select the card with parameters 'parameters'?
+     */
+    global define boolean CmpParameters(map parameters, map parameters_to_compare) ``{
+	boolean select_this = true;
+	if (size(parameters) > 0)
+	{
+	    foreach(`param, `value, parameters, ``{
+		if (value != lookup(parameters_to_compare, param, nil))
+		{
+		    select_this = false;
+		}
+	    });
+	}
+	else
+	{
+	    if (size(parameters) == 0 && size(parameters_to_compare) == 0)
+	    {
+		select_this = true;
+	    }
+	    else
+	    {
+		select_this = false;
+	    }
+	}
+	return select_this;
+    }
+
+    /**
+     * List of the sound cards acceptable by the Table widget.
+     * @return list List of sound cards
+     */
+    global define list SoundCardsAsItems() ``{
+	return
+	    maplist(`card, Sound::GetSoundCardList (), ``{
+		integer sound_card_no = lookup(card, "card_no", -1);
+		return `item(`id(sound_card_no),
+			     sformat("%1", sound_card_no),
+			     lookup(card, "name", ""));
+	    });
+    }
+
+}
