@@ -464,7 +464,7 @@ available kernel modules."));
 	    list values = splitstring (value, ",");
 	    integer index = 0;
 	    map values_map = listmap (string val, values, ``{
-		list ret = [ index, val ];
+		map ret = $[ index: val ];
 		index = index + 1;
 		return ret;
 	    });
@@ -692,7 +692,7 @@ available kernel modules."));
 
 	// save the status (configured/unconfigured)
 	map probe_status = listmap (map card, detected_cards,
-	    ``( [ card["unique_key"]:nil, `no ] ));
+	    ``( $[ (string) (card["unique_key"]:nil): `no ] ));
 
 	// store the parameters to write to this variable
 	// $[ "module" :
@@ -1491,7 +1491,7 @@ global define void LoadIRCModulesDescription () ``{
 
     irc_modules = listmap (string mod, irc_modules_list, ``{
 	map modinfo = (map) SCR::Read (add (.modinfo.kernel.misc, mod));
-	return [ mod, modinfo["module_description"]:"" ];
+	return $[ mod: (modinfo["module_description"]:"") ];
     });
 }
 
