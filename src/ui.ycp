@@ -143,7 +143,20 @@ define any DetectedDialog() ``{
 	    {
 		Tv::current_card = Tv::DetectedCardGet(detected_no);
 		Tv::current_card_no = nil;
-		if (Tv::current_card["module"]:"" == "")
+
+		// check whether module was found
+		boolean module_found = false;
+
+		if (is(Tv::current_card["module"]:nil, string))
+		{
+		    module_found = Tv::current_card["module"]:"" == "";
+		}
+		else
+		{
+		    module_found = size(Tv::current_card["module"]:[]) > 0;
+		}
+
+		if (!module_found)
 		{
 		    ret = `add_manually_warn;
 		}
@@ -262,7 +275,11 @@ define term CardsSelectionBox ( list vendor_cards_db,
     list vendor_cards_items = maplist (map card, (list<map>) vendor_cards_db, ``{
 
 	boolean select_this = false;
-	if (!some_is_selected && (mod == nil || mod == card["module"]:""))
+
+	list<string> card_modules = card["module"]:[];
+	string current_module = card_modules[size(card_modules) - 1]:"";
+
+	if (!some_is_selected && (mod == nil || mod == current_module))
 	{
 	    select_this = CmpParameters (card["parameters"]:$[],parameters);
 	}
@@ -510,7 +527,7 @@ the list in the following dialog."));
 
 	    if (new_card["parameters", "card"]:"" !=
 		    selected_card["parameters","card"]:"" ||
-		new_card["module"]:"" != selected_card["module"]:"")
+		new_card["module"]:[] != selected_card["module"]:[])
 	    {
 		selected_card = new_card;
 		selected_tuner = $[];
@@ -604,8 +621,9 @@ of available kernel modules...")),
     map parameters = lookup (Tv::current_card, "parameters", $[]);
 
     // A list of all the (media/video) kernel modules for the ComboBox widget
-    list all_modules = Tv::KernelModulesAsItems (selected_module);
-    list all_radio_modules = Tv::RadioModulesAsItems (selected_module);
+    list all_modules = Tv::ModulesAsItems(Tv::kernel_modules, selected_module);
+    list all_radio_modules = Tv::ModulesAsItems(Tv::radio_modules, selected_module);
+    list all_dvb_modules = Tv::ModulesAsItems(Tv::dvb_modules, selected_module);
 
     // The currently selected parameter
     string selected_parameter = "";
@@ -615,7 +633,8 @@ of available kernel modules...")),
     // For translators: Label for the TextEntry, when kernel module has no parameters.
     string parameter_label_nil = _("&Parameter: (none)");
 
-    boolean radio = lookup (Tv::current_card, "radio", false);
+    boolean radio = Tv::current_card["radio"]:false;
+    boolean dvb = Tv::current_card["dvb"]:false;
 
     term contents =
 	`HBox(`HSpacing(1.5),
@@ -675,14 +694,23 @@ of available kernel modules...")),
 				 Label::BackButton (),
 				 Label::NextButton ());
 
-    if (!radio)
+    if (dvb)
+    {
+        UI::ReplaceWidget(`id(`modules_rp),
+            `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
+			    _("&Kernel module"), all_dvb_modules));
+        selected_module = (string) UI::QueryWidget (`id(`module_combo), `Value);
+        UI::ChangeWidget (`id(`parameters_table), `Items,
+            Tv::ModuleParametersAsItems(Tv::dvb_modules, selected_module, parameters));
+    }
+    else if (!radio)
     {
         UI::ReplaceWidget(`id(`modules_rp),
             `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
 			    _("&Kernel module"), all_modules));
         selected_module = (string) UI::QueryWidget (`id(`module_combo), `Value);
         UI::ChangeWidget (`id(`parameters_table), `Items,
-            Tv::KernelModuleParametersAsItems(selected_module, parameters));
+            Tv::ModuleParametersAsItems(Tv::kernel_modules, selected_module, parameters));
     }
     else
     {
@@ -691,7 +719,7 @@ of available kernel modules...")),
 			    _("&Kernel module"), all_radio_modules));
         selected_module = (string) UI::QueryWidget (`id(`module_combo), `Value);
         UI::ChangeWidget (`id(`parameters_table), `Items,
-            Tv::RadioModuleParametersAsItems(selected_module, parameters));
+            Tv::ModuleParametersAsItems(Tv::radio_modules, selected_module, parameters));
     }
 
     // Initialize the "Parameter: xyz" label and its value
@@ -717,7 +745,19 @@ of available kernel modules...")),
 	ret = tvUserInput();
 	if (ret == `radio_ch)
 	{
-	    if (!radio)
+	    if (dvb)
+	    {
+		UI::ReplaceWidget(`id(`modules_rp),
+		    `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
+			    // combo label
+			    _("&Kernel module"), all_dvb_modules));
+		selected_module =
+		    (string) UI::QueryWidget (`id(`module_combo), `Value);
+		UI::ChangeWidget (`id(`parameters_table), `Items,
+		    Tv::ModuleParametersAsItems(Tv::dvb_modules, selected_module, parameters));
+		radio = true;
+	    }
+	    else if (!radio)
 	    {
 		UI::ReplaceWidget(`id(`modules_rp),
 		    `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
@@ -726,8 +766,7 @@ of available kernel modules...")),
 		selected_module =
 		    (string) UI::QueryWidget (`id(`module_combo), `Value);
 		UI::ChangeWidget (`id(`parameters_table), `Items,
-		    Tv::RadioModuleParametersAsItems (
-			selected_module, parameters));
+		    Tv::ModuleParametersAsItems(Tv::radio_modules, selected_module, parameters));
 		radio = true;
 	    }
 	    else
@@ -738,8 +777,7 @@ of available kernel modules...")),
                 selected_module =
 		    (string) UI::QueryWidget (`id(`module_combo), `Value);
 		UI::ChangeWidget (`id(`parameters_table), `Items,
-		    Tv::KernelModuleParametersAsItems (
-			selected_module, parameters));
+		    Tv::ModuleParametersAsItems(Tv::kernel_modules, selected_module, parameters));
 		radio = false;
 	    }
 	    selected_parameter =
@@ -756,12 +794,15 @@ of available kernel modules...")),
 	    parameters = $[];
 
 	    // Redraw the table
-	    if (!radio)
+	    if (dvb)
 		UI::ChangeWidget ( `id(`parameters_table), `Items,
-		Tv::KernelModuleParametersAsItems(selected_module, parameters));
+		Tv::ModuleParametersAsItems(Tv::dvb_modules, selected_module, parameters));
+	    else if (!radio)
+		UI::ChangeWidget ( `id(`parameters_table), `Items,
+		Tv::ModuleParametersAsItems(Tv::kernel_modules, selected_module, parameters));
 	    else
 		UI::ChangeWidget ( `id(`parameters_table), `Items,
-		Tv::RadioModuleParametersAsItems(selected_module, parameters));
+		Tv::ModuleParametersAsItems(Tv::radio_modules, selected_module, parameters));
 
 	    selected_parameter =
 		(string) UI::QueryWidget (`id(`parameters_table), `CurrentItem);
@@ -823,14 +864,17 @@ than a-z, A-Z, _, -, + and 0-9."));
 		    parameters = add (parameters, selected_parameter, value);
 
 		    // Redraw the table
-		    if (!radio)
+		    if (dvb)
+		    {
 			UI::ChangeWidget (`id(`parameters_table), `Items,
-			    Tv::KernelModuleParametersAsItems (
-				selected_module, parameters));
+			    Tv::ModuleParametersAsItems(Tv::dvb_modules, selected_module, parameters));
+		    }
+		    else if (!radio)
+			UI::ChangeWidget (`id(`parameters_table), `Items,
+			    Tv::ModuleParametersAsItems(Tv::kernel_modules, selected_module, parameters));
 		    else
 			UI::ChangeWidget (`id(`parameters_table), `Items,
-			    Tv::RadioModuleParametersAsItems (
-				selected_module, parameters));
+			    Tv::ModuleParametersAsItems(Tv::radio_modules, selected_module, parameters));
 
 		    UI::ChangeWidget (`id(`parameters_table), `CurrentItem,
 			selected_parameter);
@@ -851,14 +895,16 @@ your want to edit first."));
 		parameters = add (parameters, selected_parameter, "");
 
 		// Redraw the table
-		if (!radio)
+		if (dvb)
 		    UI::ChangeWidget ( `id(`parameters_table), `Items,
-			Tv::KernelModuleParametersAsItems (
-			    selected_module, parameters));
+			Tv::ModuleParametersAsItems(Tv::dvb_modules, selected_module, parameters));
+		else if (!radio)
+		    UI::ChangeWidget ( `id(`parameters_table), `Items,
+			Tv::ModuleParametersAsItems(Tv::kernel_modules, selected_module, parameters));
 		else
 		    UI::ChangeWidget ( `id(`parameters_table), `Items,
-			Tv::RadioModuleParametersAsItems (
-			    selected_module, parameters));
+			Tv::ModuleParametersAsItems(Tv::radio_modules, selected_module, parameters));
+
 		UI::ChangeWidget ( `id(`parameters_table), `CurrentItem,
 		    selected_parameter);
 	    }
@@ -1030,11 +1076,11 @@ define any AudioDialog() ``{
 
 	if (current_rb == `rb_yes && sel_no != nil && sel_no != -1)
 	{
-	    Tv::current_card = add (Tv::current_card, "sound_card_no", sel_no);
+	    Tv::current_card["sound_card_no"] = sel_no;
 	}
 	else
 	{
-	    Tv::current_card = add (Tv::current_card, "sound_card_no", nil);
+	    Tv::current_card["sound_card_no"] = nil;
 	}
     }
 
