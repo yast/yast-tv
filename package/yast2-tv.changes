@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Sun Jul 07 22:42:45 CEST 2002 - arvin@suse.de
+
+- moved non binary files to /usr/share/YaST2
+
+-------------------------------------------------------------------
 Wed Jul  3 14:03:09 CEST 2002 - jsuchome@suse.cz
 
 - bugfix 13772: some y2debug() logs changed to y2milestone()
