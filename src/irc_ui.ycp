@@ -13,6 +13,7 @@
 textdomain "tv";
 
 import "Wizard";
+import "Wizard_hw";
 import "Progress";
 import "Popup";
 import "Label";
@@ -273,7 +274,7 @@ global define boolean IRCTestPopup (string config_file, string mod, boolean modi
     define string lirc_tmp_start () ``{
 
 	if (!modified)
-	    return true;
+	    return "";
 	// store old configuration
 	orig_module = SCR::Read (.sysconfig.lirc.LIRC_MODULE);
 	if (SCR::Read (.target.size, "/etc/lircd.conf") != -1)
