@@ -20,6 +20,7 @@
     import "ModulesComments";
     import "Mode";
     import "Require";
+    import "Confirm";
 
     include "tv/misc.ycp";
     import "Label";
@@ -997,6 +998,11 @@ to /etc/modules.conf."));
      * @return boolean Return false if the module should be terminated.
      */
     global define boolean Detect() ``{
+
+	/* Confirmation: label text (detecting hardware: xxx) */
+	if (!Confirm::Detection (_("TV cards")))
+	    return true;
+
 	list probe_tv = SCR::Read(.probe.tv);
 	if (probe_tv == nil)
 	{

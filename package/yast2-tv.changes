@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Aug 28 09:01:23 CEST 2003 - jsuchome@suse.de
+
+- confirm hardware detection in manual mode (#26515)
+- 2.8.5 
+
+-------------------------------------------------------------------
 Mon Aug 25 14:01:05 CEST 2003 - jsuchome@suse.cz
 
 - more packages to install: alevt, nxtvepg (#29217)
