@@ -1126,7 +1126,7 @@ define list ChannelsScanPopup (string norm, string freq) ``{
     }
     while (ret == nil);
 
-    SCR::Execute(.background.kill, nil);
+    SCR::Execute(.background.kill, $[]);
 
     if (ret == `done)
     {

@@ -30,8 +30,8 @@
 	boolean select_this = true;
 	if (size(parameters) > 0)
 	{
-	    foreach(`param, `value, parameters, ``{
-		if (value != lookup(parameters_to_compare, param, nil))
+	    foreach(string param, any value, parameters, ``{
+		if (value != parameters_to_compare[param]:nil)
 		{
 		    select_this = false;
 		}

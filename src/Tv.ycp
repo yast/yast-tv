@@ -14,6 +14,8 @@
 
     // Set the name of the module
     module "Tv";
+
+    import "Directory";
     import "Progress";
     import "Report";
     import "Summary";
@@ -303,11 +305,18 @@
      */
     global define boolean ReadUserSettings () ``{
 
-	SCR::Execute (.target.bash, "/bin/touch /var/lib/YaST2/tv.ycp");
-	any state = SCR::Read (.target.ycp, "/var/lib/YaST2/tv.ycp");
-	if ((is (state, map)) &&
-	    ((boolean)lookup ((map)state,"dont_ask_for_application",false)))
-	    return true;
+	string file	= Directory::vardir + "tv.ycp";
+	if (SCR::Read (.target.size, file) == -1)
+	{
+	    SCR::Execute (.target.bash, sformat ("/bin/touch %1", file));
+	}
+	else
+	{
+	    any state = SCR::Read (.target.ycp, file);
+	    if ((is (state, map)) &&
+		((boolean)lookup ((map)state,"dont_ask_for_application",false)))
+		return true;
+	}
 	return false;
     }
 
@@ -1625,7 +1634,7 @@ global define boolean InitializeStationsConfig() ``{
     SCR::Write (.target.string, agent_file, sformat (".tmp.xawtvrc
 
 `ag_ini(
-  IniAgent(
+  `IniAgent(
     \"%1/xawtvrc\",
     $[
       \"comments\": [ \"^[ \\t]*#.*\", \"#.*\", \"^[ \\t]*$\" ],
@@ -1852,7 +1861,7 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 	}
 
 	// save not_ask status
-	SCR::Write (.target.ycp, "/var/lib/YaST2/tv.ycp",
+	SCR::Write (.target.ycp, Directory::vardir + "tv.ycp",
 	    $["dont_ask_for_application": not_ask]);
     }
 

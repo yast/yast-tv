@@ -24,6 +24,7 @@
     import "Mode";
     import "Report";
     import "CommandLine";
+    import "RichText";
 
     include "tv/ui.ycp";
     include "commandline/commandline.ycp";
@@ -209,7 +210,7 @@ map cmdline = $[
     }
     else
     {
-	ret = CommandLineRun( cmdline );
+	ret = CommandLine::Run( cmdline );
     }
 
     y2debug ("ret == %1", ret);
