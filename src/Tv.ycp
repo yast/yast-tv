@@ -218,6 +218,7 @@
      */
     global define boolean Write (block abort) ``{
 
+    // TODO: add modified here!
     // Shouldn't this be here?
     // if (!cards_dirty) return true;
 
@@ -277,6 +278,13 @@
 		i = i + 1;
 	}
 
+    // propose kde applications only if we have KDE
+    // TODO: propose also gnome aplication (zapping)
+    // TODO: remove application names from the texts
+    // TODO: use Require interface
+    if (SCR::Execute(.target.bash, "rpm -q kdebase3-kdm 2>/dev/null")==0)
+    {
+
 	boolean kwintv_installed =
         (SCR::Execute(.target.bash, "rpm -q kwintv 2>/dev/null")==0);
     boolean kradio_installed =
@@ -318,6 +326,7 @@ installed. Install it now?
 	        DoInstallAndRemove(to_install, []);
         }
 	}
+    }
 
 
 	// increase the progress to "finish"

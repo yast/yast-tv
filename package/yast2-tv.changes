@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Mar 13 16:23:06 CET 2003 - jsuchome@suse.de
+
+- do not check for kwintv if kde is not installed (#25277)
+- 2.7.5
+
+-------------------------------------------------------------------
 Fri Mar  7 15:59:56 CET 2003 - jsuchome@suse.de
 
 - fix: bug with reset button for radio module values (#24850)
