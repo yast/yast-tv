@@ -1,3 +1,4 @@
 Makefile
 Makefile.in
-*.ycp
+tv_cards.ycp
+tv_tuners.ycp

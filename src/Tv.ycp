@@ -101,6 +101,7 @@
      */
     global list cards_database = nil;
     global list dvb_cards_database = nil;
+    global map firmware_database = nil;
 
     /**
      * Database of the tuners for the manual configuration.
@@ -357,6 +358,18 @@
 		// Error message popup:
 		Report::Error(_("Unable to read the TV card database."));
 		cards_database = [];
+		return false;
+	    }
+	}
+
+	if (firmware_database == nil)
+	{
+	    firmware_database = (map)eval(SCR::Read(.target.yast2, "tv_dvbfirmware.ycp"));
+	    if (firmware_database == nil)
+	    {
+		// Error message popup:
+		Report::Error(_("Unable to read the TV card database."));
+		firmware_database = $[];
 		return false;
 	    }
 	}
@@ -1040,6 +1053,49 @@ available kernel modules."));
 	return ret;
     }
 
+    /*
+     * Return list of kernel modules required by configured cards
+     * @return list List of kernel modules
+     */
+    global define list<string> RequiredModules(boolean ko_suffix) {
+	list<string> reqmodules = [];
+
+	// get all required modules
+	foreach(map card, (list<map>) cards, {
+		list<string> m = (list<string>)card["module"]:[];
+
+		if (m != nil && size(m) > 0)
+		{
+		    // add .ko extension to kernel module name
+		    m = maplist(string mod, m, {
+			    if (ko_suffix)
+			    {
+				mod = mod + ".ko";
+			    }
+			    return mod;
+			}
+		    );
+		    reqmodules = (list<string>) merge(reqmodules, m);
+		}
+	    }
+	);
+
+	// remove duplicates
+	reqmodules = toset(reqmodules);
+
+	y2milestone("required kernel modules: %1", reqmodules);
+
+	return reqmodules;
+    }
+
+    define list<string> FirmwareDrivers()
+    {
+	return (list<string>)maplist(string modname, map fw,(map<string,map>)firmware_database, {
+		return modname;
+	    }
+	);
+    }
+
     /**
      * Install firmware for all configured cards
      * @return boolean True on success
@@ -1047,25 +1103,48 @@ available kernel modules."));
     define boolean InstallFW() {
 	boolean ret = true;
 
-	foreach(map card, (list<map>) cards, {
-		list<map<string,string> > firmware = card["firmware"]:[];
+	// get all required modules
+	list<string> reqmod = RequiredModules(false);
 
-		// is a firmware needed?
-		if (size(firmware) > 0)
-		{
-		    foreach(map<string,string> fw, firmware, {
-			    foreach(string source, string target, fw, {
-				    if (!InstallFWCard(card["name"]:"TV", source, target))
-				    {
-					ret = false;
-				    }
-				}
-			    );
+	// get all modules whoch require firmware
+	list<string> fwmod = FirmwareDrivers();
+
+	// check whether there is a driver which requires firmware
+	reqmod = filter(string r, reqmod, {
+		return contains(fwmod, r);
+	    }
+	);
+
+	y2internal("required modules with FW: %1", reqmod);
+
+	if (size(reqmod) > 0)
+	{
+	    foreach(string drv, reqmod, {
+		    // find card that requires the driver
+		    string cardname = "TV";
+
+		    foreach(map card, (list<map>) cards, {
+			    list<string> drvs = card["module"]:[];
+
+			    if (contains(drvs, drv))
+			    {
+				cardname = card["name"]:"TV";
+			    }
+			}
+		    );
+
+		    map<string,string> files = (map<string,string>)firmware_database[drv]:$[];
+
+		    foreach(string source, string target, files, {
+			    if (!InstallFWCard(cardname, source, target))
+			    {
+				ret = false;
+			    }
 			}
 		    );
 		}
-	    }
-	);
+	    );
+	}
 
 	return ret;
     }
@@ -1177,37 +1256,6 @@ available kernel modules."));
 	    }
 	});
 	return result;
-    }
-
-    /*
-     * Return list of kernel modules required by configured cards
-     * @return list List of kernel modules
-     */
-    global define list<string> RequiredModules() {
-	list<string> reqmodules = [];
-
-	// get all required modules
-	foreach(map card, (list<map>) cards, {
-		list<string> m = (list<string>)card["module"]:[];
-
-		if (m != nil && size(m) > 0)
-		{
-		    // add .ko extension to kernel module name
-		    m = maplist(string mod, m, {
-			    return mod + ".ko";
-			}
-		    );
-		    reqmodules = (list<string>) merge(reqmodules, m);
-		}
-	    }
-	);
-
-	// remove duplicates
-	reqmodules = toset(reqmodules);
-
-	y2milestone("required kernel modules: %1", reqmodules);
-
-	return reqmodules;
     }
 
     /**
@@ -1692,17 +1740,20 @@ to %1."), "/etc/modprobe.d/tv."));
 			    // Summary text (%1 is number)
 			    _("Installed as DVB card number %1."), dvbcard_no);
 
-			list<map<string,string> > fw = card["firmware"]:[];
-			if (size(fw) > 0)
+			if (firmware_database != nil && size(firmware_database) > 0)
 			{
-			    foreach(map<string,string> f, fw, {
-				    foreach(string source, string target, f, {
-					    boolean inst = IsFWInstalled(target);
+			    foreach(string fwmod, map<string,string> fw, (map<string,map<string,string> >)firmware_database, {
 
-					    installed_str = installed_str + "<BR>" + _("Firmware: ") +
-					    ((inst) ? sformat(_("Installed (%1)"), target) : sformat(_("Not installed (%1)"), source));
-					}
-				    );
+				    if (contains(card["module"]:[], fwmod))
+				    {
+					foreach(string source, string target, fw, {
+						boolean inst = IsFWInstalled(target);
+
+						installed_str = installed_str + "<BR>" + _("Firmware: ") +
+						((inst) ? sformat(_("Installed (%1)"), target) : sformat(_("Not installed (%1)"), source));
+					    }
+					);
+				    }
 				}
 			    );
 			}
@@ -2618,7 +2669,7 @@ global define boolean InitializeStationsConfig() ``{
 	Progress::NextStage ();
 
 	// install required kernel packages
-	list<string> kernelmodules = RequiredModules();
+	list<string> kernelmodules = RequiredModules(true);
 
 	if (size(kernelmodules) > 0)
 	{

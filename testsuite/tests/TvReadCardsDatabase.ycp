@@ -17,10 +17,17 @@
 		$[ "yast2": nil ]
 	];
 
-    map READ_empty =
+    list READ_empty = [
     $[ "target":
 		$[ "yast2": [ ] ]
-	];
+	],
+    $[ "target":
+		$[ "yast2": $[ ] ]
+	],
+    $[ "target":
+		$[ "yast2": [ ] ]
+	]
+    ];
 
     map READ_db =
 	$[ "target": $[ "yast2":
