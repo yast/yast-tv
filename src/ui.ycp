@@ -926,8 +926,8 @@ your want to edit first."));
 		if (value != filterchars (value, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_/-+0123456789"))
 		{
 		    // User wants to set kernel parameters but string is wrong
-		    Popup::Message (_("Please do not use other characters
-than a-z, A-Z, _, -, +, / and 0-9."));
+		    Popup::Message (_("Do not use characters other
+than a-z, A-Z, _, -, +, /, and 0-9."));
 		}
 		else
 		{
