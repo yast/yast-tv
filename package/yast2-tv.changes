@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Feb 11 17:33:31 CET 2003 - arvin@suse.de
+
+- fixed testsuite
+
+-------------------------------------------------------------------
 Mon Feb  3 10:17:01 CET 2003 - jsuchome@suse.cz
 
 - fix of bug #23228 (bad use of modules agent)
@@ -43,7 +48,7 @@ Fri Oct 25 14:25:08 CEST 2002 - jsuchome@suse.cz
 - fixed bug with writing the sound volume (nothing was written)
 - module UniqueKeys renamed to ModulesComments
   (/var/lib/yast/unique is obsolete)
-- require.ycp included only when needed (->faster start of module) 
+- require.ycp included only when needed (->faster start of module)
 - added some cards to CARDLIST.saa7134
 - adapted testsuite to the changes
 - 2.7.0
@@ -67,7 +72,7 @@ Mon Sep  9 16:09:04 CEST 2002 - jsuchome@suse.cz
 -------------------------------------------------------------------
 Fri Sep  6 17:16:44 CEST 2002 - jsuchome@suse.cz
 
-- added test before reading modules.options 
+- added test before reading modules.options
 
 -------------------------------------------------------------------
 Tue Aug 20 09:33:25 CEST 2002 - jsuchome@suse.cz
