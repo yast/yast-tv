@@ -25,6 +25,7 @@
 
     import "Label";
     import "Tv";
+    import "Wizard";
 
     include "tv/ui.ycp";
 
