@@ -1049,7 +1049,7 @@ global define any AudioDialog() ``{
 	if (ret == `configure_button)
 	{
 	    current_sound_card = UI::QueryWidget(`id(`sound_card_table), `CurrentItem);
-	    CallModule("sound", []);
+	    WFM::CallModule("sound", []);
 
 	    // Reread the list of the cards
 	    sound_cards = SoundCardsAsItems();

@@ -23,7 +23,7 @@
  * @return boolean success of operation
  * @example
  *    map mm = $[ "cards" : [] ];
- *    map ret = CallModule ("tv_auto", [ mm ]);
+ *    map ret = WFM::CallModule ("tv_auto", [ mm ]);
  */
 
 {
@@ -33,15 +33,15 @@
 
     include "tv/ui.ycp";
 
-    list args = Args ();
+    list args = WFM::Args ();
     if ( size (args) <= 0 )
     {
 	y2error ("Did not get the settings, probably some mistake...");
 	return false;
     }
-    if ( !is ( Args (0), map ) )
+    if ( !is ( WFM::Args (0), map ) )
     {
-	y2error ("Bad argument for tv_auto: %1", Args (0));
+	y2error ("Bad argument for tv_auto: %1", WFM::Args (0));
 	return false;
     }
 
