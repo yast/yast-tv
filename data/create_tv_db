@@ -172,7 +172,6 @@ print "/* YaST2 TV cards database\n";
 print " *\n";
 print " * Generated ".qx(date);
 print " * From: @ARGV\n";
-print "   Textdomain \"tv\"\n";
 print " */";
 print "\n";
 print "{\n";
