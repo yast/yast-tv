@@ -144,7 +144,7 @@
 	boolean read_aborted = false;
 
 	// For translators: Caption of the progress bar in the time of reading
-	string caption = _("Initializing TV and radio cards configuration");
+	string caption = _("Initializing TV and radio card configuration...");
 	// Set the right number of stages
 	//   1+2: Read databases (tv, tuner)
 	//   3:   Read the settings
@@ -224,7 +224,7 @@
 
 	boolean write_aborted = false;
 	// For translators: Caption of the "save" dialog
-	string caption = _("Saving TV and radio card configuration");
+	string caption = _("Saving TV and Radio Card Configuration");
 	// Set the right number of stages
 	//   1: Write the settings
 	//   2: Write the sound volume
@@ -296,8 +296,9 @@ It is currently not installed. Do you want to install it now?")))
 	else if (radio && !tv && !kradio_installed)
 	{
         // Popup text (recommended application):
-        if (UI::YesNoPopup(_("If you want to listen radio on your computer, you could use the KRadio application.
-It is currently not installed. Do you want to install it now?")))
+        if (UI::YesNoPopup(_("To listen to radio on your computer, you can use the KRadio application.
+It is currently not installed. Install it now?
+")))
         {
             include "require.ycp";
             DoInstallAndRemove(["kradio"], []);
@@ -306,9 +307,10 @@ It is currently not installed. Do you want to install it now?")))
 	else if (radio && tv && (!kwintv_installed || !kradio_installed))
 	{
         // Popup text (recommended applications):
-        if (UI::YesNoPopup(_("If you want to watch TV and listen radio on your computer, you could use
+        if (UI::YesNoPopup(_("To watch TV and listen to radio on your computer, you can use
 the KWinTV and KRadio applications. At least one of them is currently not
-installed. Do you want to install it now?")))
+installed. Install it now?
+")))
         {
             include "require.ycp";
 	        DoInstallAndRemove(["kwintv", "kradio"], []);
