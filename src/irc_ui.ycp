@@ -16,7 +16,7 @@ import "Wizard";
 import "Wizard_hw";
 import "Popup";
 import "Label";
-import "Runlevel";
+import "Service";
 import "Require";
 
 import "Tv";
@@ -63,7 +63,7 @@ global define boolean IRCTestPopup (string config_file, string mod, boolean modi
 		sformat ("/bin/cp %1 /etc/lircd.conf", config_file));
 
         // 2. start service (what if it is running?)
-	orig_start = (Runlevel::ServiceStatus ("lirc") == 0);
+	orig_start = (Service::Status ("lirc") == 0);
 
 	map out = $[];
 	//when module cannot be loaded, Runlevel returns 0 -> use target.bash
@@ -71,7 +71,6 @@ global define boolean IRCTestPopup (string config_file, string mod, boolean modi
 	    out = (map) SCR::Execute (.target.bash_output, "rclirc restart");
 	else
 	    out = (map) SCR::Execute (.target.bash_output, "rclirc start");
-y2internal ("out: %1", out);
 	return out["stderr"]:"";
     }
 
@@ -92,9 +91,9 @@ y2internal ("out: %1", out);
 	SCR::Write (.sysconfig.lirc.LIRC_MODULE, orig_module);
 	SCR::Write (.sysconfig.lirc, nil);
 	if (orig_start)
-	    Runlevel::RunInitScript ("lirc", "restart");
+	    Service::RunInitScript ("lirc", "restart");
 	else
-	    Runlevel::RunInitScript ("lirc", "stop");
+	    Service::RunInitScript ("lirc", "stop");
 	return true;
     }
 

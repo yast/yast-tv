@@ -85,7 +85,8 @@ global define boolean TvAddCardHandler (map options ) ``{
 	Report::Error(_("There is no such card to add."));
 	return false;
     }
-    if (contains (Tv::CardsUniqueKeys(),Tv::current_card["unique_key"]:nil))
+    if (contains (Tv::CardsUniqueKeys(),
+	    (string) lookup (Tv::current_card, "unique_key", nil)))
     {
 	//error message, %1 is name
 	Report::Message(sformat(_("The card '%1' is already configured."),
@@ -94,7 +95,7 @@ global define boolean TvAddCardHandler (map options ) ``{
     }
 
     // add some parameters
-    string tuner_id = options["tuner"]:nil;
+    string tuner_id = (string) lookup (options, "tuner", nil);
     if (tuner_id != nil)
     {
 	if (!haskey (Tv::current_card, "parameters"))
@@ -133,29 +134,48 @@ global define boolean TvRemoveCardHandler (map options ) ``{
     return Tv::CardRemove (card_no);
 }
 
-block<boolean> abort_block = ``{return false;};
+/**
+ * Wrapper function for reading the settings (used by cmd-line)
+ * @return boolean success
+ */
+global define boolean TvRead () ``{
+
+    block<boolean> abort_block = ``{return false;};
+    return Tv::Read (abort_block);
+}
+
+/**
+ * Wrapper function for writing the settings (used by cmd-line)
+ * @return boolean success
+ */
+global define boolean TvWrite () ``{
+
+    block<boolean> abort_block = ``{return false;};
+    return Tv::Write (abort_block);
+}
+
 
 /* the command line description map */
 map cmdline = $[
     "id"		: "tv",
     // translators: command line help text for Tv module
     "help"		: _("Tv card configuration module."),
-    "guihandler"	: ``(TvSequence()),
-    "initialize"	: ``(Tv::Read (abort_block)),
-    "finish"		: ``(Tv::Write (abort_block)),
+    "guihandler"	: TvSequence,
+    "initialize"	: TvRead,
+    "finish"		: TvWrite,
     "actions"		: $[
 	"summary" :$[
-	    "handler"	: ``(TvSummaryHandler()),
+	    "handler"	: TvSummaryHandler,
 	    // translators: command line help text for summary action
 	    "help"	: _("Configuration summary of TV cards")
 	],
 	"add" :$[
-	    "handler"	: ``(TvAddCardHandler()),
+	    "handler"	: TvAddCardHandler,
 	    // translators: command line help text for add action
 	    "help"	: _("Add TV card. Without parameters, add first one detected.")
 	],
 	"remove" :$[
-	    "handler"	: ``(TvRemoveCardHandler()),
+	    "handler"	: TvRemoveCardHandler,
 	    // translators: command line help text for remove action
 	    "help"	: _("Remove TV/radio card")
 	],
