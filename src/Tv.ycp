@@ -551,7 +551,7 @@ available kernel modules."));
 		// get the module name
 		string module_name = SCR::Read(.modules.alias, alias);
 		y2debug("Reading alias %1: module name is '%2'", alias, module_name);
-		if (module_name != nil && module_name != "")
+		if (module_name != nil && module_name != "" && module_name != "off")
 		{
 		    if (lookup(modules_parameters, module_name, nil) == nil)
 		    {
@@ -687,13 +687,21 @@ available kernel modules."));
 	y2milestone ("Writing char-major-81 (videodev) to modules.conf");
 	SCR::Write (.modules.alias, "videodev", "char-major-81");
 
-    // fix of bug #18033:
+	// fix of bug #18033:
 	SCR::Write (.modules.options, $["bit_test":"1"], "i2c-algo-bit");
 
 	// reset the old settings (all char-major-81-* aliases)
 	foreach (`alias, GetMajor81Aliases(), ``{
 	    SCR::Write (.modules.alias, nil, alias);
 	});
+
+    // fix of bug #19122:
+    integer i = 0;
+    while (i<4) {
+        string alias = sformat ("char-major-81-%1", i);
+        SCR::Write (.modules.alias, "off", alias);
+        i = i + 1;
+    }
 
 	// for cards choosed to delete...
 	foreach (`card, cards_to_del, ``{
