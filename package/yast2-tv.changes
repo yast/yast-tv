@@ -1,4 +1,16 @@
 -------------------------------------------------------------------
+Fri Oct 25 14:25:08 CEST 2002 - jsuchome@suse.cz
+
+- radio card support
+- fixed bug with writing the sound volume (nothing was written)
+- module UniqueKeys renamed to ModulesComments
+  (/var/lib/yast/unique is obsolete)
+- require.ycp included only when needed (->faster start of module) 
+- added some cards to CARDLIST.saa7134
+- adapted testsuite to the changes
+- 2.7.0
+
+-------------------------------------------------------------------
 Wed Sep 25 10:49:12 CEST 2002 - jsuchome@suse.cz
 
 - corrected bug 20091 (empty name instead of "user defined")

@@ -82,7 +82,7 @@ global define any TvSequence () ``{
     ];
 
     // Caption of initializing dialog
-    string caption = _("Initializing TV card configuration");
+    string caption = _("Initializing TV / radio card configuration");
     // Label text of initializing dialog
     term contents = `Label (_("Initializing ..."));
 
@@ -105,7 +105,7 @@ global define any TvSequence () ``{
  * @return Sequence result of MainSequence().
  */
 global define any TvSequenceNoIO () ``{
-    string caption = _("Initializing TV card configuration");
+    string caption = _("Initializing TV / radio card configuration");
     term contents = `Label (_("Initializing ..."));
 
     Wizard::CreateDialog ();
@@ -151,7 +151,7 @@ global define any MainSequence () ``{
 
 	    "man_manual"      : ``( ManualDialog (false) ),
 	    "man_manual_warn" : ``( ManualDialog (true) ),
-	    "man_details"     : ``( ManualDetailsDialog () ),
+	    "man_details"     : ``( ManualDetailsDialog (true) ),
 	    "man_audio"       : ``( AudioDialog () ),
 	    "man_doit"        : ``( CardAddCurrentWrapper () ),
 
@@ -159,12 +159,12 @@ global define any MainSequence () ``{
 	    "det_doit"        : ``( CardAddCurrentWrapper () ),
 
 	    "add_manual"      : ``( ManualDialog (false) ),
-	    "add_details"     : ``( ManualDetailsDialog () ),
+	    "add_details"     : ``( ManualDetailsDialog (true) ),
 	    "add_audio"       : ``( AudioDialog () ),
 	    "add_doit"        : ``( CardAddCurrentWrapper () ),
 
 	    "rep_manual"      : ``( ManualDialog (false) ),
-	    "rep_details"     : ``( ManualDetailsDialog () ),
+	    "rep_details"     : ``( ManualDetailsDialog (false) ),
 	    "rep_audio"       : ``( AudioDialog () ),
 	    "rep_doit"        : ``( CardReplaceWithCurrentWrapper () )
 	];
@@ -185,7 +185,8 @@ global define any MainSequence () ``{
 	    `abort            : `abort,
 	    `next             : `next,
 	    `add_button       : "add_manual",
-	    `edit_button      : "rep_manual"
+	    `edit_button      : "rep_manual",
+	    `edit_button_radio: "rep_details"
 	],
 
 	"man_manual" : $[
@@ -306,11 +307,11 @@ global define any WriteDialog () ``{
  */
 global define any DetectedDialog() ``{
     // For translators: Caption of the dialog
-    string caption = _("TV card setup");
+    string caption = _("TV and radio card setup");
 
     term contents =
     // Caption of the detected cards list
-	Wizard_hw::DetectedContent(_("TV cards to configure"),
+	Wizard_hw::DetectedContent(_("TV or radio cards to configure"),
 				   Tv::DetectedCardsAsItems(),
 				   false,
 				   "");
@@ -325,12 +326,12 @@ global define any DetectedDialog() ``{
     do
     {
 	// Update the content to the current values
-	string installed_overview = _("<P><B>No TV card installed yet.</B></P>");
+	string installed_overview = _("<P><B>No TV or radio card installed yet.</B></P>");
 	list installed_list = Tv::InstalledCardsSummary ();
 	if (size(installed_list) > 0)
 	{
 	    // For translators: Overview of the installed cards
-	    installed_overview = sformat (_("<P><B>Already installed TV cards:</B>%1</P>"),
+	    installed_overview = sformat (_("<P><B>Already installed TV and radio cards:</B>%1</P>"),
 					  Summary::DevicesList(installed_list));
 	}
 	UI::ChangeWidget (`id(`configured_richtext), `Value, installed_overview);
@@ -383,7 +384,7 @@ global define any DetectedDialog() ``{
  */
 global define any OverviewDialog() ``{
     // For translators: Caption of the dialog
-    string caption = _("TV card overview");
+    string caption = _("TV and radio cards overview");
 
     // A list of the configured cards in the form allowed by the Table widet
     //list configured_cards = tvConfiguredCardsTableItems();
@@ -418,6 +419,8 @@ global define any OverviewDialog() ``{
 	    {
 		Tv::current_card = Tv::CardGet(sel_no);
 		Tv::current_card_no = sel_no;
+        if (sel_no > 63)
+            ret = `edit_button_radio;
 	    }
 	    else
 	    {
@@ -456,7 +459,7 @@ of \"%1\"?"), lookup(Tv::current_card, "name", "")));
 	    }
 	}
     } while (ret != `back && ret != `abort && ret != `next &&
-	     ret != `add_button && ret != `edit_button);
+	     ret != `add_button && ret != `edit_button && ret!= `edit_button_radio);
 
     return ret;
 }
@@ -753,7 +756,7 @@ for the selected card."));
  * A dialog allowing the manual selection of the card.
  * @return any The value of the resulting UserInput.
  */
-global define any ManualDetailsDialog() ``{
+global define any ManualDetailsDialog(boolean allow_changeoftype) ``{
     if (Tv::kernel_modules == nil)
     {
 	UI::OpenDialog (
@@ -771,7 +774,7 @@ of available kernel modules...")),
     }
 
     // For translators: Caption of the dialog
-    string caption = _("Manual TV card selection: details");
+    string caption = _("Manual TV / radio card selection: details");
 
     // Currently selected module. None => select bttv
     string selected_module = lookup (Tv::current_card, "module", nil);
@@ -785,6 +788,7 @@ of available kernel modules...")),
 
     // A list of all the (media/video) kernel modules for the ComboBox widget
     list all_modules = Tv::KernelModulesAsItems (selected_module);
+    list all_radio_modules = Tv::RadioModulesAsItems (selected_module);
 
     // The currently selected parameter
     string selected_parameter = "";
@@ -794,16 +798,19 @@ of available kernel modules...")),
     // For translators: Label for the TextEntry, when kernel module has no parameters.
     string parameter_label_nil = _("&Parameter: (none)");
 
+    boolean radio = lookup (Tv::current_card, "radio", false);
+
     term contents =
 	`HBox(`HSpacing(1.5),
 	      `VBox(
 		  `VSpacing(1.0),
-		  `ComboBox(`id(`module_combo),
+//          `Right(`CheckBox(`id(`radio_ch), `opt(`notify), _("R&adio card"), radio)),
+	//	  `VSpacing(0.2),
+          `ReplacePoint(`id(`modules_rp),
+                `ComboBox(`id(`module_combo),
 			    `opt(`hstretch, `notify),
                 // ComboBox label:
-			    _("&Kernel module"),
-			    all_modules
-		  ),
+			    _("&Kernel module"), [])),
           // Frame label:
 		  `Frame(_("Parameters of the module:"),
 			 `HBox(`HSpacing(0.5),
@@ -816,8 +823,9 @@ of available kernel modules...")),
 							  _("Value"),
 				     // For tanslators: Header of a table with kernel module params.
 							  _("Description")),
-						  Tv::KernelModuleParametersAsItems(selected_module,
-										    parameters)
+                              []
+//						  Tv::KernelModuleParametersAsItems(selected_module,
+//										    parameters)
 					   ),
 					   `VSquash(
 						`HBox(`TextEntry(`id(`parameter_entry),
@@ -837,16 +845,37 @@ of available kernel modules...")),
 			       `HSpacing(0.5)
 			 )
 		  ),
-		  `VSpacing(1.0)
+		  `VSpacing(0.5),
+          (allow_changeoftype ? `Left(`CheckBox(`id(`radio_ch), `opt(`notify), _("R&adio card modules"), radio)) : `VSpacing(0)),
+		  `VSpacing(0.5)
 	      ),
 	      `HSpacing(1.5)
 	);
 
     Wizard::SetContentsButtons ( caption,
 				 contents,
-				 ManualDetailsDialogHelp (),
+				 ManualDetailsDialogHelp (allow_changeoftype),
 				 BackButtonLabel (),
 				 NextButtonLabel ());
+
+    if (!radio)
+    {
+        UI::ReplaceWidget(`id(`modules_rp),
+            `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
+			    _("&Kernel module"), all_modules));
+        selected_module = UI::QueryWidget (`id(`module_combo), `Value);
+        UI::ChangeWidget (`id(`parameters_table), `Items,
+            Tv::KernelModuleParametersAsItems(selected_module, parameters));
+    }
+    else
+    {
+        UI::ReplaceWidget(`id(`modules_rp),
+            `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
+			    _("&Kernel module"), all_radio_modules));
+        selected_module = UI::QueryWidget (`id(`module_combo), `Value);
+        UI::ChangeWidget (`id(`parameters_table), `Items,
+            Tv::RadioModuleParametersAsItems(selected_module, parameters));
+    }
 
     // Initialize the "Parameter: xyz" label and its value
     selected_parameter = UI::QueryWidget (`id(`parameters_table), `CurrentItem);
@@ -866,6 +895,32 @@ of available kernel modules...")),
     do
     {
 	ret = tvUserInput();
+    if (ret == `radio_ch)
+    {
+        if (!radio)
+        {
+            UI::ReplaceWidget(`id(`modules_rp),
+                `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
+			    _("&Kernel module"), all_radio_modules));
+            selected_module = UI::QueryWidget (`id(`module_combo), `Value);
+            UI::ChangeWidget (`id(`parameters_table), `Items,
+                Tv::RadioModuleParametersAsItems(selected_module, parameters));
+         radio = true;
+        }
+        else
+        {
+            UI::ReplaceWidget(`id(`modules_rp),
+                `ComboBox(`id(`module_combo), `opt(`hstretch, `notify),
+			    _("&Kernel module"), all_modules));
+            selected_module = UI::QueryWidget (`id(`module_combo), `Value);
+            UI::ChangeWidget (`id(`parameters_table), `Items,
+                Tv::KernelModuleParametersAsItems(selected_module, parameters));
+            radio = false;
+        }
+	    selected_parameter = UI::QueryWidget (`id(`parameters_table), `CurrentItem);
+        // testnout neprazdost
+		UI::ChangeWidget (`id(`parameter_entry), `Label, sformat(parameter_label, selected_parameter));
+    }
 
 	// The user changes the module in the Combo Box
 	if (ret == `module_combo)
@@ -874,9 +929,14 @@ of available kernel modules...")),
 	    parameters = $[];
 
 	    // Redraw the table
+        if (!radio)
 	    UI::ChangeWidget ( `id(`parameters_table),
 			       `Items,
 			       Tv::KernelModuleParametersAsItems(selected_module, parameters));
+        else
+	    UI::ChangeWidget ( `id(`parameters_table),
+			       `Items,
+			       Tv::RadioModuleParametersAsItems(selected_module, parameters));
 	    selected_parameter = UI::QueryWidget (`id(`parameters_table), `CurrentItem);
 		string value = lookup (parameters, selected_parameter, "");
 		if (selected_parameter!=nil) {
@@ -927,9 +987,15 @@ than a-z, A-Z, _, -, + and 0-9."));
 		    parameters = add (parameters, selected_parameter, value);
 
 		    // Redraw the table
+            if (!radio)
 		    UI::ChangeWidget (`id(`parameters_table),
 				      `Items,
 				      Tv::KernelModuleParametersAsItems(selected_module, parameters));
+            else
+		    UI::ChangeWidget (`id(`parameters_table),
+				      `Items,
+				      Tv::RadioModuleParametersAsItems(selected_module, parameters));
+
 		    UI::ChangeWidget (`id(`parameters_table), `CurrentItem, selected_parameter);
 		}
 	    }
@@ -959,11 +1025,15 @@ your want to edit first."));
     // Store the values to Tv::current_card
     if (ret != `back && ret != `abort)
     {
-	// For translators: The name of the TV card is set to "User defined", because
+    if (radio)
+	// For translators: The name of the card is set to "User defined", because
 	// the user changed kernel module parameters and so we do not have a good name...
-	Tv::current_card = add (Tv::current_card, "name", _("User defined"));
+	    Tv::current_card = add (Tv::current_card, "name", _("User defined radio card"));
+    else
+	    Tv::current_card = add (Tv::current_card, "name", _("User defined TV card"));
 	Tv::current_card = add (Tv::current_card, "module", selected_module);
 	Tv::current_card = add (Tv::current_card, "parameters", parameters);
+	Tv::current_card = add (Tv::current_card, "radio", radio);
     }
 
     return ret;
@@ -975,7 +1045,7 @@ your want to edit first."));
  */
 global define any AudioDialog() ``{
     // For translators: Caption of the dialog
-    string caption = _("TV card audio");
+    string caption = _("TV / radio card audio");
 
     // Name of the TV card being currently configured
     string current_card_name = lookup(Tv::current_card, "name", "");
@@ -1006,7 +1076,7 @@ global define any AudioDialog() ``{
 	      `VBox(
 		  `VSpacing(1.2),
           // Label text:
-		  `Left(`HBox(`Label(_("TV card:")),
+		  `Left(`HBox(`Label(_("TV / radio card:")),
 			      `Label(`opt(`outputField), current_card_name)
 		  )),
 		  `VSpacing(0.7),

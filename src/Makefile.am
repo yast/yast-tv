@@ -22,6 +22,6 @@ config_DATA =			\
 
 module_DATA =			\
 	Tv.ycp			\
-	UniqueKeys.ycp
+	ModulesComments.ycp
 
 EXTRA_DIST = $(client_DATA) $(ynclude_DATA) $(config_DATA) $(module_DATA)

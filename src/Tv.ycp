@@ -24,12 +24,13 @@
     import "Progress";
     import "Report";
     import "Summary";
-    import "UniqueKeys";
+    import "ModulesComments";
     import "Mode";
 
     include "tv/misc.ycp";
-    include "require.ycp";
+//    include "require.ycp"; // include when necessary
     include "ui/common_messages.ycp";
+    include "sound/write_routines.ycp";
 
     textdomain "tv";
 
@@ -125,6 +126,7 @@
      * Map of available TV kernel modules and their parameters.
      */
     global map kernel_modules = nil;
+    global map radio_modules = nil;
 
     /**
      * Becomes true, when the module is initialized for proposal.
@@ -142,7 +144,7 @@
 	boolean read_aborted = false;
 
 	// For translators: Caption of the progress bar in the time of reading
-	string caption = _("Initializing TV card configuration");
+	string caption = _("Initializing TV and radio cards configuration");
 	// Set the right number of stages
 	//   1+2: Read databases (tv, tuner)
 	//   3:   Read the settings
@@ -222,7 +224,7 @@
 
 	boolean write_aborted = false;
 	// For translators: Caption of the "save" dialog
-	string caption = _("Saving TV card configuration");
+	string caption = _("Saving TV and radio card configuration");
 	// Set the right number of stages
 	//   1: Write the settings
 	//   2: Write the sound volume
@@ -236,13 +238,13 @@
                // Progress stage
 			 _("Update sound volume"),
                // Progress stage
-			 _("Check for KWinTV")],
+			 _("Check for KWinTV and KRadio")],
                // Progress stage
 		       [ _("Writing the settings..."),
                // Progress stage
 			 _("Updating the sound volume..."),
                // Progress stage
-			 _("Checking for KWinTV..."),
+			 _("Checking for KWinTV and KRadio..."),
                // Progress stage
 			 _("Finished") ],
 		       "" );
@@ -263,19 +265,56 @@
 
 	// Check for KWinTV (and probably install it)
 	Progress::NextStage ();
-	boolean kwintv_is_installed =
-	    RequireAndConflictButtons(["kwintv"], [],
-   // Popup text (required application):
-_("If you want to watch TV on your screen, you need the KWinTV application.
-It is currently not installed. Do you want to install it now?"),
-		YesButtonLabel(), NoButtonLabel());
-
-    // kwintv should run v4l-conf itself
-	if (kwintv_is_installed)
+	integer i = 0;
+	boolean tv = false;
+	boolean radio = false;
+	while (i < size (cards))
 	{
-	    // Initialize setup
-	    SCR::Execute(.target.bash, "/usr/X11R6/bin/v4l-conf");
+		if (select(cards,i,nil)!=nil)
+		{
+			if (i<64) tv = true;
+			else radio = true;
+		}
+		i = i + 1;
 	}
+
+	boolean kwintv_installed =
+        (SCR::Execute(.target.bash, "rpm -q kwintv")==0 ? true : false);
+    boolean kradio_installed =
+        (SCR::Execute(.target.bash, "rpm -q kradio")==0 ? true : false);
+
+	if (tv && !radio && !kwintv_installed)
+	{
+        // Popup text (required application):
+        if (UI::YesNoPopup(_("If you want to watch TV on your screen, you need the KWinTV application.
+It is currently not installed. Do you want to install it now?")))
+        {
+            include "require.ycp";
+            DoInstallAndRemove(["kwintv"], []);
+        }
+	}
+	else if (radio && !tv && !kradio_installed)
+	{
+        // Popup text (recommended application):
+        if (UI::YesNoPopup(_("If you want to listen radio on your computer, you could use the KRadio application.
+It is currently not installed. Do you want to install it now?")))
+        {
+            include "require.ycp";
+            DoInstallAndRemove(["kradio"], []);
+        }
+	}
+	else if (radio && tv && (!kwintv_installed || !kradio_installed))
+	{
+        // Popup text (recommended applications):
+        if (UI::YesNoPopup(_("If you want to watch TV and listen radio on your computer, you could use
+the KWinTV and KRadio applications. At least one of them is currently not
+installed. Do you want to install it now?")))
+        {
+            include "require.ycp";
+	        DoInstallAndRemove(["kwintv", "kradio"], []);
+        }
+	}
+
 
 	// increase the progress to "finish"
 	Progress::NextStage ();
@@ -347,6 +386,7 @@ It is currently not installed. Do you want to install it now?"),
 		    Sound::SetVolume (sound_card_no, "Video", 80);
 		}
 	    });
+        SaveVolume();
 	}
 
 	return true;
@@ -459,6 +499,25 @@ available kernel modules."));
 	});
 
 	y2debug ("All v4l kernel modules: %1", kernel_modules);
+
+	path radio_path = .modinfo.kernel.drivers.media.radio;
+
+    radio_modules = $[];
+	modules_list = SCR::Dir (radio_path);
+	if (modules_list == nil)
+	{
+	    // Warning message popup:
+        Report::Warning(_("Unable to read the list of
+available kernel modules."));
+	    return true;
+	}
+
+	foreach(`mod, modules_list, ``{
+	    map parm = SCR::Read ( add (radio_path, mod));
+	    radio_modules = add (radio_modules, mod, parm);
+	});
+
+	y2debug ("All radio kernel modules: %1", radio_modules);
 	return true;
     }
 
@@ -540,7 +599,7 @@ available kernel modules."));
 
 	// scan the video capture devices (major 81 and minor 0..63)
 	integer card_no = 0;
-	while (card_no < 64)
+	while (card_no < 128)
 	{
 	    string alias = sformat("char-major-81-%1", card_no);
 	    if (contains(tv_aliases, alias))
@@ -563,7 +622,7 @@ available kernel modules."));
 
 		    // get the name and unique key
 		    string comment = SCR::Read(.modules.alias.comment, alias);
-		    map name_and_uk = UniqueKeys::ExtractFromComment (comment);
+		    map name_and_uk = ModulesComments::ExtractFromComment (comment);
 		    if (name_and_uk != nil)
 		    {
 			card_name = lookup(name_and_uk, "name", "");
@@ -592,17 +651,25 @@ available kernel modules."));
 			cards = add(cards, nil);
 		    }
 
+            boolean radio = false;
+            if (card_no>63) radio = true;
+
 		    // add the card to the cards
 		    cards = add(cards, $[ "name"       : card_name,
 					  "module"     : module_name,
 					  "parameters" : parameters,
-					  "unique_key" : unique_key ]);
+					  "unique_key" : unique_key,
+                      "radio"      : radio ]);
 		}
 	    }
 	    card_no = card_no + 1;
 	}
+	y2debug("The previously saved configuration: %1", cards);
 
-	y2milestone("The previously saved TV configuration: %1", cards);
+/*	while (card_no < 128)
+	{
+	    card_no = card_no + 1;
+    }*/
 	return true;
     }
 
@@ -711,9 +778,9 @@ available kernel modules."));
 			y2milestone ("Deleting module %1 from /etc/modules.conf",module_name);
 			// ... deletes module's options from /etc/modules.conf...
 		    SCR::Write (.modules.options, nil, module_name);
-			// ... and unloads the module from kernel
-			SCR::Execute(.target.bash, sformat("/sbin/rmmod -r %1", module_name), $[]);
-		}
+        }
+		// ... and unloads the module from kernel
+		SCR::Execute(.target.bash, sformat("/sbin/rmmod -r %1", module_name), $[]);
 	});
 
 	// necessary variables
@@ -729,16 +796,18 @@ available kernel modules."));
 	map modules_parameters = $[];
 
 	// do this for each card...
-	integer card_no = 0;
+	integer tv_card_no = 0;
+	integer radio_card_no = 64;
 	foreach (`card, cards, ``{
+        boolean radio = lookup (card, "radio", false);
 	    string module_name = lookup (card, "module", nil);
 	    string card_name = lookup (card, "name", "Manually added card");
 	    string unique_key = lookup (card, "unique_key",
-					sformat ("tv.nouniqkey%1", card_no));
+					sformat ("tv.nouniqkey%1", (radio ? radio_card_no : tv_card_no)));
 
 	    if (module_name != nil && module_name != "")
 	    {
-		string alias = sformat ("char-major-81-%1", card_no);
+		string alias = sformat ("char-major-81-%1", (radio ? radio_card_no: tv_card_no));
 		y2milestone ("Writing alias %2 %1 to modules.conf", module_name, alias);
 
 		// write alias
@@ -762,15 +831,19 @@ available kernel modules."));
 
 		// write comment with unique key and the card name
 		string comment =
-		    "# YaST2 configured TV card\n" +
-		    UniqueKeys::StoreToComment (card_name, unique_key);
+            ( radio ? "# YaST2 configured radio card\n" :
+             "# YaST2 configured TV card\n" )
+            + ModulesComments::StoreToComment (card_name, unique_key);
 		y2debug ("Writing comment to alias %1 in modules.conf", alias);
 		SCR::Write (.modules.alias.comment, comment, alias);
 
 		// set the appropriate unique key as configured
 		probe_status[unique_key] = `yes;
 	    }
-	    card_no = card_no + 1;
+        if (radio)
+            radio_card_no = radio_card_no + 1;
+        else
+            tv_card_no = tv_card_no + 1;
 	});
 
 	// write the parameters
@@ -818,7 +891,7 @@ to /etc/modules.conf."));
 	    // NOTE: it is not important to save the attached sound card number!
 	});
 
-	return true;
+    return SaveVolume();
     }
 
     /**
@@ -906,8 +979,13 @@ to /etc/modules.conf."));
 		    string name = lookup(card, "name", nil);
 		    if (name != nil)
 		    {
-            // Summary text (%1 will be number)
-			string installed_str = sformat(_("Installed as TV card number %1."), card_no);
+            string installed_str = "";
+            if (lookup(card, "radio", false))
+                // Summary text (%1 is number)
+                installed_str = sformat(_("Installed as radio card number %1."), card_no);
+            else
+                // Summary text (%1 is number)
+                installed_str = sformat(_("Installed as TV card number %1."), card_no);
 			card_item = Summary::Device(name, installed_str);
 		    }
 		    card_no = card_no + 1;
@@ -953,8 +1031,23 @@ to /etc/modules.conf."));
 
 	// try to fill holes after a remove
 	integer i = 0;
+    boolean radio = lookup(current_card, "radio", false);
+    if (radio && size (cards)<65)
+    {
+        integer cards_s = size (cards);
+        while (cards_s < 65)
+        {
+            cards = add (cards, nil);
+            cards_s = cards_s + 1;
+        }
+    }
 	cards =
 	    maplist(`card, cards, ``{
+        if (radio && i<64 )
+        {
+            i = i + 1;
+            return card;
+        }
 		if (card == nil && index == nil)
 		{
 		    index = i;
@@ -1324,6 +1417,20 @@ to /etc/modules.conf."));
 	    });
     }
 
+    //----------------------------
+    global define list RadioModulesAsItems(string selected_module) ``{
+	return
+	    maplist(`key, `value, radio_modules, ``{
+		string name = key;
+		string desc = lookup(value, "module_description", "");
+		if (desc != "" && desc != "<none>")
+		{
+		    name = sformat("%1: %2", key, desc);
+		}
+		return `item(`id(key), name, (key == selected_module));
+	    });
+    }
+
     /**
      * List of the parameters for the selected kernel module acceptable by
      * the Table widget in the ManualDetailsDialog().
@@ -1333,6 +1440,32 @@ to /etc/modules.conf."));
      */
     global define list KernelModuleParametersAsItems(string selected_module, map parameters) ``{
 	map kernel_module = lookup (kernel_modules, selected_module, $[]);
+	if (kernel_module == nil)
+	{
+	    return [];
+	}
+
+	// convert the map with parameters to list. Filter out the "module_*" params
+	list param_list =
+	    maplist (`key, `value, kernel_module, ``{
+		term result = nil;
+		if (substring (key, 0, 7) != "module_")
+		{
+		    result = `item ( `id(key),
+				     key,
+				     lookup (parameters, key, ""),
+				     value);
+		}
+		return result;
+	    });
+
+	// filter out nils
+	return filter (`val, param_list, ``(val != nil));
+    }
+
+    //----------------------------
+    global define list RadioModuleParametersAsItems(string selected_module, map parameters) ``{
+	map kernel_module = lookup (radio_modules, selected_module, $[]);
 	if (kernel_module == nil)
 	{
 	    return [];
