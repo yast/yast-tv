@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Feb  3 10:17:01 CET 2003 - jsuchome@suse.cz
+
+- fix of bug #23228 (bad use of modules agent)
+- 2.7.3
+
+-------------------------------------------------------------------
 Wed Jan 29 13:19:42 CET 2003 - jsuchome@suse.cz
 
 - merged proofreaded texts
