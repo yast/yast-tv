@@ -1,15 +1,8 @@
 /**
- * File:
- *   tv_write.ycp
- *
- * Package:
- *   Configuration of tv
- *
- * Summary:
- *   Writing only client
- *
- * Authors:
- *   Jan Holesovsky <kendy@suse.cz>
+ * File:	clients/tv_write.ycp
+ * Package:	TV cards configuration
+ * Summary:	Writing only client
+ * Authors:	Jan Holesovsky <kendy@suse.cz>
  *
  * $Id$
  *

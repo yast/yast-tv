@@ -1,36 +1,29 @@
 /**
- * File:
- *   clients/tv.ycp
- *
- * Package:
- *   Configuration of TV cards
- *
- * Summary:
- *   Main file
- *
- * Authors:
- *   Jan Holesovsky <kendy@suse.cz>
+ * File:	clients/tv.ycp
+ * Package:	TV cards configuration
+ * Summary:	Main file
+ * Authors:	Jan Holesovsky <kendy@suse.cz>
  *
  * $Id$
  *
  * Main file for tv configuration. Uses all other files.
- *
  */
 
 {
+
     /***
      * <h3>Configuration of the TV cards</h3>
      */
 
     textdomain "tv";
 
-    import "Mode";
-
-    include "tv/ui.ycp";
-
     /* The main () */
     y2milestone ("----------------------------------------");
     y2milestone ("Tv module started");
+
+    import "Mode";
+
+    include "tv/ui.ycp";
 
     /**
      * Should we suppress Read() and Write()? It is necessary in proposals...
@@ -59,4 +52,6 @@
     y2milestone ("Tv module finished");
     y2milestone ("----------------------------------------");
     return ret;
+
+/* EOF */
 }

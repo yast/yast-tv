@@ -1,3 +1,4 @@
+Read	.target.tmpdir "/tmp"
 Read	.target.size "/etc/install.inf" -1
 Read	.probe.architecture nil
 Read	.probe.has_apm nil

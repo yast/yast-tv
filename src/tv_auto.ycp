@@ -1,15 +1,8 @@
 /**
- * File:
- *   tv_auto.ycp
- *
- * Package:
- *   Configuration of tv
- *
- * Summary:
- *   Client for autoinstallation
- *
- * Authors:
- *   Jan Holesovsky <kendy@suse.cz>
+ * File:	clients/tv_auto.ycp
+ * Package:	TV cards configuration
+ * Summary:	Client for autoinstallation
+ * Authors:	Jan Holesovsky <kendy@suse.cz>
  *
  * $Id$
  *
@@ -27,8 +20,10 @@
  */
 
 {
+
     textdomain "tv";
 
+    import "Label";
     import "Tv";
 
     include "tv/ui.ycp";
@@ -62,8 +57,8 @@
     Wizard::SetContentsButtons ( caption,
 				 contents,
 				 "",
-				 BackButtonLabel (),
-				 NextButtonLabel ());
+				 Label::BackButton (),
+				 Label::NextButton ());
     Wizard::RestoreHelp (ReadDialogHelp ());
 
     // Read the settings from the current system
@@ -83,4 +78,6 @@
 	settings = $[];
     }
     return settings;
+
+/* EOF */
 }
