@@ -1,4 +1,14 @@
 -------------------------------------------------------------------
+Wed May  5 18:14:33 CEST 2004 - jsuchome@suse.cz
+
+- 2.9.10
+
+-------------------------------------------------------------------
+Tue May  4 09:20:38 CEST 2004 - jsuchome@suse.cz
+
+- merged in proofread text
+
+-------------------------------------------------------------------
 Mon Apr  5 15:27:30 CEST 2004 - jsuchome@suse.cz
 
 - do not touch destination /etc/lircd.conf file
