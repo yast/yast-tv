@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Aug 25 14:01:05 CEST 2003 - jsuchome@suse.cz
+
+- more packages to install: alevt, nxtvepg (#29217)
+
+-------------------------------------------------------------------
 Wed Aug 20 14:27:28 CEST 2003 - jsuchome@suse.de
 
 - removed redundant "initialization dialog" (#28779)
