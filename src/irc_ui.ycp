@@ -201,7 +201,7 @@ define any IRCDialog (boolean alone) ``{
 	irc_module = Tv::GetIRCModule();
 
     list remotes_items = [];
-    foreach (string control, Tv::remotes, ``{
+    foreach (string control, (list<string>) Tv::remotes, ``{
 	list aslist = splitstring (control, "/");
 	string last = aslist [ size(aslist)-1 ]:"";
 	if (issubstring (last, "lircd.conf."))
@@ -274,10 +274,10 @@ define any IRCDialog (boolean alone) ``{
     if (contains (mods, irc_module))
 	UI::ChangeWidget (`id(`mods), `Value, irc_module);
 
-    any ret = nil;
+    symbol ret = nil;
     do
     {
-	ret = tvUserInput();
+	ret = (symbol) tvUserInput();
 
 	irc_config = (string) UI::QueryWidget (`id(`config),  `Value);
 
