@@ -1,0 +1,46 @@
+{
+    import "UniqueKeys";
+    include "testsuite.ycp";
+
+    // empty unique list
+    map READ_nil =
+	$[ "var" :
+	    $[ "lib" :
+		$[ "yast" :
+		    $[ "unique" : nil ]
+	] ] ];
+
+    // none tv card
+    map READ_none_tv_card =
+	$[ "var" :
+	    $[ "lib" :
+		$[ "yast" :
+		    $[ "unique" :
+			[ $[ "contents" : [ $[ "state":"configured;0", "unique" : "j4n8.dny4jt7n78C"] ],
+			     "section":"network"] ]
+     ]]]];
+
+    // one tv card
+    map READ_one_tv_card =
+	$[ "var" :
+	    $[ "lib" :
+		$[ "yast" :
+		    $[ "unique" :
+			[ $[ "contents" : [ $[ "state":"configured;0", "unique" : "ooo.ppp"] ],
+			     "section":"network"],
+			  $[ "contents" : [ $[ "state":"configured", "unique" : "j4n8.dny4jt7n78C"],
+					    $[ "state":"configured", "unique" : "xyz.12345678"] ],
+			     "section":"tv"] ]
+     ]]]];
+
+
+    TEST(``(UniqueKeys::ReadSection ("tv")), [ READ_nil, $[], $[] ], false);
+
+    TEST(``(UniqueKeys::ReadSection ("tv")), [ READ_none_tv_card, $[], $[] ], false);
+
+    TEST(``(UniqueKeys::ReadSection ("tv")), [ READ_one_tv_card, $[], $[] ], false);
+}
+
+
+
+

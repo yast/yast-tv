@@ -1,0 +1,12 @@
+{
+    import "UniqueKeys";
+    include "testsuite.ycp";
+
+    DUMP([ UniqueKeys::StoreToComment (nil, nil) ]);
+
+    DUMP([ UniqueKeys::StoreToComment ("Test TV Card", nil) ]);
+
+    DUMP([ UniqueKeys::StoreToComment (nil, "dn0t.+xOL8ZCSAQC") ]);
+
+    DUMP([ UniqueKeys::StoreToComment ("My TV Card", "nd54sdde8d25cv45") ]);
+}
