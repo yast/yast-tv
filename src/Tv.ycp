@@ -1115,7 +1115,7 @@ available kernel modules."));
 	    }
 	);
 
-	y2internal("required modules with FW: %1", reqmod);
+	y2debug("required modules with FW: %1", reqmod);
 
 	if (size(reqmod) > 0)
 	{
@@ -1322,14 +1322,6 @@ available kernel modules."));
 		}
 	    );
 
-	    if (card["dvb"]:false == true && card["unknown"]:false == true)
-	    {
-		// stop dvb service
-		Service::Stop("dvb");
-
-		Service::Disable("dvb");
-	    }
-
 	    if (size(module_names) > 1)
 	    {
 		// remove install line
@@ -1384,16 +1376,7 @@ available kernel modules."));
 		(radio ? radio_card_no : tv_card_no));
 	    boolean dvb = card["dvb"]:false;
 
-	    // TODO: remove "unknown", check number of modules instead
-	    if (dvb == true && card["unknown"]:false == true)
-	    {
-		// start dvb service
-		Service::Start("dvb");
-
-		// enable dvb service
-		Service::Enable("dvb");
-	    }
-	    else if (module_names != nil && module_names != [])
+	    if (module_names != nil && module_names != [])
 	    {
 		string alias = sformat ("char-major-81-%1",
 		    (radio ? radio_card_no: tv_card_no));
@@ -1581,8 +1564,6 @@ to %1."), "/etc/modprobe.d/tv."));
 
 	probe_tv = merge(probe_tv, probe_dvb);
 
-	boolean dvbservice = (Service::Status("dvb") == 0);
-
 	detected_cards = [];
 
 	foreach(map tv_card, (list<map<string,any> >) probe_tv, ``{
@@ -1671,30 +1652,7 @@ to %1."), "/etc/modprobe.d/tv."));
 		    result = add (result, "card_id", card_id);
 		}
 
-		// consider DVB cards as configured when dvb service is running
-		if (tv_card["dvb"]:false && dvbservice)
-		{
-		    // check whether the card is already in read cards
-		    boolean foundcard = false;
-		    string uniq = tv_card["unique_key"]:"";
-
-		    foreach(map c, (list<map>)cards, {
-			    if (c["unique_key"]:"" == uniq)
-			    {
-				foundcard = true;
-			    }
-			}
-		    );
-
-		    if (!foundcard)
-		    {
-			cards = add(cards, result);
-		    }
-		}
-		else
-		{
-		    detected_cards = add(detected_cards, result);
-		}
+		detected_cards = add(detected_cards, result);
 	    });
 
 	if (Mode::test)
@@ -1928,6 +1886,29 @@ to %1."), "/etc/modprobe.d/tv."));
     }
 
     /**
+     * Return card index
+     * @param uniq Unique ID of the card
+     * @return integer index or nil if ID was not found
+     */
+    global define integer CardIndexUniqKey(string uniq)
+    {
+	integer ret = nil;
+
+	integer idx = 0;
+	foreach(map c, (list<map>) cards, {
+		if (uniq == c["unique_key"]:nil)
+		{
+		    ret = idx;
+		}
+
+		idx = idx + 1;
+	    }
+	);
+
+	return ret;
+    }
+
+    /**
      * Creates the content of the "configured card" Table in OverviewDialog()
      * @return list List of `item()s
      */
@@ -1949,7 +1930,7 @@ to %1."), "/etc/modprobe.d/tv."));
 		// suffix to differ between analog (TV) and digital (DVB) cards
 		string suff = (isdvb) ? _("DVB") : _("TV");
 
-		ret = `item(`id(card_no), sformat("%1 - %2", num, suff), card["name"]:"");
+		ret = `item(`id(card["unique_key"]:"unknown_UID"), sformat("%1 - %2", num, suff), card["name"]:"");
 	    }
 	    if (isdvb)
 	    {
@@ -2809,7 +2790,7 @@ It is currently not installed. Install it now?</p>"), "kradio"));
 
 	    list<string> cardmodules = (list<string>)card["module"]:[];
 	    if (uk != nil &&
-		!contains(installed_uk, uk) && cardmodules[size(cardmodules) - 1]:nil != nil)
+		!contains(installed_uk, uk) && cardmodules != nil && size(cardmodules) > 0 && !(card["dvb"]:false && card["unknown"]:false))
 	    {
 		current_card    = card;
 		current_card_no = nil;

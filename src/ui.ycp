@@ -201,12 +201,17 @@ define any OverviewDialog() ``{
 	    Label::BackButton (), Label::FinishButton () );
 
 	UI::ChangeWidget(`id(`table), `Items, Tv::CardsAsItems());
+	y2debug("table content: %1", Tv::CardsAsItems());
 
 	UI::SetFocus (`id (`table));
 
 	ret = (symbol) tvUserInput();
 
-	integer sel_no = (integer) UI::QueryWidget (`id(`table), `CurrentItem);
+	string sel_uniq = (string) UI::QueryWidget (`id(`table), `CurrentItem);
+
+	integer sel_no = Tv::CardIndexUniqKey(sel_uniq);
+	y2debug("selected item: %1", UI::QueryWidget (`id(`table), `CurrentItem));
+	y2debug("selected card: %1", sel_no);
 
 	// Edit the selected card
 	if (ret == `table)
@@ -217,6 +222,7 @@ define any OverviewDialog() ``{
 	    {
 		Tv::current_card = (map) Tv::CardGet(sel_no);
 		Tv::current_card_no = sel_no;
+
 		if (sel_no > 63)
 		    ret = `edit_button_radio;
 	    }
@@ -644,6 +650,12 @@ of available kernel modules...")),
     boolean radio = Tv::current_card["radio"]:false;
     boolean dvb = Tv::current_card["dvb"]:false;
 
+    if (dvb)
+    {
+	// don't offer radio card modules for DVB cards
+	allow_changeoftype = false;
+    }
+
     term contents =
 	`HBox(`HSpacing(1.5),
 	      `VBox(
@@ -986,9 +998,28 @@ your want to edit first."));
 	    Tv::current_card["module"] = [ selected_module ];
 	}
 
+	if (!haskey(Tv::current_card, "parameters"))
+	{
+	    // add missing "parameters" map otherwise adding parameter would fail
+	    Tv::current_card["parameters"] = $[];
+	}
+
 	Tv::current_card ["parameters", selected_module ] = parameters;
 	Tv::current_card ["radio"] = radio;
     }
+    return ret;
+}
+
+define symbol CheckManualConfig()
+{
+    symbol ret = `audio;
+
+    // require manual configuration for unknown DVB cards
+    if (Tv::current_card["dvb"]:false && Tv::current_card["unknown"]:false)
+    {
+	ret = `manual;
+    }
+
     return ret;
 }
 
@@ -1013,7 +1044,9 @@ define any AudioDialog() ``{
     // Try to read already stored values
     integer current_sound_card = Tv::current_card["sound_card_no"]:-1;
     symbol current_rb = `rb_yes;
-    if (current_sound_card == nil || size(sound_cards) == 0)
+
+    y2debug("current card: Tv::current_card: %1", Tv::current_card);
+    if (current_sound_card == nil || size(sound_cards) == 0 || (Tv::current_card["dvb"]:false && current_sound_card < 0))
     {
 	current_rb = `rb_no;
     }
@@ -1577,6 +1610,9 @@ define any MainSequence () ``{
 	    "man_doit"        : ``( CardAddCurrentWrapper () ),
 	    "man_channels"	: ``( ChannelsDialog ()),
 
+	    "det_check"		: [``( CheckManualConfig()), true],
+	    "det_details0"     : ``( ManualDetailsDialog (true, 0) ),
+	    "det_details1"     : ``( ManualDetailsDialog (true, 1) ),
 	    "det_audio"       : ``( AudioDialog () ),
 	    "det_irc"		: ``( IRCDialog (false) ),
 	    "det_channels"	: ``( ChannelsDialog ()),
@@ -1608,7 +1644,7 @@ define any MainSequence () ``{
 	    `next             : `next,
 	    `add_manually     : "man_manual",
 	    `add_manually_warn: "man_manual_warn",
-	    `add_detected     : "det_audio",
+	    `add_detected     : "det_check",
 	    `edit_button      : "overview"
 	],
 	"overview" :
@@ -1657,6 +1693,20 @@ define any MainSequence () ``{
 	    `next             : "detected"
 	],
 
+
+	"det_check" : $[
+	    `audio             : "det_audio",
+	    `manual            : "det_details0"
+	],
+	"det_details0" : $[
+	    `abort            : `abort,
+	    `details1         : "det_details1",
+	    `next             : "det_audio"
+	],
+	"det_details1" : $[
+	    `abort            : `abort,
+	    `next             : "det_audio"
+	],
 	"det_audio" : $[
 	    `abort            : `abort,
 	    `next             : "det_irc"
