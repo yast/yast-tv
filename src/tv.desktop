@@ -16,7 +16,7 @@ X-SuSE-YaST-Geometry=
 X-SuSE-YaST-SortKey=
 X-SuSE-YaST-AutoInstResource=
 
-Icon=tv
+Icon=yast-tv
 Exec=/sbin/yast2 tv 
 
 Name=TV card
