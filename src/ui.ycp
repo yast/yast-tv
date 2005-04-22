@@ -700,7 +700,7 @@ of available kernel modules...")),
 				     `VBox(`Table(`id(`parameters_table),
 						  `opt(`notify, `immediate),
 				     // Header of a table with kernel module params.
-						  `header(_("Paramater"),
+						  `header(_("Parameter"),
 				     // Header of a table with kernel module params.
 							  _("Value"),
 				     // Header of a table with kernel module params.
