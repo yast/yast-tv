@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Jun 15 13:53:28 CEST 2005 - lslezak@suse.cz
+
+- merged proof read texts
+- 2.12.0
+
+-------------------------------------------------------------------
 Mon Mar 14 13:41:58 CET 2005 - lslezak@suse.cz
 
 - fixed IRC configuration during installation (#66898),

@@ -474,7 +474,7 @@
 	if (tuners_database == nil)
 	{
 	    // Error message popup:
-	    Report::Error(_("Unable to read the tuner database!"));
+	    Report::Error(_("Unable to read the tuner database."));
 	    tuners_database = $[];
 	    return false;
 	}
@@ -949,7 +949,7 @@ press Continue to install the firmware.
 	    `VSpacing(1),
 	    `HBox(
 		`HSpacing(2),
-		`Frame(`id(`fr), _("Install firmware"),
+		`Frame(`id(`fr), _("Install Firmware"),
 		    `HBox(
 			`TextEntry(`id(`firmware), _("&File"), filename),
 			`VBox(
@@ -1613,7 +1613,7 @@ Use the firmware file anyway?
 	{
 	    // Error message popup, %1 is file name
 	    Report::Error (sformat (_("Unable to write parameters
-to %1."), "/etc/modprobe.d/tv."));
+to %1."), "/etc/modprobe.d/tv"));
 	    result = false;
 	}
 
@@ -1629,16 +1629,16 @@ to %1."), "/etc/modprobe.d/tv."));
 	if (!SCR::Write (.modprobe_tv, nil))
 	{
 	    // Error message popup,  %1 is file name
-	    Report::Error (sformat (_("Unable to write %1"),
-		"/etc/modprobe.d/tv."));
+	    Report::Error (sformat (_("Unable to write %1."),
+		"/etc/modprobe.d/tv"));
 	    result = false;
 	}
 
 	if (used_modprobe_conf && !SCR::Write (.modules, nil))
 	{
 	    // Error message popup,  %1 is file name
-	    Report::Error (sformat (_("Unable to write %1"),
-		"/etc/modprobe.conf."));
+	    Report::Error (sformat (_("Unable to write %1."),
+		"/etc/modprobe.conf"));
 	    result = false;
 	}
 	return result;
@@ -1856,7 +1856,7 @@ to %1."), "/etc/modprobe.d/tv."));
 						boolean inst = IsFWInstalled(firmware_prefix + target);
 
 						installed_str = installed_str + "<BR>" + _("Firmware: ") +
-						((inst) ? sformat(_("Installed (%1)"), target) : sformat(_("Not Installed (%1)"), source));
+						((inst) ? sformat(_("Installed (%1)"), target) : sformat(_("Not installed (%1)"), source));
 					    }
 					);
 				    }
@@ -1867,7 +1867,7 @@ to %1."), "/etc/modprobe.d/tv."));
 		    else
 			installed_str = sformat(
 			    // Summary text (%1 is number)
-			    _("Installed as TV card number %1."), card_no);
+			    _("Installed as TV card number %1"), card_no);
 		    card_item = Summary::Device(name, installed_str);
 		}
 
@@ -2519,9 +2519,9 @@ global define void LoadIRCModulesDescription () ``{
 
     map ir_desc = $[
 	// description for ir-kbd-gpio module
-	"ir-kbd-gpio": _("input driver for bt8x8 gpio IR remote controls"),
+	"ir-kbd-gpio": _("Input driver for bt8x8 gpio IR remote controls"),
 	// description for ir-kbd-i2c module
-	"ir-kbd-i2c" : _("input driver for i2c IR remote controls")
+	"ir-kbd-i2c" : _("Input driver for i2c IR remote controls")
     ];
 
     irc_modules = listmap (string mod, (list<string>) irc_modules_list, ``{
@@ -2703,8 +2703,8 @@ global define boolean InitializeStationsConfig() ``{
     global define boolean Read (block<boolean> abort) ``{
 	boolean read_aborted = false;
 
-	// For translators: Caption of the progress bar in the time of reading
-	string caption = _("Initializing TV and radio card configuration...");
+	// Title of initialization dialog
+	string caption = _("Initializing TV and Radio Card Configuration");
 	// Set the right number of stages
 	//   1+2: Read databases (tv, tuner)
 	//   3:   Read the settings
@@ -2782,7 +2782,7 @@ global define boolean InitializeStationsConfig() ``{
 	if (!IsDirty ()) return true;
 
 	boolean write_aborted = false;
-	// For translators: Caption of the "save" dialog
+	// For translators: Title of the "save" dialog
 	string caption = _("Saving TV and Radio Card Configuration");
 	// Set the right number of stages
 	//   1: Write the settings
@@ -2900,18 +2900,20 @@ global define boolean InitializeStationsConfig() ``{
 	{
 	    // Popup text (required application are %1):
 	    apps = add (apps, "kradio");
-	    InstallApplication (apps, sformat(_("<p>To enable watching TV and listening to radio on your computer,<br>
-these packages will be installed:<br>
-<b>%1</b>
+	    InstallApplication (apps, sformat(_("<p>To enable you to watch TV and listen to radio on your computer,<br>
+these packages should be installed:<br>
+<b>%1</b><br>
+Install them now?
 </p>
 "), mergestring (apps, ", ")));
 	}
 	else if (tv && !tv_app_installed)
 	{
 	    // Popup text (required application are %1):
-	    InstallApplication (apps, sformat(_("<p>To enable watching TV on your computer,<br>
-these packages will be installed:<br>
-<b>%1</b>
+	    InstallApplication (apps, sformat(_("<p>To enable you to watch TV on your computer,<br>
+these packages should be installed:<br>
+<b>%1</b><br>
+Install them now?
 </p>
 "), mergestring (apps, ", ")));
 	}
@@ -2919,7 +2921,7 @@ these packages will be installed:<br>
 	{
 	    // Popup text (required application is %1):
 	    InstallApplication (["kradio"], sformat (_("<p>To listen to radio on your computer, you can use the <b>%1</b> application.
-It is currently not installed. Install it now?</p>"), "kradio"));
+Install it now?</p>"), "kradio"));
 	}
 
 	// save not_ask status

@@ -85,10 +85,10 @@
 	ret =
 	    $[ "rich_text_title" :
                 // Richtext title
-                _("TV cards"),
+                _("TV Cards"),
 	       "menu_title"      :
                 // Richtext title
-                _("&TV cards"),
+                _("&TV Cards"),
 	       "id"              : "tv_conf"
 	    ];
     }

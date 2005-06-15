@@ -19,8 +19,8 @@ X-SuSE-YaST-AutoInstResource=
 Icon=yast-tv
 Exec=/sbin/yast2 tv 
 
-Name=TV card
-GenericName=Configure TV card
+Name=TV Card
+GenericName=Configure a TV card
 Name[cs]=TV karta
 GenericName[cs]=Nastavit TV kartu
 Name[de]=TV-Karte

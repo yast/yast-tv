@@ -87,7 +87,7 @@ define boolean AddCardHandler (map options ) {
 	if (modname == "" && card_model == "-1")
 	{
 	    // error message
-	    Report::Error(_("There is no such card to add."));
+	    Report::Error(_("The specified card does not exist."));
 	    return false;
 	}
 	if (card_model == "-1")
@@ -97,7 +97,7 @@ define boolean AddCardHandler (map options ) {
 		!haskey (Tv::radio_modules, modname))
 	    {
 		// error message, %1 is module (driver) name
-		Report::Error(sformat (_("There is no such card to add. Module %1 is unknown."),modname));
+		Report::Error(sformat (_("The specified card does not exist. Module %1 is unknown."),modname));
 		return false;
 	    }
 	    card = $[ "module": modname, "name": _("User-Defined TV Card") ];
@@ -113,7 +113,7 @@ define boolean AddCardHandler (map options ) {
 	    if (card == $[])
 	    {
 		// error message
-		Report::Error(_("There is no such card to add. Probably driver or card model is wrong."));
+		Report::Error(_("The specified card does not exist. Probably the driver or card model is wrong."));
 		return false;
 	    }
 	    options = remove (options, "card");
@@ -248,8 +248,8 @@ define boolean ShowCardHandler (map options) {
     }
 
     string modname = card["module"]:"";
-    // label: list of card parameters will follow; %1 is card name, %2 driver
-    string out = sformat (_("Parameters of card '%1' (using module %2):\n"),
+    // list of card parameters will follow; %1 is card name, %2 driver
+    string out = sformat (_("Parameters of Card '%1' (using module %2):\n"),
 	card["name"]:"", modname);
 
     map kernel_module = Tv::GetKernelModuleInfo (modname);
@@ -319,12 +319,12 @@ define boolean IRCHandler (map<string,string> options) {
     if (command == "status")
     {
 	if (!Tv::use_irc)
-	    // status text
-	    CommandLine::Print (_("Infrared control is disabled."));
+	    // command line status text
+	    CommandLine::Print (_("Infrared control is disabled"));
 	else
-	    // status text
+	    // command line status text
 	    CommandLine::Print (sformat (
-	    _("Infrared control is enabled using module %1."),Tv::irc_module));
+	    _("Infrared control is enabled using module %1"),Tv::irc_module));
 	return false;
     }
 
@@ -362,7 +362,7 @@ define boolean TvWrite () ``{
 map cmdline = $[
     "id"		: "tv",
     // translators: command line help text for Tv module
-    "help"		: _("TV card configuration module."),
+    "help"		: _("TV card configuration module"),
     "guihandler"	: TvSequence,
     "initialize"	: TvRead,
     "finish"		: TvWrite,
@@ -375,7 +375,7 @@ map cmdline = $[
 	"add" :$[
 	    "handler"	: AddCardHandler,
 	    // translators: command line help text for add action
-	    "help"	: _("Add TV card. Without parameters, add first one detected."),
+	    "help"	: _("Add TV card. Without parameters, add the first one detected."),
 	    "options"	: [ "non_strict" ],
 	    // help text for unknown parameters
 	    "non_strict_help": _("Value of the specific module parameter"),
@@ -388,36 +388,36 @@ map cmdline = $[
 	"modules": $[
 	    "handler"	: ListModulesHandler,
 	    // translators: command line help text for modules action
-	    "help"	: _("List all available TV kernel modules (drivers).")
+	    "help"	: _("List all available TV kernel modules (drivers)")
 	],
 	"cards": $[
 	    "handler"	: ListModelsHandler,
 	    // translators: command line help text for 'cards' action
-	    "help"	: _("List supported TV models with their ID numbers.")
+	    "help"	: _("List supported TV models with their ID numbers")
 	],
 	"set": $[
 	    "handler"	: SetParametersHandler,
 	    // translators: command line help text for set action
-	    "help"	: _("Set the new values for given card parameters."),
+	    "help"	: _("Set the new values for given card parameters"),
 	    "options"	: [ "non_strict" ],
-	    // help text for unknownd parameters; do not translate 'show'
-	    "non_strict_help" : _("Value of the specific module parameter."),
+	    // command line help text for 'add'
+	    "non_strict_help" : _("Value of the specific module parameter"),
 	],
 	"show": $[
 	    "handler"	: ShowCardHandler,
-	    // translators: command line help text for test action
-	    "help"	: _("Show the information of given TV card")
+	    // translators: command line help text for 'show'
+	    "help"	: _("Show the information of the given TV card")
 	],
 	"irc": $[
 	    "handler"	: IRCHandler,
-	    // translators: command line help text for test action
-	    "help"	: _("Enable or Disable Infrared Control")
+	    // translators: command line help text for 'irc'
+	    "help"	: _("Enable or disable infrared control")
 	],
     ],
     "options"		: $[
 	"no"	:$[
 	    // translators: command line help text for the 'no' option
-	    "help"	: _("Number of TV or radio card"),
+	    "help"	: _("TV or radio card number"),
 	    "type"	: "string"
 	],
 	"tuner"	:$[
