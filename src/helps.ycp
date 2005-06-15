@@ -25,7 +25,7 @@ Please wait...
 <BR></P>
 ") +
 	    // For translators: tv read dialog help, part 2 of 2
-_("<P><B><BIG>Aborting the initialization:</BIG></B><BR>
+_("<P><B><BIG>Aborting the Initialization</BIG></B><BR>
 Safely abort the configuration utility by pressing <B>Abort</B>
 now.
 </P>
@@ -57,14 +57,14 @@ Here, configure your TV and radio cards.
 <BR></P>
 ") +
 	    // Help: Detected cards, part 2 of 3
-_("<P><B><BIG>Adding a TV or Radio Card:</BIG></B><BR>
+_("<P><B><BIG>Adding a TV or Radio Card</BIG></B><BR>
 Select the card from the list of the detected cards. If your card was
 not autodetected, use <B>Other (not detected)</B>. Then press
 <B>Configure</B>.
 </P>
 ") +
 	    // Help: Detected cards, part 3 of 3
-	_("<P><B><BIG>Editing or Deleting:</BIG></B><BR>
+	_("<P><B><BIG>Editing or Deleting</BIG></B><BR>
 If you press <B>Change</B>, an additional dialog opens in which you
 can change the configuration.
 </P>
@@ -80,18 +80,18 @@ can change the configuration.
 	    // Help: Overview of the installed cards, part 1 of 3
 _("<P><B><BIG>TV and Radio Card Overview</BIG></B><BR>
 Here, get an overview of installed TV and radio cards. Additionally,
-you can edit their configuration.
+you can edit each configuration.
 <BR></P>
 ") +
 	    // Help: Overview of the installed cards, part 2 of 3
-_("<P><B><BIG>Adding a TV or Radio Card:</BIG></B><BR>
-If you press <B>Add</B>, you can manually configure TV or radio cards.
+_("<P>
+Press <B>Add</B> to manually configure additional TV or radio cards.
 </P>
 ") +
 	    // Help: Overview of the installed cards, part 3 of 3
-_("<P><B><BIG>Editing or Deleting:</BIG></B><BR>
-Select a card for which to change or remove the configuration.
-Then press the appropriate button: <B>Edit</B> or <B>Delete</B>.
+_("<P>
+To change or remove the configuration of a card, select the card.
+Then press <B>Edit</B> or <B>Delete</B>.
 </P>
 ");
     }
@@ -102,25 +102,21 @@ Then press the appropriate button: <B>Edit</B> or <B>Delete</B>.
      */
     define string ManualDialogHelp() ``{
 	return
-	    // Help: Manual addition of a card, part 1/4
-_("<P><B><BIG>Manual TV card selection</BIG></B><BR>
-Please choose the type of your TV card.
+	    // Help: Manual addition of a card, part 1/3
+_("<P><B><BIG>Manual TV Card Selection</BIG></B><BR>
+Select the card type from <b>Vendor</b> and <b>Card</b>.
 <BR></P>") +
-	    // Help: Manual addition of a card, part 2/4
-_("<P><B><BIG>Selecting tuner:</BIG></B><BR>
-If you have to specify the type of the tuner to get a working
-configuration, select your card, press <B>Select tuner</B> button and
-choose the type of your tuner.
+	    // Help: Manual addition of a card, part 2/3
+_("<P>
+If you need to specify the tuner type to get a working
+configuration, select your card then press <B>Select Tuner</B>. In the dialog
+that opens, select the tuner type.
 </P>") +
-	    // Help: Manual addition of a card, part 3/4
-_("<P><B><BIG>Expert Configuration:</BIG></B><BR>
-You can choose the exact kernel module and its parameters if you press
-the <B>Expert Settings</B> button.
-</P>
-") +
-	    // Help: Manual addition of a card: part 4/4
-_("<P><B><BIG>Radio Card</BIG></B><BR>
-To configure the radio card, you must select the appropriate kernel module. To do that, use the <B>Expert Settings</B> button.
+	    // Help: Manual addition of a card, part 3/3
+_("<P>
+In <B>Expert Settings</B>, configure the 
+kernel module and parameters to use. 
+This is required for configuring a radio card.
 </P>
 ");
 }
@@ -135,25 +131,24 @@ To configure the radio card, you must select the appropriate kernel module. To d
     string helptext =
 	    // Help: Manual addition of a card: Details, part 1/4
 _("<P><B><BIG>Manual Selection: Details</BIG></B><BR>
-Here, you can control all the parameters of the driver of your TV or radio card.<BR>
-Beware: This is for experts!
+Here, you can control all the parameters of the driver of your TV or radio card. This is for experts.
 <BR></P>
 ") +
 	    // Help: Manual addition of a card: Details, part 2/4
-_("<P><B><BIG>Kernel Module:</BIG></B><BR>
-Select the kernel module -- the driver of your card.
+_("In <B>Kernel Module</B>, select the driver to use for the card. The available 
+parameters for the selected module are listed in <b>Module Parameters</p>.
 </P>
 ") +
 	    // Help: Manual addition of a card: Details, part 3/4
-_("<P><B><BIG>Changing parameters:</BIG></B><BR>
-Choose the parameter you want to change, write its new value to
-the input line and press <B>Set</B>. To set the parameter's value
-to default, press <B>Reset</B>.
+_("<P>To modify a parameter, select the parameter to change from the list, 
+write the value in <b>Parameter</b>,  
+then press <b>Set</b>. To restore the default setting for the parameter, 
+press <B>Reset</B>.
 </P>");
     if (allow_changeoftype)
         helptext = helptext +
 	    // Help: Manual addition of a card: Details, part 4/4
-_("<P><B><BIG>Radio Card</BIG></B><BR>
+_("<P><B><BIG>Radio Card Configuration</BIG></B><BR>
 To select the module for your radio card, check <B>Radio Card Modules</B>.
 </P>
 ");
@@ -167,20 +162,19 @@ To select the module for your radio card, check <B>Radio Card Modules</B>.
     define string AudioDialogHelp() ``{
 	return
 	    // Help: Setup the audio of the card, part 1/3
-_("<P><B><BIG>Audio for a TV or Radio Card</BIG></B><BR>
+_("<P><B><BIG>Audio for TV or Radio Card</BIG></B><BR>
 If your TV or radio card has an audio output and it is connected to your sound
-card, YaST2 must unmute the sound card's input.
+card, the sound card's input must be enabled. This can be done here.
 <BR></P>
 ") +
 	    // Help: Setup the audio of the card, part 2/3
-_("<P><B><BIG>Selecting the sound card:</BIG></B><BR>
-Select <B>Yes</B> to enable the list of the sound cards and choose
-one of your configured sound cards.
+_("<P>If your card is not connected to the sound card, select 
+<b>Not Connected</b>. If a connection is present, select <b>Connected To</b>. 
+Select the sound card to which the TV or radio card is connected from the list. 
 </P>") +
 	    // Help: Setup the audio of the card, part 3/3
-_("<P><B><BIG>Configuring sound card:</BIG></B><BR>
-If your sound card is not configured yet, press <B>Configure sound
-cards</B> button.
+_("<P>If the sound card has not been configured yet, press 
+<b>Configure Sound Cards</b> to start the sound configuration module.
 </P>");
 }
 
@@ -193,17 +187,18 @@ define string ChannelsDialogHelp () ``{
     return
 
     // helptext for TV Stations Dialog 1/3
-_("<p>Here, see the list of TV stations defined for your system.</p>") +
+_("<p><b><big>TV Station Configuration</big></b>
+Here, see the list of TV stations defined for your system.</p>") +
 
     // helptext for TV Stations Dialog 2/3
 _("<p>Edit the entries in the table directly using <b>Add</b>,
 <b>Edit</b>, and <b>Delete</b>. Alternatively, use
 <b>Scan the Channels</b> to run the scan, which could find the available
-TV stations for the given <b>TV Norm</b> and <b>Frequency Table</b>.</b>
+TV stations for the given <b>TV Standard</b> and <b>Frequency Table</b>.</b>
 ") +
 
     // helptext for TV Stations Dialog 3/3
-_("<p>The list of stations shown in this table is saved to <i>/etc/X11/xawtvrc</i> file.</p>");
+_("<p>The list of stations shown in this table is saved to the <tt>/etc/X11/xawtvrc</tt> file.</p>");
 
 }
 
@@ -215,13 +210,14 @@ define string IRCDialogHelp () ``{
 
     return
     // IRC helptext 1/3
-_("<p>In this dialog, configure the infrared control of your TV card.</p>") +
+_("<p><b><big>Infrared Control Configuration</big></b><br>
+In this dialog, configure the infrared control of your TV card. To skip this configuration, select <b>Do Not Use IRC</b>.</p>") +
 
     // IRC helptext 2/3
-_("<p>If you know which kernel module to use with your TV card, select one from the list. You can see the description of the selected module when <b>Show Module Description</b> is checked.</p>") +
+_("<p>If you know which kernel module to use with your TV card, select one from the list. When <b>Show Module Description</b> is checked, also see the description of the module.</p>") +
 
     // IRC helptext 3/3
-_("<p>Press <b>Test</b> to test the functionality of your IR control.</p>");
+_("<p>Press <b>Test</b> to test your IR control.</p>");
 
 }
 
