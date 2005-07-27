@@ -21,7 +21,7 @@ import "Summary";
 import "Tv";
 import "Wizard";
 import "Wizard_hw";
-
+import "WizardHW";
 
 include "tv/helps.ycp";
 include "tv/misc.ycp";
@@ -82,66 +82,66 @@ define any CardReplaceWithCurrentWrapper() ``{
     return `next;
 }
 
+define void SetItems() {
+    // create description for WizardHW
+    list<map<string,any> > items = Tv::CardsAsItemMap();
+    y2debug("items: %1", items);
+
+    WizardHW::SetContents(items);
+}
+
+
 /**
  * A dialog showing the detected cards and allowing to configure them.
  * @return any The value of the resulting UserInput.
  */
-define any DetectedDialog() ``{
-    // For translators: Header of the dialog
-    string caption = _("TV and Radio Card Setup");
+define any HardwareDialog() ``{
 
-    term contents =
-	// Frame label of the detected cards list
-	Wizard_hw::DetectedContent(_("TV and Radio Cards to Configure"),
-				   Tv::DetectedCardsAsItems(), false, "");
+    WizardHW::CreateHWDialog(_("TV and Radio Card Setup"),
+	DetectedDialogHelp(),
+	[_("Number"), _("Card Name")],
+	[]
+    );
 
-    Wizard::SetContentsButtons ( caption,
-				 contents,
-				 DetectedDialogHelp (),
-				 Label::BackButton (),
-				 Label::FinishButton () );
+    Wizard::SetNextButton(`next, Label::FinishButton());
 
-    any ret = nil;
-    do
-    {
-	string installed_overview =
-	    // Update the content to the current values
-	    _("<P><B>No TV or radio card installed yet</B></P>");
+    symbol ret = `_dummy;
 
-	list installed_list = Tv::InstalledCardsSummary ();
-	if (size(installed_list) > 0)
+    do {
+	SetItems();
+
+	map<string,any> ev = WizardHW::WaitForEvent();
+	y2internal("WaitForEvent: %1", ev);
+
+	symbol ui = (symbol)ev["event","ID"]:nil;
+
+	if (ui == `add)
 	{
-	    installed_overview = sformat (
-		// For translators: Overview of the installed cards
-		_("<P><B>Installed TV and Radio Cards:</B>%1</P>"),
-		Summary::DevicesList ((list<string>)installed_list));
+	    Tv::current_card = $[];
+	    Tv::current_card_no = nil;
+	    ret = `add_manually;
 	}
-	UI::ChangeWidget (`id(`configured_richtext), `Value,installed_overview);
-
-	ret = tvUserInput();
-
-	// Configure the autodetected card
-	if (ret == `configure_button)
+	else if (ui == `edit)
 	{
-	    integer detected_no =
-		(integer)UI::QueryWidget(`id(`detected_selbox), `CurrentItem);
+	    integer index_configured = Tv::IndexGetUniq(ev["selected"]:"");
+	    integer index_detected = Tv::IndexDetectedCardUniqGet(ev["selected"]:"");
 
-	    if (detected_no == nil)
-	    {
-		// The user chose [Configure...] but did not select a card
-		Popup::Message(_("Select a card to configure."));
-		continue;
-	    }
+	    y2internal("index_detected: %1", index_detected);
+	    y2internal("index_configured: %1", index_configured);
 
-	    if (detected_no < 0)
+	    if (index_configured != nil)
 	    {
-		Tv::current_card = $[];
-		Tv::current_card_no = nil;
-		ret = `add_manually;
+		Tv::current_card = (map) Tv::CardGet(index_configured);
+		Tv::current_card_no = index_configured;
+
+/* TODO		if (sel_no > 63)
+		    ret = `edit_button_radio;
+		else*/
+		    ret = `edit;
 	    }
-	    else
+	    else if (index_detected != nil)
 	    {
-		Tv::current_card = Tv::DetectedCardGet(detected_no);
+		Tv::current_card = Tv::DetectedCardUniqGet(ev["selected"]:"");
 		Tv::current_card_no = nil;
 
 		// check whether module was found
@@ -166,105 +166,34 @@ define any DetectedDialog() ``{
 		}
 	    }
 	}
-    } while (ret != `back && ret != `abort && ret != `next &&
-	     ret != `add_manually && ret != `add_manually_warn &&
-	     ret != `add_detected &&
-	     ret != `edit_button);
-
-    return ret;
-}
-
-/**
- * A dialog giving overview of all the configured cards.
- * @return any The value of the resulting UserInput.
- */
-define any OverviewDialog() ``{
-    // For translators: Header of the dialog
-    string caption = _("TV and Radio Card Overview");
-
-    // A list of the configured cards in the form allowed by the Table widet
-    //list configured_cards = tvConfiguredCardsTableItems();
-
-    term contents = Wizard_hw::ConfiguredContent(`header(
-        // For translators: Header of the table with installed cards
-	_("Number"),
-	// For translators: Header of the table with installed cards
-	_("Card Name")),
-	[], nil, nil, nil, nil);
-
-    contents = Wizard_hw::SpacingAround (contents, 1.5, 1.5, 1.0, 1.0);
-
-    symbol ret = `not_next;
-    do
-    {
-	Wizard::SetContentsButtons ( caption, contents, OverviewDialogHelp (),
-	    Label::BackButton (), Label::FinishButton () );
-
-	UI::ChangeWidget(`id(`table), `Items, Tv::CardsAsItems());
-	y2debug("table content: %1", Tv::CardsAsItems());
-
-	UI::SetFocus (`id (`table));
-
-	ret = (symbol) tvUserInput();
-
-	string sel_uniq = (string) UI::QueryWidget (`id(`table), `CurrentItem);
-
-	integer sel_no = Tv::CardIndexUniqKey(sel_uniq);
-	y2debug("selected item: %1", UI::QueryWidget (`id(`table), `CurrentItem));
-	y2debug("selected card: %1", sel_no);
-
-	// Edit the selected card
-	if (ret == `table)
-	    ret = `edit_button;
-	if (ret == `edit_button)
+	else if (ui == `delete)
 	{
-	    if (sel_no != nil)
-	    {
-		Tv::current_card = (map) Tv::CardGet(sel_no);
-		Tv::current_card_no = sel_no;
+	    integer index = Tv::IndexGetUniq(ev["selected"]:"");
 
-		if (sel_no > 63)
-		    ret = `edit_button_radio;
-	    }
-	    else
+	    if (index != nil)
 	    {
-		// The user chose [Edit...] but did not select a card
-		Popup::Message(_("Select the card to edit."));
-		ret = `not_next;
-	    }
-	}
-	// Add a card manually
-	if (ret == `add_button)
-	{
-	    Tv::current_card = $[];
-	    Tv::current_card_no = nil;
-	}
-	// Delete the selected card
-	if (ret == `delete_button)
-	{
-	    if (sel_no != nil)
-	    {
-		Tv::current_card = (map) Tv::CardGet(sel_no);
-		Tv::current_card_no = sel_no;
+		Tv::current_card = (map) Tv::CardGet(index);
+		Tv::current_card_no = index;
 		// The user chose [Delete] in the overview dialog
 		// %1 is name of the selected card
 		boolean really_del = Popup::YesNo(sformat(_("Really
 remove the configuration
 of %1?"), Tv::current_card["name"]:""));
 
-		if (really_del)
-		{
-		    Tv::CardRemove(sel_no);
-		}
-	    }
-	    else
-	    {
-		// The user chose [Delete] but did not select a card
-		Popup::Message(_("Select the card to delete."));
+	       if (really_del)
+	       {
+		   Tv::CardRemove(index);
+	       }
 	    }
 	}
-    } while (!contains ([`back, `abort, `cancel, `next, `add_button,
-			 `edit_button, `edit_button_radio], ret));
+	else
+	{
+	    ret = ui;
+	}
+    } while (!contains([`back, `abort, `next, `add_manually, `add_manually_warn, `add_detected, `edit, `edit_button_radio],ret));
+
+    Wizard::RestoreNextButton();
+
     return ret;
 }
 
@@ -1627,8 +1556,7 @@ Install it now?")))
 define any MainSequence () ``{
     map aliases =
 	$[
-	    "detected"	      : ``( DetectedDialog () ),
-	    "overview"	      : ``( OverviewDialog () ),
+	    "hardware"	      : ``( HardwareDialog() ),
 
 	    "man_manual"      : ``( ManualDialog (false) ),
 	    "man_manual_warn" : ``( ManualDialog (true) ),
@@ -1666,17 +1594,19 @@ define any MainSequence () ``{
 	];
 
     map sequence = $[
-	"ws_start" : "detected",
-	"detected" :
+	"ws_start" : "hardware",
+	"hardware" :
 	$[
 	    `abort            : `abort,
 	    `next             : `next,
 	    `add_manually     : "man_manual",
 	    `add_manually_warn: "man_manual_warn",
 	    `add_detected     : "det_check",
-	    `edit_button      : "overview"
+	    `edit	      : "rep_manual",
+	    `edit_button_radio: "rep_details0",
+//	    `edit_button      : "overview"
 	],
-	"overview" :
+/*	"overview" :
 	$[
 	    `abort            : `abort,
 	    `next             : `next,
@@ -1684,7 +1614,7 @@ define any MainSequence () ``{
 	    `edit_button      : "rep_manual",
 	    `edit_button_radio: "rep_details0",
 	],
-
+*/
 	"man_manual" : $[
 	    `abort            : `abort,
 	    `details_button   : "man_details0",
@@ -1719,7 +1649,7 @@ define any MainSequence () ``{
 	    `next             : "man_doit"
 	],
 	"man_doit" : $[
-	    `next             : "detected"
+	    `next             : "hardware"
 	],
 
 
@@ -1749,7 +1679,7 @@ define any MainSequence () ``{
 	    `next             : "det_doit"
 	],
 	"det_doit" : $[
-	    `next             : "detected"
+	    `next             : "hardware"
 	],
 
 	"add_manual" : $[
@@ -1780,7 +1710,7 @@ define any MainSequence () ``{
 	    `next             : "add_doit"
 	],
 	"add_doit" : $[
-	    `next             : "overview"
+	    `next             : "hardware"
 	],
 
 	"rep_manual" : $[
@@ -1811,7 +1741,7 @@ define any MainSequence () ``{
 	    `next             : "rep_doit"
 	],
 	"rep_doit" : $[
-	    `next             : "overview"
+	    `next             : "hardware"
 	],
 
     ];

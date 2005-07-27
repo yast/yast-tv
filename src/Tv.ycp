@@ -1906,6 +1906,46 @@ to %1."), "/etc/modprobe.d/tv"));
 	return cards[index]:nil;
     }
 
+    global define map CardGetUniq(string uniq) {
+	if (uniq == nil || uniq == "" || size(cards) == 0)
+	{
+	    return $[];
+	}
+
+	map ret = $[];
+
+	foreach(map card, (list<map>)cards, {
+		if (card["unique_key"]:"" == uniq)
+		{
+		    ret = card;
+		}
+	    }
+	);
+
+	return ret;
+    }
+
+    global define integer IndexGetUniq(string uniq) {
+	if (uniq == nil || uniq == "" || size(cards) == 0)
+	{
+	    return nil;
+	}
+
+	integer index = 0;
+	integer ret = nil;
+
+	foreach(map card, (list<map>)cards, {
+		if (card["unique_key"]:"" == uniq)
+		{
+		    ret = index;
+		    index = index + 1;
+		}
+	    }
+	);
+
+	return ret;
+    }
+
     /**
      * Add the <B>current_card</B> to the <B>cards</B>. Try to fill holes
      * after removes.
@@ -2137,6 +2177,93 @@ to %1."), "/etc/modprobe.d/tv"));
 	return filter(term item, (list<term>) conf_list, ``(item != nil));
     }
 
+    /**
+     * Creates the content of the "configured card" Table in OverviewDialog()
+     * @return list List of `item()s
+     */
+    global define list<map<string,any> > CardsAsItemMap() ``{
+	if (cards == nil)
+	{
+	    cards = [];
+	}
+
+	integer dvb_card_no = 0;
+	integer radio_card_no = 64;
+	integer tv_card_no = 0;
+
+	list<map<string,any> > conf_list = maplist (map card, (list<map<string,any> >) cards, ``{
+	    map<string,any> ret = $[];
+	    boolean isdvb = card["dvb"]:false;
+	    boolean isradio = card["radio"]:false;
+
+	    if (card != nil && card != $[])
+	    {
+		integer num = (isdvb) ? dvb_card_no : tv_card_no;
+		// suffix to differ between analog (TV) and digital (DVB) cards
+		string suff = (isdvb) ? _("DVB") : _("TV");
+
+		string uniq = card["unique_key"]:((isdvb) ? sformat("dvb.nouniqkey%1", dvb_card_no) :
+		    sformat ("tv.nouniqkey%1", (isradio ? radio_card_no : tv_card_no)));
+
+		ret = $[
+		    "id" : uniq,
+		    "table_descr" : [ sformat("%1 - %2", num, suff), card["name"]:"" ],
+		    "rich_descr" : _("Sound Card")
+		];
+	    }
+	    if (isdvb)
+	    {
+		dvb_card_no = dvb_card_no + 1;
+	    }
+	    else
+	    {
+		if (isradio)
+		{
+		    radio_card_no = radio_card_no + 1;
+		}
+		else
+		{
+		    tv_card_no = tv_card_no + 1;
+		}
+	    }
+
+	    return ret;
+	});
+
+
+
+
+	// add detected non-configured cards
+	if (detected_cards == nil)
+	{
+	    detected_cards = [];
+	}
+
+	// unique keys of the already installed cards
+	list installed_uk = CardsUniqueKeys();
+
+	// create the list of `item()s (nil if it is already installed)
+	list detected_list = maplist(map card, (list<map<string,any> >) detected_cards, ``{
+
+	    string uk = (string)card["unique_key"]:nil;
+	    if (uk != nil && !contains(installed_uk, uk))
+	    {
+		map<string,any> uncofigured = $[
+		    "id" : uk,
+		    "table_descr" : [ _("Not Configured"), card["name"]:"" ],
+		    "rich_descr" : _("<P>The card is not configured yet.<BR>Press <B>Edit</B> to configure.<P>")
+		];
+
+		conf_list = add(conf_list, uncofigured);
+	    }
+	});
+
+	// remove empty items
+	conf_list = filter(map<string,any> m, conf_list, {return m != nil && m != $[];});
+
+	return conf_list;
+    }
+
     /////////////////////////////////////////////////////////////////
     // Functions working with "detected_cards"
     /////////////////////////////////////////////////////////////////
@@ -2152,6 +2279,46 @@ to %1."), "/etc/modprobe.d/tv"));
 	    return $[];
 	}
 	return detected_cards[index]:$[];
+    }
+
+    global define map DetectedCardUniqGet(string uniq) ``{
+	if (uniq == nil || uniq == "")
+	{
+	    return $[];
+	}
+
+	map ret = $[];
+
+	foreach(map card, (list<map>)detected_cards, {
+		if (card["unique_key"]:"" == uniq)
+		{
+		    ret = card;
+		}
+	    }
+	);
+
+	return ret;
+    }
+
+    global define integer IndexDetectedCardUniqGet(string uniq) {
+	if (uniq == nil || uniq == "" || size(detected_cards) == 0)
+	{
+	    return nil;
+	}
+
+	integer index = 0;
+	integer ret = nil;
+
+	foreach(map card, (list<map>)detected_cards, {
+		if (card["unique_key"]:"" == uniq)
+		{
+		    ret = index;
+		    index = index + 1;
+		}
+	    }
+	);
+
+	return ret;
     }
 
     /**
