@@ -58,38 +58,13 @@ Here, configure your TV and radio cards.
 ") +
 	    // Help: Detected cards, part 2 of 3
 _("<P><B><BIG>Adding a TV or Radio Card</BIG></B><BR>
-Select the card from the list of the detected cards. If your card was
-not autodetected, use <B>Other (not detected)</B>. Then press
-<B>Configure</B>.
+Select the card from the list of the unconfigured cards. If your card was
+not autodetected, press <B>Add</B> button and configure the card manually.
 </P>
 ") +
-	    // Help: Detected cards, part 3 of 3
-	_("<P><B><BIG>Editing or Deleting</BIG></B><BR>
-If you press <B>Change</B>, an additional dialog opens in which you
-can change the configuration.
-</P>
-");
-    }
 
-    /**
-     * Help texts for OverviewDialog()
-     * @return The help text.
-     */
-    define string OverviewDialogHelp() ``{
-	return
-	    // Help: Overview of the installed cards, part 1 of 3
-_("<P><B><BIG>TV and Radio Card Overview</BIG></B><BR>
-Here, get an overview of installed TV and radio cards. Additionally,
-you can edit each configuration.
-<BR></P>
-") +
-	    // Help: Overview of the installed cards, part 2 of 3
-_("<P>
-Press <B>Add</B> to manually configure additional TV or radio cards.
-</P>
-") +
 	    // Help: Overview of the installed cards, part 3 of 3
-_("<P>
+_("<P><B><BIG>Editing or Deleting</BIG></B><BR>
 To change or remove the configuration of a card, select the card.
 Then press <B>Edit</B> or <B>Delete</B>.
 </P>

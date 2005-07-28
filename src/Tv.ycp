@@ -27,6 +27,7 @@
     import "Label";
     import "Message";
     import "Package";
+    import "Sound";
 
     textdomain "tv";
 
@@ -1649,7 +1650,6 @@ to %1."), "/etc/modprobe.d/tv"));
      * @return boolean Was the reading succesfull?
      */
     define boolean WriteSoundVolume() ``{
-	import "Sound";
 	// unmute the sound cards
 	foreach (map card, (list<map<string,any> >) cards, ``{
 	    integer sound_card_no = (integer) card["sound_card_no"]:nil;
@@ -2177,6 +2177,32 @@ to %1."), "/etc/modprobe.d/tv"));
 	return filter(term item, (list<term>) conf_list, ``(item != nil));
     }
 
+    define string richTextDescription(string title, list<string> properties) {
+	string items = "";
+
+	if (properties != nil && size(properties) > 0)
+	{
+	    foreach(string prop, properties, {
+		    items = items + "<LI>" + prop + "</LI>";
+		}
+	    );
+	}
+
+	string ret = "";
+
+	if (title != nil && title != "")
+	{
+	    ret = "<P><B>" + title + "</B></P>";
+	}
+
+	if (items != "")
+	{
+	    ret = ret + "<P><UL>" + items + "</UL></P>";
+	}
+
+	return ret;
+    }
+
     /**
      * Creates the content of the "configured card" Table in OverviewDialog()
      * @return list List of `item()s
@@ -2190,6 +2216,13 @@ to %1."), "/etc/modprobe.d/tv"));
 	integer dvb_card_no = 0;
 	integer radio_card_no = 64;
 	integer tv_card_no = 0;
+
+	list<map> sound_cards = (list<map>)Sound::GetSoundCardList();
+	y2debug("sound_cards: %1", sound_cards);
+	map sndmap = listmap(map sndcard, sound_cards, {
+		return $[ sndcard["card_no"]:-1 :  sndcard["name"]:"" ];
+	    }
+	);
 
 	list<map<string,any> > conf_list = maplist (map card, (list<map<string,any> >) cards, ``{
 	    map<string,any> ret = $[];
@@ -2205,10 +2238,30 @@ to %1."), "/etc/modprobe.d/tv"));
 		string uniq = card["unique_key"]:((isdvb) ? sformat("dvb.nouniqkey%1", dvb_card_no) :
 		    sformat ("tv.nouniqkey%1", (isradio ? radio_card_no : tv_card_no)));
 
+		y2debug("card: %1", card);
+
+		list<string> descr = [];
+
+		if (num != nil && num >= 0)
+		{
+		    // %1 is "TV" or "DVB", %2 is card number
+		    descr = add(descr, sformat(_("Configured as %1 card number %2"), suff, num));
+		}
+
+		if (card["module"]:nil != nil)
+		{
+		    descr = add(descr, sformat(_("Driver %1"), mergestring((list<string>)card["module"]:[], ", ")));
+		}
+
+		if (card["sound_card_no"]:nil != nil)
+		{
+		    descr = add(descr, sformat(_("Attached to sound card <B>%1</B>"), sndmap[card["sound_card_no"]:-1]:""));
+		}
+
 		ret = $[
 		    "id" : uniq,
 		    "table_descr" : [ sformat("%1 - %2", num, suff), card["name"]:"" ],
-		    "rich_descr" : _("Sound Card")
+		    "rich_descr" : richTextDescription(card["name"]:"", descr)
 		];
 	    }
 	    if (isdvb)
@@ -2250,8 +2303,10 @@ to %1."), "/etc/modprobe.d/tv"));
 	    {
 		map<string,any> uncofigured = $[
 		    "id" : uk,
+		    // status of the card, the text used in table, translation should be as short as possible
 		    "table_descr" : [ _("Not Configured"), card["name"]:"" ],
-		    "rich_descr" : _("<P>The card is not configured yet.<BR>Press <B>Edit</B> to configure.<P>")
+		    // status of the card - rich text
+		    "rich_descr" : richTextDescription(card["name"]:"", [_("The card is not configured yet"), _("Press <B>Edit</B> to configure")])
 		];
 
 		conf_list = add(conf_list, uncofigured);
@@ -3164,7 +3219,6 @@ Install it now?</p>"), "kradio"));
 	// setup the sound volume
 	if (any_tv_configured)
 	{
-	    import "Sound";
 	    foreach (map card, (list<map<string,any> >)Sound::GetSoundCardList (), ``{
 		integer sound_card_no = card["card_no"]:-2;
 		if (sound_card_no != -2)
