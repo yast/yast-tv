@@ -27,6 +27,8 @@ include "tv/helps.ycp";
 include "tv/misc.ycp";
 include "tv/irc_ui.ycp";
 
+string selected_card = "";
+
 /**
  * Read settings dialog
  * @return Symbol for next or abort dialog.
@@ -110,10 +112,22 @@ define any HardwareDialog() ``{
     do {
 	SetItems();
 
+	// initialize selected_card
+	if (selected_card == "")
+	{
+	    selected_card = WizardHW::SelectedItem();
+	}
+
+	// set previously selected card
+	WizardHW::SetSelectedItem(selected_card);
+
 	map<string,any> ev = WizardHW::WaitForEvent();
-	y2internal("WaitForEvent: %1", ev);
+	y2milestone("WaitForEvent: %1", ev);
 
 	symbol ui = (symbol)ev["event","ID"]:nil;
+
+	// remember the selected card
+	selected_card = ev["selected"]:"";
 
 	if (ui == `add)
 	{
@@ -126,8 +140,8 @@ define any HardwareDialog() ``{
 	    integer index_configured = Tv::IndexGetUniq(ev["selected"]:"");
 	    integer index_detected = Tv::IndexDetectedCardUniqGet(ev["selected"]:"");
 
-	    y2internal("index_detected: %1", index_detected);
-	    y2internal("index_configured: %1", index_configured);
+	    y2debug("index_detected: %1", index_detected);
+	    y2debug("index_configured: %1", index_configured);
 
 	    if (index_configured != nil)
 	    {
@@ -169,6 +183,7 @@ define any HardwareDialog() ``{
 	else if (ui == `delete)
 	{
 	    integer index = Tv::IndexGetUniq(ev["selected"]:"");
+	    y2debug("index: %1", index);
 
 	    if (index != nil)
 	    {
