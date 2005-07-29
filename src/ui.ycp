@@ -182,6 +182,7 @@ define any HardwareDialog() ``{
 	}
 	else if (ui == `delete)
 	{
+	    y2debug("selected: %1", ev["selected"]:"");
 	    integer index = Tv::IndexGetUniq(ev["selected"]:"");
 	    y2debug("index: %1", index);
 
@@ -189,6 +190,7 @@ define any HardwareDialog() ``{
 	    {
 		Tv::current_card = (map) Tv::CardGet(index);
 		Tv::current_card_no = index;
+
 		// The user chose [Delete] in the overview dialog
 		// %1 is name of the selected card
 		boolean really_del = Popup::YesNo(sformat(_("Really

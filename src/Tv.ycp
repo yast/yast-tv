@@ -1071,6 +1071,10 @@ press Continue to install the firmware.
 		y2milestone("copying firmware %1 -> %2 (offset: %3, length: %4) exit: %5", source, target, offset, length, result);
 	    }
 	}
+	else
+	{
+	    ret = false;
+	}
 
 	if (!ret && ask)
 	{
@@ -1078,8 +1082,8 @@ press Continue to install the firmware.
 	    Report::Warning(_("The TV card will not work without firmware."));
 	}
 
-	// check MD5 if it's specified
-	if (md5 != nil && md5 != "")
+	// check MD5 if it's specified and the firmware is installed
+	if (md5 != nil && md5 != "" && ret)
 	{
 	    // compute MD5 hash of the firmware file
 	    string md5cmd = sformat("/usr/bin/md5sum %1", target);
@@ -1938,8 +1942,9 @@ to %1."), "/etc/modprobe.d/tv"));
 		if (card["unique_key"]:"" == uniq)
 		{
 		    ret = index;
-		    index = index + 1;
 		}
+
+		index = index + 1;
 	    }
 	);
 
@@ -2256,6 +2261,30 @@ to %1."), "/etc/modprobe.d/tv"));
 		if (card["sound_card_no"]:nil != nil)
 		{
 		    descr = add(descr, sformat(_("Attached to sound card <B>%1</B>"), sndmap[card["sound_card_no"]:-1]:""));
+		}
+
+		// add firmware data if available
+		if (isdvb)
+		{
+		    if (firmware_database != nil && size(firmware_database) > 0)
+		    {
+			foreach(string fwmod, list<map<string,any> > fws, (map<string,list<map<string,any> > >)firmware_database, {
+
+				if (contains(card["module"]:[], fwmod))
+				{
+				    foreach(map<string,any> fw, fws, {
+					    string target = fw["target"]:"";
+					    string source = fw["source"]:"";
+					    boolean inst = IsFWInstalled(firmware_prefix + target);
+
+					    descr = add(descr, _("Firmware: ") +
+					    ((inst) ? sformat(_("Installed (%1)"), target) : sformat(_("Not installed (%1 -> %2)"), source, target)));
+					}
+				    );
+				}
+			    }
+			);
+		    }
 		}
 
 		ret = $[

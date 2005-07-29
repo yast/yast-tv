@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jul 29 14:51:38 CEST 2005 - lslezak@suse.cz
+
+- replaced the first dialog - use WizardHW module
+- 2.12.1
+
+-------------------------------------------------------------------
 Wed Jun 15 13:53:28 CEST 2005 - lslezak@suse.cz
 
 - merged proof read texts
