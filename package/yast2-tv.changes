@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Tue Aug  9 14:21:34 CEST 2005 - lslezak@suse.cz
+
+- write configuration also to sysconfig/hardware/hwcfg-*
+  file (#103027)
+- use WizardHW:: formatting functions
+- merged proofread texts
+- 2.12.2
+
+-------------------------------------------------------------------
 Fri Jul 29 14:51:38 CEST 2005 - lslezak@suse.cz
 
 - replaced the first dialog - use WizardHW module

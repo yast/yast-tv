@@ -1085,7 +1085,7 @@ define any AudioDialog() ``{
 				 contents,
 				 AudioDialogHelp (),
 				 Label::BackButton (),
-				 Label::NextButton ());
+				 (Tv::current_card["dvb"]:false) ? Label::OKButton() : Label::NextButton());
 
     // Select the previously selected card
     if (current_rb == `rb_yes)

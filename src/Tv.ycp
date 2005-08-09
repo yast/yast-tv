@@ -28,6 +28,7 @@
     import "Message";
     import "Package";
     import "Sound";
+    import "WizardHW";
 
     textdomain "tv";
 
@@ -1281,8 +1282,11 @@ Use the firmware file anyway?
 					// try installation of the firmware again?
 					install = Popup::YesNo(_("Installation of the firmware has failed.\nTry the installation again?"));
 
-					// remove the invalid file from the cache
-					fw_source_cache = remove(fw_source_cache, source);
+					if (haskey(fw_source_cache, source) && fw_source_cache != nil)
+					{
+					    // remove the invalid file from the cache
+					    fw_source_cache = remove(fw_source_cache, source);
+					}
 				    }
 				    else
 				    {
@@ -1409,6 +1413,100 @@ Use the firmware file anyway?
 	return result;
     }
 
+    global map<string, string> GetBusInfo() {
+	list<map> detected = (list<map>)SCR::Read(.probe.tv);
+
+	list<map> probe_dvb = (list<map>)SCR::Read(.probe.dvb);
+	if (probe_dvb != nil)
+	{
+	    detected = (list<map>)merge(detected, probe_dvb);
+	}
+
+	map<string, string> ret = $[];
+
+	foreach(map d, detected, {
+		string uniq = d["unique_key"]:"";
+		string bus = d["bus_hwcfg"]:"";
+		string busid = d["sysfs_bus_id"]:"";
+
+		if (uniq != nil && uniq != "" && bus != nil && bus != "" && busid != nil && busid != "")
+		{
+		    ret[uniq] = bus + "-" + busid;
+		}
+	    }
+	);
+
+	y2milestone("businfo: %1", ret);
+
+	return ret;
+    }
+
+    define string GetStaticConfig(string uniq)
+    {
+	string file = "";
+
+	// get all static configurations
+	list<string> configs = HWConfig::ConfigFiles();
+	configs = filter(string f, configs, {return regexpmatch(f, "^static-[0-9]*");});
+	y2milestone("found static configs: %1", configs);
+
+	// search existing config file
+	if (size(configs) > 0)
+	{
+	    integer greatest = -1;
+	    boolean found = false;
+
+	    // search existing config
+	    foreach(string f, configs, {
+		    if (!found)
+		    {
+			// read MODULE comment
+			string comment = HWConfig::GetComment(f, "MODULE");
+
+			if (comment != nil && comment != "")
+			{
+			    // search for uniqID
+			    if (regexpmatch(comment, uniq))
+			    {
+				file = f;
+				found = true;
+				y2milestone("Found flags in file: %1", f);
+			    }
+			}
+
+			if (!found)
+			{
+			    // not found, check config number
+			    string num = regexpsub(f, "^static-([0-9]*)", "\\1");
+
+			    if (num != nil)
+			    {
+				integer num_i = tointeger(num);
+				if (num_i != nil && num_i > greatest)
+				{
+				    greatest = num_i;
+				}
+			    }
+			}
+		    }
+		}
+	    );
+
+	    if (file == nil || file == "")
+	    {
+		y2debug("file empty, greatest: %1", greatest);
+		// not found - create new config
+		file = sformat("static-%1", greatest + 1);
+	    }
+	}
+	else
+	{
+	    file = "static-0";
+	}
+
+	return file;
+    }
+
     /**
      * Write the TV settings to the SCR.
      * @return boolean Was the reading successful?
@@ -1454,6 +1552,9 @@ Use the firmware file anyway?
 	    i = i + 1;
 	}
 
+	// get card info
+	map<string, string> busmap = GetBusInfo();
+
 	// for cards choosed to delete...
 	foreach (map card, (list<map<string,any> >) cards_to_del, ``{
 	    list<string> module_names = card["module"]:[];
@@ -1498,6 +1599,30 @@ Use the firmware file anyway?
 		    );
 		}
 	    }
+
+	    // remove hwcfg file
+	    string uniq = card["unique_key"]:"";
+	    string bus = busmap[uniq]:"";
+
+	    if (bus != nil && bus != "")
+	    {
+		string file = "bus-" + bus;
+		y2milestone("Removing hwcfg file: %1", file);
+		// remove the hwcfg file
+		HWConfig::RemoveConfig(file);
+	    }
+	    else
+	    {
+		// search for static hwcfg file
+		string staticconf = FindStaticHWConfig(uniq);
+		if (staticconf != nil && staticconf != "")
+		{
+		    // there is a static config file, remove it
+		    y2milestone("Removing hwcfg file: %1", staticconf);
+		    // remove the hwcfg file
+		    HWConfig::RemoveConfig(staticconf);
+		}
+	    }
 	});
 
 	boolean result = true;
@@ -1518,6 +1643,7 @@ Use the firmware file anyway?
 	integer radio_card_no = 64;
 	integer dvb_card_no = 0;
 	foreach (map card, (list<map>) cards, ``{
+	    y2milestone("Writing configuration of card: %1", card);
 
 	    boolean radio	= card["radio"]:false;
 	    list<string> module_names = card["module"]:[];
@@ -1540,14 +1666,44 @@ Use the firmware file anyway?
 		y2milestone ("Writing alias %2 %1 to /etc/modprobe.d/tv",
 		    module_names, alias);
 
+
+		string uniq = card["unique_key"]:"";
+		string bus = busmap[uniq]:"";
+
+		// set sysconfig file name
+		string file = "";
+
+		if (bus != nil && bus != "")
+		{
+		    file = "bus-" + bus;
+		}
+		else
+		{
+		    file = GetStaticConfig(uniq);
+		}
+
+		// sysconfig comment
+		string comment =
+		( radio ? "# YaST configured radio card\n"
+			: "# YaST configured TV card\n" ) +
+		    ModulesComments::StoreToComment (card_name, unique_key);
+
 		if (size(module_names) == 1)
 		{
 		    // write alias
 		    SCR::Write(add(.modprobe_tv.alias, alias), module_names[0]:"");
+
+		    // write sysconfig
+		    // set module name
+		    HWConfig::SetValue(file, "MODULE", module_names[0]:"");
+		    HWConfig::SetComment(file, "MODULE", comment);
+		    // set automatic start at boot
+		    HWConfig::SetValue(file, "STARTMODE", "auto");
 		}
 		else if (size(module_names) > 1)
 		{
 		    string install_string = "";
+		    integer index = 0;
 
 		    foreach(string m, module_names, {
 			    if (size(install_string) > 0)
@@ -1555,9 +1711,25 @@ Use the firmware file anyway?
 				install_string = install_string + "; ";
 			    }
 
+			    string varname = "MODULE";
+
+			    if (index != 0)
+			    {
+				varname = sformat("%1_%2", varname, index);
+			    }
+
+			    HWConfig::SetValue(file, varname, m);
+
 			    install_string = install_string + "/sbin/modprobe " + m;
+
+			    index = index + 1;
 			}
 		    );
+
+		    // add the first module entry
+		    HWConfig::SetComment(file, "MODULE", comment);
+		    // set automatic start at boot
+		    HWConfig::SetValue(file, "STARTMODE", "auto");
 
 		    SCR::Write(add(.modprobe_tv.install, alias), install_string);
 		}
@@ -1590,11 +1762,6 @@ Use the firmware file anyway?
 		);
 
 		// write comment with unique key and the card name
-		string comment =
-		( radio ? "# YaST2 configured radio card\n"
-			: "# YaST2 configured TV card\n" ) +
-		    ModulesComments::StoreToComment (card_name, unique_key);
-
 		y2debug ("Writing comment to alias %1 in /etc/modprobe.d/tv",
 		    alias);
 
@@ -1612,6 +1779,8 @@ Use the firmware file anyway?
 	    else
 		tv_card_no = tv_card_no + 1;
 	});
+
+	HWConfig::Flush();
 
 	// write the parameters
 	if (!WriteModulesParameters (modules_parameters))
@@ -2182,31 +2351,6 @@ to %1."), "/etc/modprobe.d/tv"));
 	return filter(term item, (list<term>) conf_list, ``(item != nil));
     }
 
-    define string richTextDescription(string title, list<string> properties) {
-	string items = "";
-
-	if (properties != nil && size(properties) > 0)
-	{
-	    foreach(string prop, properties, {
-		    items = items + "<LI>" + prop + "</LI>";
-		}
-	    );
-	}
-
-	string ret = "";
-
-	if (title != nil && title != "")
-	{
-	    ret = "<P><B>" + title + "</B></P>";
-	}
-
-	if (items != "")
-	{
-	    ret = ret + "<P><UL>" + items + "</UL></P>";
-	}
-
-	return ret;
-    }
 
     /**
      * Creates the content of the "configured card" Table in OverviewDialog()
@@ -2290,7 +2434,7 @@ to %1."), "/etc/modprobe.d/tv"));
 		ret = $[
 		    "id" : uniq,
 		    "table_descr" : [ sformat("%1 - %2", num, suff), card["name"]:"" ],
-		    "rich_descr" : richTextDescription(card["name"]:"", descr)
+		    "rich_descr" : WizardHW::CreateRichTextDescription(card["name"]:"", descr)
 		];
 	    }
 	    if (isdvb)
@@ -2333,9 +2477,9 @@ to %1."), "/etc/modprobe.d/tv"));
 		map<string,any> uncofigured = $[
 		    "id" : uk,
 		    // status of the card, the text used in table, translation should be as short as possible
-		    "table_descr" : [ _("Not Configured"), card["name"]:"" ],
+		    "table_descr" : [ _("Not configured"), card["name"]:"" ],
 		    // status of the card - rich text
-		    "rich_descr" : richTextDescription(card["name"]:"", [_("The card is not configured yet"), _("Press <B>Edit</B> to configure")])
+		    "rich_descr" : WizardHW::CreateRichTextDescription(card["name"]:"", WizardHW::UnconfiguredDevice())
 		];
 
 		conf_list = add(conf_list, uncofigured);
