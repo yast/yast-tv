@@ -59,7 +59,7 @@ Here, configure your TV and radio cards.
 	    // Help: Detected cards, part 2 of 3
 _("<P><B><BIG>Adding a TV or Radio Card</BIG></B><BR>
 Select the card from the list of the unconfigured cards. If your card was
-not autodetected, press <B>Add</B> button and configure the card manually.
+not detected, press <B>Add</B> and configure the card manually.
 </P>
 ") +
 
