@@ -95,16 +95,9 @@ define boolean IRCTestPopup (string config_file, string mod, boolean modified) `
 	return true;
     }
 
-    UI::OpenDialog(`opt(`decorated), `HBox(`HSpacing(1.5),
-    `VBox(
-        `VSpacing(1),
-        // Wait text label
-        `Label(_("Initializing...")),
-        `VSpacing(1),
-        `PushButton(`id(`done), `opt(`default), Label::AbortButton()),
-        `VSpacing(1)),
-    `HSpacing(1.5)
-    ));
+    UI::OpenDialog(
+        `Label(_("Initializing..."))
+    );
 
     string start = lirc_tmp_start ();
     if (start != "")
