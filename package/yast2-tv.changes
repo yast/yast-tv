@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Aug 12 10:32:44 CEST 2005 - lslezak@suse.cz
+
+- removed Abort button in IRC test popup (#102540)
+- 2.12.3
+
+-------------------------------------------------------------------
 Tue Aug  9 14:21:34 CEST 2005 - lslezak@suse.cz
 
 - write configuration also to sysconfig/hardware/hwcfg-*
