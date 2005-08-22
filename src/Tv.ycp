@@ -2098,28 +2098,6 @@ to %1."), "/etc/modprobe.d/tv"));
 	return ret;
     }
 
-    global define integer IndexGetUniq(string uniq) {
-	if (uniq == nil || uniq == "" || size(cards) == 0)
-	{
-	    return nil;
-	}
-
-	integer index = 0;
-	integer ret = nil;
-
-	foreach(map card, (list<map>)cards, {
-		if (card["unique_key"]:"" == uniq)
-		{
-		    ret = index;
-		}
-
-		index = index + 1;
-	    }
-	);
-
-	return ret;
-    }
-
     /**
      * Add the <B>current_card</B> to the <B>cards</B>. Try to fill holes
      * after removes.
@@ -2270,6 +2248,7 @@ to %1."), "/etc/modprobe.d/tv"));
 		{
 		    uniqkey = (isdvb) ? sformat("dvb.nouniqkey%1", dvb_card_no) :
 		    sformat ("tv.nouniqkey%1", (isradio ? radio_card_no : tv_card_no));
+		    y2milestone("found empty uniq, using: %1", uniqkey);
 		}
 
 		if (uniq == uniqkey)

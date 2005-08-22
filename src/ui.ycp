@@ -137,7 +137,7 @@ define any HardwareDialog() ``{
 	}
 	else if (ui == `edit)
 	{
-	    integer index_configured = Tv::IndexGetUniq(ev["selected"]:"");
+	    integer index_configured = Tv::CardIndexUniqKey(ev["selected"]:"");
 	    integer index_detected = Tv::IndexDetectedCardUniqGet(ev["selected"]:"");
 
 	    y2debug("index_detected: %1", index_detected);
@@ -183,7 +183,7 @@ define any HardwareDialog() ``{
 	else if (ui == `delete)
 	{
 	    y2debug("selected: %1", ev["selected"]:"");
-	    integer index = Tv::IndexGetUniq(ev["selected"]:"");
+	    integer index = Tv::CardIndexUniqKey(ev["selected"]:"");
 	    y2debug("index: %1", index);
 
 	    if (index != nil)
