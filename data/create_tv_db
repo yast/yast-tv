@@ -29,8 +29,8 @@ $saa7134_cardlist_fname = $ARGV[1];
 
 # List of the known vendors
 $known_vendors = 
-    "\(ATI\|AVerMedia\|BESTBUY\|FlyVideo\|GrandTec\|Hauppauge\|Intel\|".
-    "Leadtek\|LifeView\|MATRIX-Vision\|MIRO\|Phoebe\|Pinnacle\|".
+    "\(ATI\|Askey\|Asus\|AVerMedia\|BESTBUY\|Compro\|FlyVideo\|GrandTec\|Hauppauge\|Intel\|".
+    "Leadtek\|LifeView\|MATRIX-Vision\|MIRO\|Osprey\|Phoebe\|Pinnacle\|Prolink\|".
     "STB\|Terratec\|Zoltrix\)";
 
 # This is for the sort function...
@@ -188,11 +188,43 @@ push @cards, dbSAA7134($saa7134_cardlist_fname);
 # Sort it according to known vendors
 $vendors = ();
 $index = 0;
+
+my $regexp = $known_vendors;
+
+if ($known_vendors =~ /\((.*)\)/)
+{
+    $regexp = $1;
+}
+  
+@vendor_list = split(/\|/, $regexp);
+
+print STDERR "Defined ".@vendor_list." vendors:\n";
+
+sort(@vendor_list);
+
+foreach my $v (@vendor_list)
+{
+    print STDERR "$v\n";
+}
+print STDERR "\n";
+	
+
 while ($index <= $#cards)
 {
-    if ($cards[$index]->{"name"} =~ /($known_vendors)/)
+    if ($cards[$index]->{"name"} =~ /^"($known_vendors)/i)
     {
 	$vendor = $1;
+	print STDERR "found vendor: $1 ";
+	    
+	foreach my $v (@vendor_list)
+	{
+	    if ($vendor =~ /($v)/i)
+	    {
+		$vendor = $v;
+	    }
+	}
+
+	print STDERR "mapped to: $vendor\n";
 
 	# Remove the found card
 	$ref = splice(@cards, $index, 1);
