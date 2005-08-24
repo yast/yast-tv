@@ -19,7 +19,7 @@ $saa7134_cardlist_fname = $ARGV[1];
 # Names to translate
 %clean_names =
     (
-    	"*** UNKNOWN/GENERIC *** " => " // Item text in the list of cards\n\t\t\t_(\"Unknown bttv card\")",
+    	"*** UNKNOWN/GENERIC ***" => " // Item text in the list of cards\n\t\t\t_(\"Unknown bttv card\")",
     	"UNKNOWN/GENERIC" => " // Item text in the list of cards\n\t\t\t_(\"Unknown saa7134 card\")",
     	"[many vendors] CPH05X/06X (bt878)" => "\"CPH05X/06X (bt878)\"",
     	"Flyvideo 98 (LR50Q) / Chronos Video Shuttle II" => "\"FlyVideo 98 (LR50Q) / Chronos Video Shuttle II\"",
@@ -89,15 +89,8 @@ sub dbBTTV
 
     @card_array = ();
 
-    $finish = 0;
-    while (!$finish && ($_ = <DB>))
+    while ($_ = <DB>)
     {
-	# we end with a tuner.o line
-	if (/tuner\.o/)
-	{
-	    $finish = 1;
-	    next;
-	}
 	# create the line
 	if (/^\s*([^=]*)=(\S*)\s*-\s*(.*)$/)
 	{
@@ -138,7 +131,7 @@ sub dbSAA7134
     while ($_ = <DB>)
     {
 	# create the line
-	if (/^\s*([^= ]*) = (.*)$/)
+	if (/^\s*(\S*)\s*->\s*(\S*.*\S)\s*$/)
 	{
 	    # Clean the name
 	    my $card_name = $2;
@@ -148,6 +141,10 @@ sub dbSAA7134
 	    }
 	    else
 	    {
+		if ($card_name =~ /^(.*\S)\s*\[.*:.*\]/)
+		{
+		    $card_name = $1;
+		}
 		$card_name = "\"$card_name\"";
 	    }
 

@@ -45,17 +45,10 @@ sub dbBTTV
 
     print "    \"bttv\" : [\n";
 
-    $tuners = 0;
     while (<DB>)
     {
-	# we end with a tuner.o line
-	if (/tuner\.o/)
-	{
-	    $tuners = 1;
-	    next;
-	}
 	# create the line
-	if ($tuners && /^\s*([^=]*)=(\S*)\s*-\s*(.*)$/)
+	if (/^\s*([^=]*)=(\S*)\s*-\s*(.*)$/)
 	{
 	    # Clean the name
 	    my $card_name = $3;
