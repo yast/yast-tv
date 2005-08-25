@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Aug 25 11:09:33 CEST 2005 - lslezak@suse.cz
+
+- updated the TV card database, improved the database
+  generator (#112710)
+- 2.12.5
+
+-------------------------------------------------------------------
 Mon Aug 22 11:24:39 CEST 2005 - lslezak@suse.cz
 
 - edit or delete just manually configured TV card (#106092)
