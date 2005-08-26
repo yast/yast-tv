@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Aug 26 09:42:53 CEST 2005 - lslezak@suse.cz
+
+- offer also ivtv* and saa71* kernel drivers from extra directory
+  in manual configuration (#113195)
+- 2.12.6
+
+-------------------------------------------------------------------
 Thu Aug 25 11:09:33 CEST 2005 - lslezak@suse.cz
 
 - updated the TV card database, improved the database

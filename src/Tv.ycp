@@ -533,7 +533,40 @@ available kernel modules."));
 	    kernel_modules = add (kernel_modules, mod, parm);
 	});
 
-	y2debug ("All v4l kernel modules: %1", kernel_modules);
+	// add drivers from extra directory
+	path extra_path = .modinfo.extra;
+	list<string> extra_modules_list = (list<string>) SCR::Dir (extra_path);
+	if (extra_modules_list != nil)
+	{
+	    list<string> regexps = ["^ivtv", "^saa7"];
+
+	    extra_modules_list = filter(string m, extra_modules_list, {
+		    boolean found = false;
+
+		    foreach(string regexp, regexps, {
+			    if (regexpmatch(m, regexp))
+			    {
+				found = true;
+			    }
+			}
+		    );
+
+		    return found;
+		}
+	    );
+
+	    if (size(extra_modules_list) > 0)
+	    {
+		y2debug("Extra kernel modules: %1", extra_modules_list);
+
+		foreach (string mod, (list<string>) extra_modules_list, ``{
+		    map parm = (map) SCR::Read ( add (video_path, mod));
+		    kernel_modules = add (kernel_modules, mod, parm);
+		});
+	    }
+	}
+
+	y2debug("All v4l kernel modules: %1", kernel_modules);
 
 	path radio_path = .modinfo.kernel.drivers.media.radio;
 
@@ -565,7 +598,7 @@ available kernel modules."));
 	    return true;
 	}
 	foreach(string mod, (list<string>) modules_list, ``{
-	    map parm = (map) SCR::Read ( add (radio_path, mod));
+	    map parm = (map) SCR::Read ( add (dvb_path, mod));
 	    dvb_modules = add(dvb_modules, mod, parm);
 	});
 	y2debug("All dvb modules: %1", dvb_modules);
