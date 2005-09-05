@@ -18,7 +18,7 @@ return [
 	    ],
 	    $[
 		"name" : "B2C2 FlexCopII DVB chip / Technisat SkyStar2 DVB card",
-		"module" : [ "skystar2", "mt312" ]
+		"module" : [ "b2c2-flexcop-pci", "mt312" ]
 	    ]
 	]
     ]

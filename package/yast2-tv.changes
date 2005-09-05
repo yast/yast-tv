@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon Sep  5 16:35:03 CEST 2005 - lslezak@suse.cz
+
+- 'skystar2' kernel module has been renamed to 'b2c2-flexcop-pci'
+  (#115262)
+- 2.12.7
+
+-------------------------------------------------------------------
 Fri Aug 26 09:42:53 CEST 2005 - lslezak@suse.cz
 
 - offer also ivtv* and saa71* kernel drivers from extra directory
