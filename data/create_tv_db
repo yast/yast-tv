@@ -14,6 +14,7 @@ if ($#ARGV < 1)
 # Parameters
 $bttv_cardlist_fname = $ARGV[0];
 $saa7134_cardlist_fname = $ARGV[1];
+$cx88_cardlist_fname = $ARGV[2];
 # ... more to come ...
 
 # Names to translate
@@ -21,6 +22,7 @@ $saa7134_cardlist_fname = $ARGV[1];
     (
     	"*** UNKNOWN/GENERIC ***" => " // Item text in the list of cards\n\t\t\t_(\"Unknown bttv card\")",
     	"UNKNOWN/GENERIC" => " // Item text in the list of cards\n\t\t\t_(\"Unknown saa7134 card\")",
+    	"UNKNOWN/GENERIC CX88" => " // Item text in the list of cards\n\t\t\t_(\"Unknown cx88xx card\")",
     	"[many vendors] CPH05X/06X (bt878)" => "\"CPH05X/06X (bt878)\"",
     	"Flyvideo 98 (LR50Q) / Chronos Video Shuttle II" => "\"FlyVideo 98 (LR50Q) / Chronos Video Shuttle II\"",
     	"Flyvideo 98EZ (capture only)" => " // Item text in the cards list (translate \"capture only\")\n\t\t\t\t\t_(\"FlyVideo 98EZ (capture only)\")",
@@ -163,6 +165,46 @@ sub dbSAA7134
     return @card_array;
 }
 
+# Create the CX88 part of the database
+sub dbCX88
+{
+    $name = shift;
+    open (DB, $name) or die "Cannot open $name!";
+
+    @card_array = ();
+
+    while ($_ = <DB>)
+    {
+	# create the line
+	if (/^\s*([^=]*)=(\S*)\s*-\s*(.*)$/)
+	{
+	    # Clean the name
+	    my $card_name = $3;
+	    if (defined $clean_names{$card_name})
+	    {
+		$card_name = $clean_names{$card_name};
+	    }
+	    else
+	    {
+		$card_name = "\"$card_name\"";
+	    }
+
+	    $item =
+		{ "name" => $card_name,
+		  "module" => "\"cx88xx\"",
+		  "parameters" => "\$[ \"$1\" : \"$2\" ]"
+		};
+	    
+	    push @card_array, $item;
+	}
+    }
+    
+    close(DB);
+
+    return @card_array;
+}
+
+
 # And do it!
 
 print "/* YaST2 TV cards database\n";
@@ -180,6 +222,7 @@ print "return [\n";
 # Collect the parameters
 push @cards, dbBTTV($bttv_cardlist_fname);
 push @cards, dbSAA7134($saa7134_cardlist_fname);
+push @cards, dbCX88($cx88_cardlist_fname);
 #...more to come...
 
 # Sort @cards
@@ -199,8 +242,6 @@ if ($known_vendors =~ /\((.*)\)/)
 @vendor_list = split(/\|/, $regexp);
 
 print STDERR "Defined ".@vendor_list." vendors:\n";
-
-sort(@vendor_list);
 
 foreach my $v (@vendor_list)
 {
