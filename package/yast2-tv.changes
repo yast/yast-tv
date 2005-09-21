@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Sep 21 17:11:10 CEST 2005 - lslezak@suse.cz
+
+- added cx88 cards into the database 
+- 2.13.0
+
+-------------------------------------------------------------------
 Mon Sep  5 16:35:03 CEST 2005 - lslezak@suse.cz
 
 - 'skystar2' kernel module has been renamed to 'b2c2-flexcop-pci'

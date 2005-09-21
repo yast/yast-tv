@@ -6,13 +6,13 @@
 
 ydata_DATA = tv_cards-lirc_gpio.ycp tv_cards.ycp tv_tuners.ycp tv_dvbcards.ycp tv_dvbfirmware.ycp
 
-tv_cards.ycp: CARDLIST.bttv CARDLIST.saa7134
+tv_cards.ycp: CARDLIST.bttv CARDLIST.saa7134 CARDLIST.cx88
 	$(srcdir)/create_tv_db $^ > $@
 
 tv_tuners.ycp: CARDLIST.tuner
 	$(srcdir)/create_tuner_db $^ > $@
 
-EXTRA_DIST = CARDLIST.bttv CARDLIST.saa7134 CARDLIST.tuner\
+EXTRA_DIST = CARDLIST.bttv CARDLIST.saa7134 CARDLIST.cx88 CARDLIST.tuner\
 	     create_tv_db create_tuner_db tv_cards-lirc_gpio.ycp tv_dvbcards.ycp tv_dvbfirmware.ycp
 
 # delete generated files
