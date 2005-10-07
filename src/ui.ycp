@@ -203,6 +203,10 @@ of %1?"), Tv::current_card["name"]:""));
 	       }
 	    }
 	}
+	else if (ui == `cancel)
+	{
+	    ret = `abort;
+	}
 	else
 	{
 	    ret = ui;
