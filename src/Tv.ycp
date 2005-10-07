@@ -2861,7 +2861,7 @@ global define any ReadIRC () ``{
     }
     else
     {
-	irc_config = "/usr/share/lirc/remotes/input-layer-lircd.conf";
+	irc_config = "/usr/share/lirc/remotes/linux-input-layer-lircd.conf";
     }
 
     map out = (map) SCR::Execute (.target.bash_output,

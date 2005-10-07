@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Oct  7 14:14:18 CEST 2005 - lslezak@suse.cz
+
+- close the module by "X" window manager button (#118233)
+- lirc generic config file has been renamed to
+  linux-input-layer-lircd.conf
+- 2.13.1
+
+-------------------------------------------------------------------
 Wed Sep 21 17:11:10 CEST 2005 - lslezak@suse.cz
 
 - added cx88 cards into the database 
