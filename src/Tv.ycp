@@ -3040,23 +3040,30 @@ global define boolean WriteStationsConfig () ``{
 global define string tv_tmp_start() ``{
 
     list<string> modnames = (list<string>) current_card["module"]:[];
+    string ret = "";
 
-    string modname = modnames[size(modnames) - 1]:"";
-    string params = "";
-    maplist(string k, string v, current_card["parameters"]:$[], ``{
-	params = params + sformat(" %1=%2", k, v);
+    foreach(string modname, modnames, {
+	string params = "";
+	maplist(string k, string v, current_card["parameters", modname]:$[], ``{
+	    params = params + sformat(" %1=%2", k, v);
+	});
+	// we need to tell 'modprobe' not to look into modprobe.conf now, because
+	// it may contain messed options for the module %1 that will break the
+	// module loading. (modprobe would merge options specified in param %2 with
+	// those specified in modprobe.conf)
+	string cmd = sformat("/sbin/modprobe -C /dev/null %1 %2", modname, params);
+	y2milestone("command to run: %1", cmd);
+
+	map res = (map) SCR::Execute(.target.bash_output, cmd, $[]);
+	y2milestone("modprobe output: %1", res);
+
+	if (res["stderr"]:"" != "")
+	{
+	    ret = ret + "\n" + res["stderr"]:"";
+	}
     });
-    // we need to tell 'modprobe' not to look into modprobe.conf now, because
-    // it may contain messed options for the module %1 that will break the
-    // module loading. (modprobe would merge options specified in param %2 with
-    // those specified in modprobe.conf)
-    string cmd = sformat("/sbin/modprobe -C /dev/null %1 %2", modname, params);
-    y2debug ("command to run: %1", cmd);
 
-    map res = (map) SCR::Execute(.target.bash_output, cmd, $[]);
-    y2debug ("modprobe output: %1", res);
-
-    return res["stderr"]:"";
+    return ret;
 }
 
 /**
