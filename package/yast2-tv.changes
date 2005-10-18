@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Oct 18 16:17:59 CEST 2005 - lslezak@suse.cz
+
+- use /dev/{videoN,vbiN} for scanning analog TV channels (#119246)
+- fixed temporary module loading (build correct module options)
+- 2.13.2
+
+-------------------------------------------------------------------
 Fri Oct  7 14:14:18 CEST 2005 - lslezak@suse.cz
 
 - close the module by "X" window manager button (#118233)

@@ -1216,9 +1216,30 @@ define list ChannelsScanPopup (string norm, string freq) ``{
 	return nil;
     }
 
+    integer cardnum = Tv::current_card_no;
+
+    if (cardnum == nil)
+    {
+	// the card hasn't been configured yet, compute the number
+	map config = Tv::Export();
+	list<map> configured = config["cards"]:[];
+
+	cardnum = 0;
+
+	foreach(map c, configured, {
+		if (!c["dvb"]:false && !c["radio"]:false)
+		{
+		    cardnum = cardnum + 1;
+		}
+	    }
+	);
+    }
+
+    y2milestone("Scanning TV card number %1", cardnum);
+
     SCR::Execute (.background.run_output,
-	sformat("/usr/X11R6/bin/scantv -n %1 -f %2 2>&1 -o %3/xawtvrc",
-	    norm, freq, Tv::tmpdir));
+	sformat("/usr/X11R6/bin/scantv -n %1 -f %2 2>&1 -o %3/xawtvrc -c /dev/video%4 -C /dev/vbi%4",
+	    norm, freq, Tv::tmpdir, cardnum));
 
     string test_output = "";
     any ret = nil;
