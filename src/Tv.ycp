@@ -1234,7 +1234,7 @@ Use the firmware file anyway?
 	    }
 	);
 
-	y2debug("required modules with FW: %1", reqmod);
+	y2milestone("required modules with FW: %1", reqmod);
 
 	if (size(reqmod) > 0)
 	{
@@ -1258,6 +1258,14 @@ Use the firmware file anyway?
 		    foreach(map<string,any> fw, fws, {
 			    string target = fw["target"]:"";
 			    string source = fw["source"]:"";
+
+			    boolean inst = IsFWInstalled(firmware_prefix + target);
+			    if (inst)
+			    {
+				// the firmware is already installed
+				y2milestone("Firmware %1 has been already installed.", firmware_prefix + target);
+				continue;
+			    }
 
 			    if (target != nil && target != "" && source != nil && source != "")
 			    {
@@ -1671,6 +1679,10 @@ Use the firmware file anyway?
 	//                         no_of_the_card ----^-------^-------^
 	map modules_parameters = $[];
 
+	// remember all created hwconfig files
+	// $["sysconfig_name" : "card_name"]
+	map<string,string> hwconfigfiles = $[];
+
 	// do this for each card...
 	integer tv_card_no = 0;
 	integer radio_card_no = 64;
@@ -1714,6 +1726,8 @@ Use the firmware file anyway?
 		{
 		    file = GetStaticConfig(uniq);
 		}
+
+		hwconfigfiles = add(hwconfigfiles, file, card_name);
 
 		// sysconfig comment
 		string comment =
@@ -1848,6 +1862,20 @@ to %1."), "/etc/modprobe.d/tv"));
 		"/etc/modprobe.conf"));
 	    result = false;
 	}
+
+	// start up the configured devices
+	foreach(string hwconf, string cname, hwconfigfiles, {
+		string hwup = "/sbin/hwup " + hwconf;
+		y2milestone("Startting device: %1", hwup);
+
+		integer res = (integer)SCR::Execute (.target.bash, hwup);
+		if (res != 0)
+		{
+		    Report::Error(sformat(_("Cannot start device '%1' up"), cname));
+		    result = false;
+		}
+	    }
+	);
 	return result;
     }
 

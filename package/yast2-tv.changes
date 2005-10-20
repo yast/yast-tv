@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Oct 20 09:20:41 CEST 2005 - lslezak@suse.cz
+
+- activate the configured TV/DVB cards (#129307)
+- don't ask for firmware file if it's already installed
+- 2.13.3
+
+-------------------------------------------------------------------
 Tue Oct 18 16:17:59 CEST 2005 - lslezak@suse.cz
 
 - use /dev/{videoN,vbiN} for scanning analog TV channels (#119246)
