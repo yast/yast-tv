@@ -21,7 +21,6 @@
     import "Summary";
     import "ModulesComments";
     import "Mode";
-    import "Require";
     import "Confirm";
     import "Service";
     import "Label";
@@ -316,10 +315,10 @@
 	    list<string> to_install = [];
 	    // check if packages are avialable...
 	    foreach (string app, (list<string>) apps, ``{
-		if (Require::IsPackageAvailable (app))
+		if (Package::Available (app))
 		    to_install = add (to_install, app);
 	    });
-	    Require::DoInstallAndRemoveTarget (to_install, []);
+	    Package::InstallAll (to_install);
 	}
     }
 
@@ -3327,13 +3326,13 @@ global define boolean InitializeStationsConfig() ``{
 		i = i + 1;
 	}
 
-	if (Require::AreAllPackagesInstalled (["kdelibs3"]))
+	if (Package::Installed ("kdelibs3"))
 	    tv_app = "kdetv";
-	else if (Require::AreAllPackagesInstalled (["gnome-panel"]))
+	else if (Package::Installed ("gnome-panel"))
 	    tv_app = "zapping";
 
-	boolean tv_app_installed = Require::AreAllPackagesInstalled ([tv_app]);
-	boolean radio_app_installed = Require::AreAllPackagesInstalled (["kradio"]);
+	boolean tv_app_installed = Package::Installed (tv_app);
+	boolean radio_app_installed = Package::Installed ("kradio");
 	list<string> apps = [ tv_app, "alevt", "nxtvepg" ];
 
 	// do not propose kradio application if we have not KDE

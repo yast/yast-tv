@@ -14,7 +14,7 @@ textdomain "tv";
 
 import "Label";
 import "Popup";
-import "Require";
+import "Package";
 import "Service";
 import "Tv";
 import "Wizard";
@@ -330,9 +330,9 @@ of kernel module descriptions...
             use_irc = (ret == `yes);
 	    if (use_irc)
 	    {
-		boolean lirc_installed = Require::AreAllPackagesInstalledTarget(["lirc"]);
+		boolean lirc_installed = Package::Installed ("lirc");
 
-		if (!Require::RequireAndConflictTarget (["lirc"], [],
+		if (!Package::InstallMsg ("lirc",
 		// popup label (install required application?)
 		_("Package 'lirc' is required for using infrared devices.
 Install it now?
