@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Dec 16 15:58:57 CET 2005 - jsuchome@suse.cz
+
+- use Package module instead of Require 
+- 2.13.4
+
+-------------------------------------------------------------------
 Thu Oct 20 09:20:41 CEST 2005 - lslezak@suse.cz
 
 - activate the configured TV/DVB cards (#129307)

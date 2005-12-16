@@ -14,6 +14,7 @@
 textdomain "tv";
 
 import "Label";
+import "Package";
 import "Popup";
 import "Progress";
 import "Sequencer";
@@ -1502,7 +1503,7 @@ define any ChannelsDialog () ``{
 	tv_norm		= (string) UI::QueryWidget (`id(`norms), `Value);
 	tv_freqtab	= (string) UI::QueryWidget (`id(`freq), `Value);
 
-	if (ret == `scan && Require::RequireAndConflictTarget(["v4l-tools"],[],
+	if (ret == `scan && Package::InstallMsg ("v4l-tools",
 	    // popup label (install required application?)
 	    _("To scan the TV channels, package '%1' is required.
 Install it now?")))
