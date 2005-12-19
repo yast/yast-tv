@@ -1870,7 +1870,7 @@ to %1."), "/etc/modprobe.d/tv"));
 		integer res = (integer)SCR::Execute (.target.bash, hwup);
 		if (res != 0)
 		{
-		    Report::Error(sformat(_("Cannot start device '%1' up"), cname));
+		    Report::Error(sformat(_("Cannot start device %1."), cname));
 		    result = false;
 		}
 	    }
