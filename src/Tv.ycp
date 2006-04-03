@@ -267,7 +267,7 @@
 	0x4cb51019
     ];
 
-    string firmware_prefix = "/usr/lib/hotplug/firmware/";
+    string firmware_prefix = "/lib/firmware/";
 
     map<string, string> fw_source_cache = $[];
 
@@ -533,7 +533,7 @@ available kernel modules."));
 	});
 
 	// add drivers from extra directory
-	path extra_path = .modinfo.extra;
+	path extra_path = .modinfo.updates;
 	list<string> extra_modules_list = (list<string>) SCR::Dir (extra_path);
 	if (extra_modules_list != nil)
 	{
