@@ -1,0 +1,56 @@
+/**
+ * File:	clients/tv_write.ycp
+ * Package:	TV cards configuration
+ * Summary:	Writing only client
+ * Authors:	Jan Holesovsky <kendy@suse.cz>
+ *
+ * $Id$
+ *
+ * This is a write-only client. It takes its arguments and just
+ * write the settings.
+ */
+
+/**
+ * @param first a map of tv settings
+ * @return boolean success of operation
+ * @example map mm = $[ "FAIL_DELAY" : "77" ];
+ * @example any ret = WFM::CallModule ("tv_write", [ mm ]);
+ */
+
+{
+    textdomain "tv";
+
+    import "Tv";
+    import "Progress";
+
+    list args = WFM::Args ();
+    if ( size (args) <= 0 )
+    {
+	y2error ("NOT writing, no arguments...");
+	return false;
+    }
+    if ( !is ( WFM::Args (0), map ) )
+    {
+	y2error ("Bad argument for tv write: %1", WFM::Args (0));
+	return false;
+    }
+
+    // The settings are in the first argument
+    map settings = args[0]:$[];
+    y2milestone("Only writing... (%1)", settings);
+
+    if (! Tv::Import (settings))
+    {
+	return false;
+    }
+
+    block<boolean> callback = ``{
+	return UI::PollInput () == `abort;
+    };
+
+    Progress::off ();
+    boolean ret = Tv::Write (callback);
+    Progress::on ();
+
+    return ret;
+}

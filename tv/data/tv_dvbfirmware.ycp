@@ -1,0 +1,137 @@
+/*
+ * Yast2 firmware database for DVB cards
+ *
+ * See /usr/src/linux/Documentation/dvb/get_dvb_firmware script
+ *
+ * $Id$
+ */
+
+{
+textdomain "tv";
+
+return $[
+    "tda1004x" :
+	[
+	    $[
+		"source" : "ttlcdacc.dll",
+		"target" : "dvb-fe-tda10045.fw",
+		"info" : [
+		    $[
+			// driver version 1.16
+			"offset" : 229113,
+			"length" : 30555,
+			"md5sum" : "2105fd5bf37842fbcdfa4bfd58f3594a"
+		    ],
+		    $[
+			// driver version 1.17
+			"offset" : 216261,
+			"length" : 30555,
+			"md5sum" : "2105fd5bf37842fbcdfa4bfd58f3594a"
+		    ]
+		]
+	    ],
+	    $[
+		"source" : "ttlcdacc.dll",
+		"target" : "dvb-fe-tda10046.fw",
+		"info" : [
+		    $[
+			// driver version 1.16
+			"offset" : 259889,
+			"length" : 24479,
+			"md5sum" : "a25b579e37109af60f4a36c37893957c"
+		    ],
+		    $[
+			// driver version 1.17
+			"offset" : 247033,
+			"length" : 24479,
+			"md5sum" : "a25b579e37109af60f4a36c37893957c"
+		    ]
+		]
+	    ]
+	],
+
+    "alps_tdlb7" :
+	[
+	    $[
+		"source" : "SC_MAIN.MC",
+		"target" : "dvb-fe-tdlb7.fw",
+		"info" : [
+		    $[
+			"md5sum" : "53970ec17a538945a6d8cb608a7b3899"
+		    ]
+		]
+	    ]
+	],
+
+    "sp887x" :
+	[
+	    $[
+		"source" : "sc_main.mc",
+		"target" : "dvb-fe-sp887x.fw",
+		"info" : [
+		    $[
+			"md5sum" : "237938d53a7f834c05c42b894ca68ac3"
+		    ]
+		]
+	    ]
+	],
+
+    "av7110" :
+	[
+	    $[
+		"source" : "dvb-ttpci-01.fw-261c",
+		"target" : "dvb-ttpci-01.fw",
+		"info" : [
+		    $[
+			"md5sum" : "7b263de6b0b92d2347319c65adc7d4fb"
+		    ]
+		]
+	    ]
+	],
+
+    "ttusb_dec" :
+	[
+	    $[
+		"source" : "STB_PC_T.bin",
+		"target" : "dvb-ttusb-dec-2000t.fw",
+		"info" : [
+		    $[
+			"md5sum" : "bd86f458cee4a8f0a8ce2d20c66215a9"
+		    ]
+		]
+	    ],
+	    $[
+		"source" : "STB_PC_X.bin",
+		"target" : "dvb-ttusb-dec-2540t.fw",
+		"info" : [
+		    $[
+			"md5sum" : "53e58f4f5b5c2930beee74a7681fed92"
+		    ]
+		]
+	    ],
+	    $[
+		"source" : "STB_PC_T.bin",
+		"target" : "dvb-ttusb-dec-3000s.fw",
+		"info" : [
+		    $[
+			"md5sum" : "b013ececea83f4d6d8d2a29ac7c1b448"
+		    ]
+		]
+	    ]
+	],
+
+    "dvb-dibusb" :
+	[
+	    $[
+		"source" : "dvb-dibusb-5.0.0.11.fw",
+		"target" : "dvb-dibusb-5.0.0.11.fw",
+		"info" : [
+		    $[
+			"md5sum" : "fa490295a527360ca16dcdf3224ca243"
+		    ]
+		]
+	    ]
+	],
+];
+
+}

@@ -1,0 +1,60 @@
+[Desktop Entry]
+Type=Application
+Categories=Qt;X-SuSE-YaST;X-SuSE-YaST-Hardware;
+
+X-KDE-ModuleType=Library
+X-KDE-RootOnly=true
+X-KDE-HasReadOnlyMode=true
+X-KDE-Library=yast2
+X-SuSE-YaST-Call=tv
+
+X-SuSE-YaST-Group=Hardware
+X-SuSE-YaST-Argument=
+X-SuSE-YaST-RootOnly=true
+X-SuSE-YaST-AutoInst=
+X-SuSE-YaST-Geometry=
+X-SuSE-YaST-SortKey=
+X-SuSE-YaST-AutoInstResource=
+
+Icon=yast-tv
+Exec=/sbin/yast2 tv 
+
+Name=TV Card
+GenericName=Configure a TV card
+Name[cs]=TV karta
+GenericName[cs]=Nastavit TV kartu
+Name[de]=TV-Karte
+GenericName[de]=TV-Karte konfigurieren
+Name[en]=TV Card
+Name[es]=Tarjeta de TV
+GenericName[es]=Configurar tarjeta de TV
+Name[hu]=TV-kártya
+GenericName[hu]=TV- és rádió kártya beállítása
+Name[it]=Scheda TV
+GenericName[it]=Configurazione scheda TV
+Name[ko]=TV 카드
+GenericName[ko]=TV 카드 설정
+Name[nl]=TV kaart
+GenericName[nl]=Configureer TV kaart
+Name[pt]=Placa de TV
+GenericName[pt]=Configurar placa de TV
+Name[sk]=TV karta
+GenericName[sk]=Konfigurovať TV kartu
+Name[sv]=TV-kort
+GenericName[sv]=Ställ in TV-kort
+Name[da]=TV-kort
+GenericName[da]=Konfigurer TV-kort
+Name[el]=Κάρτα TV
+GenericName[el]=Ρύθμιση κάρτας TV
+Name[en]=TV Card
+Name[fr]=Carte TV
+GenericName[fr]=Configurer la carte TV
+Name[ja]=TV カード
+GenericName[ja]=TV カードの設定
+Name[lt]=TV plokštė
+GenericName[lt]=Konfigūruoti TV plokštę
+Name[sl]=TV kartica
+GenericName[sl]=Nastavi TV kartico
+Name[tr]=TV kartı
+GenericName[tr]=TV kartını yapılandır
+X-KDE-SubstituteUID=true

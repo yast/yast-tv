@@ -1,0 +1,7 @@
+card lists:
+
+CARDLIST.bttv = /usr/src/linux/Documentation/video4linux/bttv/CARDLIST
+(package kernel-sources)
+
+CARDLIST.saa7134 = /usr/src/kernel-modules/v4l2/saa7134/CARDLIST
+(package km_v4l2)

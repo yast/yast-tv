@@ -1,0 +1,256 @@
+<HTML>
+<HEAD>
+  <TITLE>TV card configuration</TITLE>
+</HEAD>
+
+<BODY BGCOLOR=#FFFFFF>
+
+<H1>TV card configuration</H1>
+
+<P>
+<I>Author: Jan Holesovsky
+&lt;<A HREF="mailto:kendy@suse.cz">kendy@suse.cz</A>&gt;,
+based on e-mails with Gerd Knorr
+&lt;<A HREF="mailto:kraxel@suse.de">kraxel@suse.de</A>&gt;</I>
+</P>
+
+<P>
+Changes:
+</P>
+
+<UL>
+  <LI><B>2002-08-28:</B> Updated documentation.
+  <LI><B>2001-07-17:</B> Added [Select tuner] to the Manual dialog.
+                         Changed the Manual selection: Details screen.
+  <LI><B>2001-07-12:</B> Details dialog, overview of the dialogs.
+  <LI><B>2001-07-11:</B> Manual and Overview dialogs. Dialogs cleanup.
+  <LI><B>2001-07-10:</B> Detected and Audio dialogs.
+  <LI><B>2001-07-09:</B> Initial.
+</UL>
+
+<DL>
+
+<DT>
+<H2>Documentation</H2>
+</DT>
+
+<DD>
+<P>
+The documentation about the 
+<A HREF="file:/usr/src/linux/Documentation/video4linux">kernel modules for video</A>.
+</P>
+
+<P>
+A <A HREF="modinfo-video.txt">list</A> of the
+<TT>kernel/drivers/media/video</TT> modules parameters
+(generated using <TT>modinfo</TT>).
+</P>
+
+<P>
+<A HREF="http://bytesex.org/bttv">BTTV homepage</A>,
+<A HREF="http://www.ibiblio.org/pub/Linux/docs/HOWTO/mini/other-formats/html_single/BTTV.html">BTTV Mini-HOWTO</A>,
+<A HREF="http://roadrunner.swansea.uk.linux.org/v4l.shtml">Video 4 Linux</A>,
+<A HREF="http://www.kwintv.org">kWinTV homepage</A>.
+</P>
+
+</DD>
+
+<DT>
+<H2>The features</H2>
+</DT>
+
+<DD>
+
+<P>
+A list of the features can be found 
+<A HREF="tv-features.txt">here</A>.
+</P>
+
+<H3>The configuration itself</H3>
+
+<P>
+A TV card is configured by writing the proper aliases and options to
+the modules.conf file. The module options are the main problem because
+the autodetection does not work for every card perfectly.
+</P>
+
+<P>
+It is possible to have more cards in one computer at the same time.
+The configuration module must reflect it.
+</P>
+
+<H3>Database of cards for manual configuration</H3>
+
+<P>
+It has to be maintained manually, I am affraid
+there is no database to generate it from. Some of the possible sources of
+information are a list of the cards in 
+<A HREF="file:/usr/src/linux/Documentation/video4linux/bttv/CARDLIST">bttv CARDLIST</A>
+and the initial paragraph of 
+<A HREF="file:/usr/src/linux/Documentation/video4linux/Zoran">Zoran module doc</A>.
+</P>
+
+<H3>The volume of the soundcard</H3>
+
+<P>
+The module has to ask the user if he has his TV card's audio output
+connected to the sound card. If yes, it must unmute the sound card and
+configure the (sound card's input) volume.
+</P>
+
+<P>
+It is important to ask user, because there are also grabber boards without
+any audio/tuner (they have just the bt848/878 chip, a video input and nothing
+else), so the users could be confused.
+</P>
+
+<P>
+If the sound card is not configured at all, it must be possible to run
+the sound card configuration module.
+</P>
+
+<H3>More cards in one computer</H3>
+
+<P>
+The videodev.o module gives out minor numbers to the drivers.
+Aliases work like this:
+</P>
+
+<PRE>
+   alias char-major-81          videodev
+   alias char-major-81-&lt;minor&gt;  driver
+</PRE>
+
+<P>
+Starting with 2.4.5 the video4linux modules have insmod options for
+the minor numbers, i.e. you can give them fixed minor numbers this way:
+</P>
+
+<PRE>
+   alias char-major-81-0        foo
+   alias char-major-81-1        bar
+   option foo                   video_nr=0
+   option bar                   video_nr=1
+</PRE>
+
+<H3>Scan for the channels</H3>
+
+<P>
+This is application-dependent and will not be implemented. Theoretically,
+<TT>scantv</TT> command-line tool can be used, but it can write just
+<TT>xawtv</TT> configuration files.
+</P>
+
+<P>
+Anyway, it is not a big problem, because the recommended application
+(<TT>kwintv</TT>) has a wizard for scanning the channels.
+</P>
+</DD>
+
+<DT>
+<H2>The workflow</H2>
+</DT>
+
+<DD>
+<H3>Overview</H3>
+
+<P>
+The module starts to the <B>TV card setup</B> (Detected, Edit configuration
+or Configure manually?) screen.
+The list contains the detected but not yet configured cards.
+There could be one more menuentry in the Control Center which starts the
+module directly in the <B>TV card overview</B> (Overview dialog).
+</P>
+
+<P>
+<A HREF="tv.dia">(source)</A>, <a href="tv.png">(image)</a>
+</P>
+<!--
+<P>
+<IMG SRC="tv.png">
+</P>
+-->
+
+<H3>The first screen: Detected, Edit configuration or Configure manually?</H3>
+
+<P>
+<B>TV card</B> refers to the type of the card if the autodetection is able
+to provide it, else it is the name of the chipset.
+</P>
+
+<P>
+<A HREF="tv-detect.ui">(source)</A>
+</P>
+
+<P>
+<IMG SRC="tv-detect.png">
+</P>
+
+<H3>Manual configuration</H3>
+
+<P>
+For some bttv cards it is necessary to select tuner as well.
+<B>Select tuner</B> button opens a pup-up, where it is possible to choose
+one. A choice <B>Autodetected</B> should be present for the cards that
+do not need the tuner explicitely mentioned.
+</P>
+
+<P>
+<A HREF="tv-manual.ui">(source)</A>
+</P>
+
+<P>
+<IMG SRC="tv-manual.png">
+</P>
+
+<H3>Manual configuration: Details</H3>
+
+<P>
+There must be a warning in the helptext, that changing
+the kernel module resets the parameters.
+</P>
+
+<P>
+<A HREF="tv-manual-details.ui">(source)</A>
+</P>
+
+<P>
+<IMG SRC="tv-manual-details.png">
+</P>
+
+<H3>Is audio output connected to the sound card?</H3>
+
+<P>
+<B>TV card:</B> refers to the type of the card (from autodetection or
+the user's selection).
+</P>
+
+<P>
+<A HREF="tv-audio.ui">(source)</A>
+</P>
+
+<P>
+<IMG SRC="tv-audio.png">
+</P>
+
+<H3>The overview dialog</H3>
+
+<P>
+<B>Card name</B> refers to the type of the card (from autodetection or
+the user's selection).
+</P>
+
+<P>
+<A HREF="tv-overview.ui">(source)</A>
+</P>
+
+<P>
+<IMG SRC="tv-overview.png">
+</P>
+
+</DD>
+
+</DL>
+
+</BODY>
+</HTML>

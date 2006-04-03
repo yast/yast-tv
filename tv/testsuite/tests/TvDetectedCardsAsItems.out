@@ -1,0 +1,15 @@
+Dump	---------------
+Dump	[`item (`id (-1), "Other (not detected)", true)]
+Dump	[`item (`id (-1), "Other (not detected)", true)]
+Dump	[`item (`id (-1), "Other (not detected)", true)]
+Dump	[`item (`id (-1), "Other (not detected)", true)]
+Dump	---------------
+Dump	[`item (`id (0), "First detected card", true), `item (`id (-1), "Other (not detected)", false)]
+Dump	[`item (`id (0), "First detected card", true), `item (`id (-1), "Other (not detected)", false)]
+Dump	[`item (`id (-1), "Other (not detected)", true)]
+Dump	[`item (`id (-1), "Other (not detected)", true)]
+Dump	---------------
+Dump	[`item (`id (0), "My TV_card", true), `item (`id (1), "Some other detected card", false), `item (`id (-1), "Other (not detected)", false)]
+Dump	[`item (`id (0), "My TV_card", true), `item (`id (1), "Some other detected card", false), `item (`id (-1), "Other (not detected)", false)]
+Dump	[`item (`id (0), "My TV_card", true), `item (`id (1), "Some other detected card", false), `item (`id (-1), "Other (not detected)", false)]
+Dump	[`item (`id (1), "Some other detected card", true), `item (`id (-1), "Other (not detected)", false)]

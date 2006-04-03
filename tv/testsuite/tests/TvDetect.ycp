@@ -1,0 +1,55 @@
+{
+    // testedfiles: Tv.ycp
+
+    include "testsuite.ycp";
+
+    map READ = $[
+	"target" : $[ "size": -1, "tmpdir" : "/tmp", ]
+    ];
+
+    TESTSUITE_INIT([READ], nil);
+    import "Tv";
+
+    map READ_nil =
+    $[ "probe":
+		$[ "tv": nil,
+		   "dvb": nil
+		]
+	];
+
+    map READ_empty =
+    $[ "probe":
+		$[ "tv": [ ],
+		   "dvb": [ ]
+		]
+	];
+
+    map READ_det =
+	$[ "probe": $[ "tv": [
+	  $[
+		"sub_device": "jmeno prvni",
+		"unique_key": "klic",
+		"drivers":[ $[ "modules" : [] ] ]
+	  ],
+	  $[
+		"device":"jmeno druhe",
+		"unique_key": "123xyz",
+		"drivers":[ $[ "modules": [ [ "bttv" ] ] ] ]
+	  ]],
+	  "dvb" : []
+	]];
+
+
+	// Read() returns nil and invokes Report::Warning
+	/*
+    TEST (``(Tv::Detect()), [ READ_nil, $[], $[] ], nil);
+	*/
+
+	// Read() returns an empty list
+	TEST (``(Tv::Detect()), [ READ_empty, $[], $[] ], nil);
+	DUMP (Tv::detected_cards);
+
+	TEST (``(Tv::Detect()), [ READ_det, $[], $[] ], nil);
+	DUMP (Tv::detected_cards);
+
+}

@@ -1,0 +1,42 @@
+{
+    // testedfiles: Tv.ycp
+
+    include "testsuite.ycp";
+
+    map READ = $[
+	"target" : $[ "size": -1, "tmpdir" : "/tmp", ]
+    ];
+
+    TESTSUITE_INIT([READ], nil);
+    import "Tv";
+
+    define void TEST_It_Now(string s_module) ``{
+	DUMP("---------------");
+
+	// kernel_modules_database cannot be nil (see ReadKernelModules)
+	/*Tv::kernel_modules = nil;
+	list items = Tv::ModulesAsItems(s_module);
+	DUMP(items);*/
+
+
+	Tv::kernel_modules = $[];
+	list items = Tv::ModulesAsItems(Tv::kernel_modules,s_module);
+	DUMP(items);
+
+
+	Tv::kernel_modules = $[
+		"bttv" : $["module_description":"bttv - v4l driver module for bt848/878 based cards"],
+		"zoran": $["module_description":"Zoran ZR36120 based framegrabber"]
+	];
+	items = Tv::ModulesAsItems(Tv::kernel_modules,s_module);
+	DUMP(items);
+
+    }
+
+    // testing with different values of selected_module
+    TEST_It_Now(nil);
+
+    TEST_It_Now("bttv");
+
+	TEST_It_Now("zoran");
+}

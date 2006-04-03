@@ -1,0 +1,4 @@
+Dump	[]
+Dump	[`item (`id (0), "Default (detected)", true)]
+Dump	[`item (`id (0), "Default (detected)", false), `item (`id (1), "No tuner", false), `item (`id (2), "Alps HSBH1", false)]
+Dump	[`item (`id (0), "Default (detected)", false), `item (`id (1), "No tuner", false), `item (`id (2), "Alps HSBH1", true)]

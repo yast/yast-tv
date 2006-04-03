@@ -1,0 +1,25 @@
+Dump	nil
+Dump	nil
+Dump	nil
+Dump	nil
+Dump	nil
+Dump	nil
+Dump	nil
+Dump	nil
+Dump	nil
+Dump	nil
+Dump	nil
+Dump	nil
+Dump	$["module":"bttv", "parameters":$["param1":"testvalue"], "sound_card_no":0, "unique_key":"hluk.HvsIesmXXX1"]
+Dump	$["module":"bttv", "parameters":$["param1":"testvalue"], "sound_card_no":0, "unique_key":"hluk.HvsIesmXXX1"]
+Dump	$["module":"bttv", "parameters":$["param1":"testvalue"], "sound_card_no":0, "unique_key":"hluk.HvsIesmXXX1"]
+Dump	nil
+Dump	nil
+Dump	nil
+Dump	$["module":"bttv", "parameters":$["par_other":"testvalue2"], "sound_card_no":1, "unique_key":"j7F3.J8dhgs34fK2"]
+Dump	nil
+Dump	nil
+Dump	nil
+Dump	nil
+Dump	nil
+Dump	$["module":"xyz", "parameters":$["par_other":"testvalue2"], "sound_card_no":1, "unique_key":"j7F3.J8dhgs34fK2"]

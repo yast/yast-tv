@@ -1,0 +1,24 @@
+{
+    // testedfiles: Tv.ycp tv/misc.ycp
+
+    include "testsuite.ycp";
+
+    map READ = $[
+	"target" : $[ "size": -1, "tmpdir" : "/tmp", ]
+    ];
+
+    TESTSUITE_INIT([READ], nil);
+
+    import "Tv"; // moves "Read    .target.size "/etc/install.inf" -1" line up
+    include "tv/misc.ycp";
+
+
+	TEST(``(CmpParameters($[],$[])), [], nil);
+
+	TEST(``(CmpParameters($[ "card":"0" ],$[ "card":"0" ])), [], nil);
+
+	TEST(``(CmpParameters($[ "card":"0", "tuner":"0" ],$[ "card":"0", "tuner": "1" ])), [], nil);
+
+	TEST(``(CmpParameters($[ "card":"0", "tuner":nil ],$[ "card":"0" ])), [], nil);
+
+}

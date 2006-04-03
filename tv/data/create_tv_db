@@ -1,0 +1,299 @@
+#! /usr/bin/perl -w
+#
+# creates tv_cards.ycp - a database with the TV cards
+#
+# $1 - the CARDLIST.bttv source file
+# $2 - the CARDLIST.saa7134 source file
+# ...more to come...
+
+if ($#ARGV < 1)
+{
+    die "Please, specify the source files as parameters!";
+}
+
+# Parameters
+$bttv_cardlist_fname = $ARGV[0];
+$saa7134_cardlist_fname = $ARGV[1];
+$cx88_cardlist_fname = $ARGV[2];
+# ... more to come ...
+
+# Names to translate
+%clean_names =
+    (
+    	"*** UNKNOWN/GENERIC ***" => " // Item text in the list of cards\n\t\t\t_(\"Unknown bttv Card\")",
+    	"UNKNOWN/GENERIC" => " // Item text in the list of cards\n\t\t\t_(\"Unknown saa7134 Card\")",
+    	"UNKNOWN/GENERIC CX88" => " // Item text in the list of cards\n\t\t\t_(\"Unknown cx88xx Card\")",
+    	"[many vendors] CPH05X/06X (bt878)" => "\"CPH05X/06X (bt878)\"",
+    	"Flyvideo 98 (LR50Q) / Chronos Video Shuttle II" => "\"FlyVideo 98 (LR50Q) / Chronos Video Shuttle II\"",
+    	"Flyvideo 98EZ (capture only)" => " // Item text in the cards list (translate \"capture only\")\n\t\t\t\t\t_(\"FlyVideo 98EZ (capture only)\")",
+    	"Flyvideo 98FM (LR50Q) / Typhoon TView TV/FM Tuner" => "\"FlyVideo 98FM (LR50Q) / Typhoon TView TV/FM Tuner\""
+    );
+
+# List of the known vendors
+$known_vendors = 
+    "\(ATI\|Askey\|Asus\|AVerMedia\|BESTBUY\|Compro\|FlyVideo\|GrandTec\|Hauppauge\|Intel\|".
+    "Leadtek\|LifeView\|MATRIX-Vision\|MIRO\|Osprey\|Phoebe\|Pinnacle\|Prolink\|".
+    "STB\|Terratec\|Zoltrix\)";
+
+# This is for the sort function...
+sub get_name_cmp
+{
+    $ref = shift;
+    $name = $ref->{"name"};
+    
+    if ($name =~ /^_\(/)
+    {
+	$name = "!".$name; # To change the order...
+    }
+    $name =~ tr/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/;
+
+    return $name;
+}
+
+# Print the database in its List-of-hashes form
+sub dbPrint
+{
+    $vendor_name = shift;
+    $to_print_ref = shift;
+    @to_print = @{$to_print_ref};
+    
+    print "    \$[ \"name\" : $vendor_name,\n";
+    print "       \"cards\" :\n";
+    print "\t[\n";
+
+    $first = 1;
+    foreach $ref (@to_print)
+    {
+	# we do not add a "," before the first entry
+	if ($first)
+	{
+	    $first = 0;
+	}
+	else
+	{
+	    print ",\n";
+	}
+	print "\t    \$[ \"name\" : $ref->{\"name\"},\n";
+	print "\t       \"module\" : [ $ref->{\"module\"} ],\n";
+	print "\t       \"parameters\" : \$[ $ref->{\"module\"} : $ref->{\"parameters\"}\n ]";
+	print "\t    ]";
+    }
+
+    print "\n\t]\n";
+    print "    ]";
+}
+
+# Create the BTTV part of the database
+sub dbBTTV
+{
+    $name = shift;
+    open (DB, $name) or die "Cannot open $name!";
+
+    @card_array = ();
+
+    while ($_ = <DB>)
+    {
+	# create the line
+	if (/^\s*([^=]*)=(\S*)\s*-\s*(.*)$/)
+	{
+	    # Clean the name
+	    my $card_name = $3;
+	    if (defined $clean_names{$card_name})
+	    {
+		$card_name = $clean_names{$card_name};
+	    }
+	    else
+	    {
+		$card_name = "\"$card_name\"";
+	    }
+
+	    $item =
+		{ "name" => $card_name,
+		  "module" => "\"bttv\"",
+		  "parameters" => "\$[ \"$1\" : \"$2\" ]"
+		};
+	    
+	    push @card_array, $item;
+	}
+    }
+    
+    close(DB);
+
+    return @card_array;
+}
+
+# Create the saa7134 part of the database
+sub dbSAA7134
+{
+    $name = shift;
+    open (DB, $name) or die "Cannot open $name!";
+
+    @card_array = ();
+
+    while ($_ = <DB>)
+    {
+	# create the line
+	if (/^\s*(\S*)\s*->\s*(\S*.*\S)\s*$/)
+	{
+	    # Clean the name
+	    my $card_name = $2;
+	    if (defined $clean_names{$card_name})
+	    {
+		$card_name = $clean_names{$card_name};
+	    }
+	    else
+	    {
+		if ($card_name =~ /^(.*\S)\s*\[.*:.*\]/)
+		{
+		    $card_name = $1;
+		}
+		$card_name = "\"$card_name\"";
+	    }
+
+	    $item =
+		{ "name" => $card_name,
+		  "module" => "\"saa7134\"",
+		  "parameters" => "\$[ \"card\" : \"$1\" ]"
+		};
+	    
+	    push @card_array, $item;
+	}
+    }
+    
+    close(DB);
+
+    return @card_array;
+}
+
+# Create the CX88 part of the database
+sub dbCX88
+{
+    $name = shift;
+    open (DB, $name) or die "Cannot open $name!";
+
+    @card_array = ();
+
+    while ($_ = <DB>)
+    {
+	# create the line
+	if (/^\s*([^=]*)=(\S*)\s*-\s*(.*)$/)
+	{
+	    # Clean the name
+	    my $card_name = $3;
+	    if (defined $clean_names{$card_name})
+	    {
+		$card_name = $clean_names{$card_name};
+	    }
+	    else
+	    {
+		$card_name = "\"$card_name\"";
+	    }
+
+	    $item =
+		{ "name" => $card_name,
+		  "module" => "\"cx88xx\"",
+		  "parameters" => "\$[ \"$1\" : \"$2\" ]"
+		};
+	    
+	    push @card_array, $item;
+	}
+    }
+    
+    close(DB);
+
+    return @card_array;
+}
+
+
+# And do it!
+
+print "/* YaST2 TV cards database\n";
+print " *\n";
+print " * Generated ".qx(date);
+print " * From: @ARGV\n";
+print " */";
+print "\n";
+print "{\n";
+print "textdomain \"tv\";\n";
+print "return [\n";
+
+@cards = ();
+
+# Collect the parameters
+push @cards, dbBTTV($bttv_cardlist_fname);
+push @cards, dbSAA7134($saa7134_cardlist_fname);
+push @cards, dbCX88($cx88_cardlist_fname);
+#...more to come...
+
+# Sort @cards
+@cards = sort { get_name_cmp($a) cmp get_name_cmp($b) } @cards;
+
+# Sort it according to known vendors
+$vendors = ();
+$index = 0;
+
+my $regexp = $known_vendors;
+
+if ($known_vendors =~ /\((.*)\)/)
+{
+    $regexp = $1;
+}
+  
+@vendor_list = split(/\|/, $regexp);
+
+print STDERR "Defined ".@vendor_list." vendors:\n";
+
+foreach my $v (@vendor_list)
+{
+    print STDERR "$v\n";
+}
+print STDERR "\n";
+	
+
+while ($index <= $#cards)
+{
+    if ($cards[$index]->{"name"} =~ /^"($known_vendors)/i)
+    {
+	$vendor = $1;
+	print STDERR "found vendor: $1 ";
+	    
+	foreach my $v (@vendor_list)
+	{
+	    if ($vendor =~ /($v)/i)
+	    {
+		$vendor = $v;
+	    }
+	}
+
+	print STDERR "mapped to: $vendor\n";
+
+	# Remove the found card
+	$ref = splice(@cards, $index, 1);
+
+	# Give it to $vendors
+	if (defined $vendors{$vendor})
+	{
+	    push @{$vendors{$vendor}}, ( $ref );
+	}
+	else
+	{
+	    $vendors{$vendor} = [ $ref ];
+	}
+    }
+    else
+    {
+	$index++;
+    }
+}
+
+# Print it now
+dbPrint(" // Item text in the list of card vendors\n\t\t\t\t_(\"Other vendors\")", \@cards);
+foreach $vendor (sort keys %vendors)
+{
+    print ",\n";
+    dbPrint("\"$vendor\"", $vendors{$vendor});
+}
+    
+print "\n];\n}\n";
+
+# The end...

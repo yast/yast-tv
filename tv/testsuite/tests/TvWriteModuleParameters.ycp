@@ -1,0 +1,68 @@
+{
+    // testedfiles: Tv.ycp
+
+    include "testsuite.ycp";
+
+    map READ = $[
+	"target" : $[ "size": -1, "tmpdir" : "/tmp", ]
+    ];
+
+    TESTSUITE_INIT([READ], nil);
+    import "Tv";
+
+    // Read() return nil
+    map READ_nil =
+	$[ "modules" :
+	    $[ "options" : $[] ]
+	];
+
+	// Dir() returns current state of bttv
+    map READ_one =
+	$[ "modules" :
+	    $[ "options" :
+			$[ "bttv":
+				[ 3, $[ "card": $[ 0: nil, 1: "3", 2: "2" ],
+						"tuner": $[ 0: "a", 1: "b", 2: "c" ]] ]
+			]]
+	];
+
+	// Write() fails
+	map WRITE_false =
+	$[ "modules" :
+	    $[ "options" : false ]
+	];
+
+	// Write() is OK
+	map WRITE_true =
+	$[ "modules" :
+	    $[ "options" : true ]
+	];
+
+	// parameters which should be written
+	map modules_pars =
+	$[ "bttv":
+		[ 3, $[ "card": $[ 0: nil, 1: "3", 2: "2" ],
+				"tuner": $[ 0: "a", 1: "b", 2: "c" ]]
+		],
+	   "isa-pnp":
+		[ 1, $[ "isapnp_reset": $[ 0:"0"]]
+		]
+	];
+
+
+    TEST(``(Tv::WriteModulesParameters (modules_pars)), [ READ_nil, WRITE_false, $[] ],false);
+
+    TEST(``(Tv::WriteModulesParameters (modules_pars)), [ READ_nil, WRITE_true, $[] ], false);
+
+	// bttv has nil parameters -> nil will be written after calling Dir()
+	modules_pars =
+	$[ "isa-pnp":
+		[ 1, $[ "isapnp_reset": $[ 0:"0"]]
+		],
+	   "bttv" :
+//		[ 3, $[ nil: $[] ]]
+		[ 3, nil]
+	];
+
+    TEST(``(Tv::WriteModulesParameters (modules_pars)), [ READ_one, WRITE_true, $[] ], false);
+}

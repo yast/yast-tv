@@ -1,0 +1,12 @@
+Dump	---------------
+Dump	[[], nil]
+Dump	[[`item (`id (0), "Other vendors", false), `item (`id (1), "ATI", false)], nil]
+Dump	---------------
+Dump	[[`item (`id (0), "Autodetected card", true)], 0]
+Dump	[[`item (`id (0), "Autodetected card", true), `item (`id (1), "Other vendors", false), `item (`id (2), "ATI", false)], 0]
+Dump	---------------
+Dump	[[`item (`id (0), "Autodetected card", false)], nil]
+Dump	[[`item (`id (0), "Autodetected card", false), `item (`id (1), "Other vendors", false), `item (`id (2), "ATI", true)], 2]
+Dump	---------------
+Dump	[[`item (`id (0), "Autodetected card", false)], nil]
+Dump	[[`item (`id (0), "Autodetected card", false), `item (`id (1), "Other vendors", true), `item (`id (2), "ATI", false)], 1]

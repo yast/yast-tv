@@ -1,0 +1,116 @@
+/**
+ * File:	clients/tv_proposal.ycp
+ * Package:	TV cards configuration
+ * Summary:	Proposal function dispatcher.
+ * Authors:	Jan Holesovsky <kendy@suse.cz>
+ *
+ * $Id$
+ *
+ * Proposal function dispatcher for tv configuration.
+ */
+
+{
+
+    textdomain "tv";
+
+    import "Tv";
+    import "Progress";
+
+    string func  = (string) WFM::Args(0);
+    map    param = (map) WFM::Args(1);
+    map    ret   = $[];
+
+    // Make proposal for installation/configuration...
+    if ( func == "MakeProposal" )
+    {
+	boolean force_reset = param["force_reset"]:false;
+	string proposal = "";
+	string warning = nil;
+	symbol warning_level = nil;
+
+	// Let's generate the proposal
+	if (force_reset || !Tv::proposal_valid)
+	{
+	    Tv::proposal_valid = true;
+
+	    // Do not show any progress during Read ()
+	    Progress::off ();
+	    UI::OpenDialog(`VBox(`Label(_("Detecting TV cards..."))));
+	    Tv::ReadCardsDatabase();
+	    Tv::ReadSettings ();
+	    Tv::Detect ();
+	    Tv::ReadIRC();
+	    UI::CloseDialog();
+	    Progress::on ();
+
+	    Tv::Propose ();
+	}
+
+	proposal = Tv::Summary ();
+
+	// Fill return map
+	ret =
+	    $[ "preformatted_proposal" : proposal,
+	       //"warning"               : warning,
+	       //"warning_level"         : warning_level
+	    ];
+    }
+    // Run an interactive workflow
+    else if ( func == "AskUser" )
+    {
+	map stored = Tv::Export ();
+
+	// Do not show any progress during Read ()
+	Progress::off ();
+	Tv::ReadCardsDatabase ();
+	Tv::ReadTunersDatabase ();
+	Progress::on ();
+
+	any seq = WFM::CallFunction ( "tv", [ .noio ] );
+
+	if (seq != `next)
+	{
+	    Tv::Import (stored);
+	}
+
+	// Fill return map
+	ret =
+	    $[ "workflow_sequence" : seq
+	    ];
+    }
+    // Return human readable titles for the proposal
+    else if ( func == "Description" )
+    {
+	// Fill return map
+	ret =
+	    $[ "rich_text_title" :
+                // Richtext title
+                _("TV Cards"),
+	       "menu_title"      :
+                // Richtext title
+                _("&TV Cards"),
+	       "id"              : "tv_conf"
+	    ];
+    }
+    // Write the settings
+    else if ( func == "Write" )
+    {
+	boolean has_next = param["has_next"]:false;
+	boolean success = true;
+
+	if (Tv::IsDirty ())
+	{
+	    block<boolean> abort = ``{ return false; };
+	    success = Tv::Write ( abort );
+	}
+
+	// Fill return map
+	ret =
+	    $[ "success" : success
+	    ];
+    }
+
+    return ret;
+
+/* EOF */
+}

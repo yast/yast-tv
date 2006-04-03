@@ -1,0 +1,9 @@
+Dump	---------------
+Dump	[]
+Dump	[`item (`id ("bttv"), "bttv: bttv - v4l driver module for bt848/878 based cards", false), `item (`id ("zoran"), "zoran: Zoran ZR36120 based framegrabber", false)]
+Dump	---------------
+Dump	[]
+Dump	[`item (`id ("bttv"), "bttv: bttv - v4l driver module for bt848/878 based cards", true), `item (`id ("zoran"), "zoran: Zoran ZR36120 based framegrabber", false)]
+Dump	---------------
+Dump	[]
+Dump	[`item (`id ("bttv"), "bttv: bttv - v4l driver module for bt848/878 based cards", false), `item (`id ("zoran"), "zoran: Zoran ZR36120 based framegrabber", true)]

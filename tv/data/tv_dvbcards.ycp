@@ -1,0 +1,27 @@
+/*
+ * Yast2 DVB card database
+ *
+ * $Id$
+ */
+
+{
+textdomain "tv";
+
+return [
+    $[ "name" :  // Item text in the list of card vendors
+				_("Other vendors"),
+       "cards" :
+	[
+	    $[
+		"name" : "Technotrend-Budget / Hauppauge WinTV-NOVA-T DVB card",
+		"module" : [ "budget-ci", "tda1004x" ]
+	    ],
+	    $[
+		"name" : "B2C2 FlexCopII DVB chip / Technisat SkyStar2 DVB card",
+		"module" : [ "b2c2-flexcop-pci", "mt312" ]
+	    ]
+	]
+    ]
+];
+
+}
