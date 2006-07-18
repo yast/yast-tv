@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Jun 28 08:48:14 CEST 2006 - lslezak@suse.cz
+
+- don't install TV applications when X11 is not installed
+  (minimal/text mode installation) (#170000)
+- updated Tv card database and database generator
+- 2.13.9
+
+-------------------------------------------------------------------
 Mon Apr  3 15:39:46 CEST 2006 - lslezak@suse.cz
 
 - fixed paths: search extra drivers in "updates" subdirectory,
