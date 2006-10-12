@@ -3312,57 +3312,82 @@ global define boolean InitializeStationsConfig() ``{
 
 	Progress::NextStage ();
 
-	// do we have TV or radio card?
-	integer i = 0;
-	boolean tv = false;
-	boolean radio = false;
-	while (i < size (cards))
+	// don't install the applications in a minimal system (text mode),
+	// the applications have many dependencies (X11,...)
+	if (Package::Installed ("xorg-x11-libs"))
 	{
-		if ((cards[i]:nil) != nil)
-		{
-			if (i<64) tv = true;
-			else radio = true;
-		}
-		i = i + 1;
-	}
+	    // do we have TV or radio card?
+	    integer i = 0;
+	    boolean tv = false;
+	    boolean radio = false;
+	    while (i < size (cards))
+	    {
+		    if ((cards[i]:nil) != nil)
+		    {
+			    if (i<64) tv = true;
+			    else radio = true;
+		    }
+		    i = i + 1;
+	    }
 
-	if (Package::Installed ("kdelibs3"))
-	    tv_app = "kdetv";
-	else if (Package::Installed ("gnome-panel"))
-	    tv_app = "zapping";
+	    y2milestone("Detected TV card: %1, Radio card: %2", tv, radio);
 
-	boolean tv_app_installed = Package::Installed (tv_app);
-	boolean radio_app_installed = Package::Installed ("kradio");
-	list<string> apps = [ tv_app, "alevt", "nxtvepg" ];
+	    if (Package::Installed ("kdelibs3"))
+		tv_app = "kdetv";
+	    else if (Package::Installed ("gnome-panel"))
+		tv_app = "zapping";
 
-	// do not propose kradio application if we have not KDE
-	if (radio && tv && !tv_app_installed && !radio_app_installed &&
-	    tv_app == "kdetv")
-	{
-	    // Popup text (required application are %1):
-	    apps = add (apps, "kradio");
-	    InstallApplication (apps, sformat(_("<p>To enable you to watch TV and listen to radio on your computer,<br>
+	    boolean tv_app_installed = Package::Installed (tv_app);
+	    boolean radio_app_installed = Package::Installed ("kradio");
+	    list<string> apps = [ tv_app ];
+
+	    if (!Package::Installed("alevt"))
+	    {
+		apps = add(apps, "alevt");
+	    }
+
+	    if (!Package::Installed("nxtvepg"))
+	    {
+		apps = add(apps, "nxtvepg");
+	    }
+
+	    y2milestone("TV application: %1, installed: %2", tv_app, tv_app_installed);
+	    y2milestone("Radio applications installed: %1", radio_app_installed);
+	    y2milestone("Applications to install: %1", apps);
+
+	    // do not propose kradio application if we have not KDE
+	    if (radio && tv && !tv_app_installed && !radio_app_installed &&
+		tv_app == "kdetv")
+	    {
+		// Popup text (required application are %1):
+		apps = add (apps, "kradio");
+		InstallApplication (apps, sformat(_("<p>To enable you to watch TV and listen to radio on your computer,<br>
 these packages should be installed:<br>
 <b>%1</b><br>
 Install them now?
 </p>
 "), mergestring (apps, ", ")));
-	}
-	else if (tv && !tv_app_installed)
-	{
-	    // Popup text (required application are %1):
-	    InstallApplication (apps, sformat(_("<p>To enable you to watch TV on your computer,<br>
+	    }
+	    else if (tv && !tv_app_installed)
+	    {
+		// Popup text (required application are %1):
+		InstallApplication (apps, sformat(_("<p>To enable you to watch TV on your computer,<br>
 these packages should be installed:<br>
 <b>%1</b><br>
 Install them now?
 </p>
 "), mergestring (apps, ", ")));
-	}
-	else if (radio && !radio_app_installed && tv_app == "kdetv")
-	{
-	    // Popup text (required application is %1):
-	    InstallApplication (["kradio"], sformat (_("<p>To listen to radio on your computer, you can use the <b>%1</b> application.
+	    }
+	    else if (radio && !radio_app_installed && tv_app == "kdetv")
+	    {
+		// Popup text (required application is %1):
+		InstallApplication (["kradio"], sformat (_("<p>To listen to radio on your computer, you can use the <b>%1</b> application.
 Install it now?</p>"), "kradio"));
+	    }
+	}
+	else
+	{
+	    y2milestone("X11 libraries (xorg-x11-libs) are not installed, skipping installation of TV packages.");
 	}
 
 	// save not_ask status
