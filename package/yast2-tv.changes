@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Nov 10 14:51:56 CET 2006 - lslezak@suse.cz
+
+- fixed path to 'scantv' utility (/usr/X11R6/bin -> /usr/bin)
+  (#214134)
+- 2.14.0
+
+-------------------------------------------------------------------
 Wed Jun 28 08:48:14 CEST 2006 - lslezak@suse.cz
 
 - don't install TV applications when X11 is not installed
