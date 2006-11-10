@@ -1239,7 +1239,7 @@ define list ChannelsScanPopup (string norm, string freq) ``{
     y2milestone("Scanning TV card number %1", cardnum);
 
     SCR::Execute (.background.run_output,
-	sformat("/usr/X11R6/bin/scantv -n %1 -f %2 2>&1 -o %3/xawtvrc -c /dev/video%4 -C /dev/vbi%4",
+	sformat("/usr/bin/scantv -n %1 -f %2 2>&1 -o %3/xawtvrc -c /dev/video%4 -C /dev/vbi%4",
 	    norm, freq, Tv::tmpdir, cardnum));
 
     string test_output = "";
