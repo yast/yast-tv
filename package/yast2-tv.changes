@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Nov 29 15:22:21 CET 2006 - lslezak@suse.cz
+
+- search for DVB drivers also in analog driver directory (#140468)
+- 2.15.0
+
+-------------------------------------------------------------------
 Fri Nov 10 14:51:56 CET 2006 - lslezak@suse.cz
 
 - fixed path to 'scantv' utility (/usr/X11R6/bin -> /usr/bin)

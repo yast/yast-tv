@@ -620,6 +620,19 @@ available kernel modules."));
 	    dvb_core_drivers = add(dvb_core_drivers, mod, parm);
 	});
 
+	// add dvb drivers from media/video directory (search for "*dvb*" modules)
+	list<string> dvb_extra_drivers = (list<string>)SCR::Dir(video_path);
+	dvb_extra_drivers = filter(string d, dvb_extra_drivers, {return issubstring(d, "dvb");});
+	y2milestone("Extra DVB drivers (from media/video): %1", dvb_extra_drivers);
+
+	if (dvb_extra_drivers != nil && size(dvb_extra_drivers) > 0)
+	{
+	    foreach(string mod, dvb_extra_drivers, {
+		map parm = (map) SCR::Read(add(video_path, mod));
+		dvb_core_drivers = add(dvb_core_drivers, mod, parm);
+	    });
+	}
+
 	y2debug("found dvb drivers: %1", dvb_core_drivers);
 
 	return true;
