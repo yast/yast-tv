@@ -91,6 +91,7 @@ define void SetItems() {
     y2debug("items: %1", items);
 
     WizardHW::SetContents(items);
+    Wizard::SetDesktopIcon("tv");
 }
 
 
@@ -100,7 +101,7 @@ define void SetItems() {
  */
 define any HardwareDialog() ``{
 
-    WizardHW::CreateHWDialog(_("TV and Radio Card Setup"),
+    WizardHW::CreateHWDialog(_("TV and Radio Card Configuration"),
 	DetectedDialogHelp(),
 	[_("Number"), _("Card Name")],
 	[]

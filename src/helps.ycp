@@ -52,7 +52,7 @@ Please wait...
     define string DetectedDialogHelp() ``{
 	return
 	    // Help: Detected cards, part 1 of 3
-_("<P><B><BIG>TV and Radio Card Setup</BIG></B><BR>
+_("<P><B><BIG>TV and Radio Card Configuration</BIG></B><BR>
 Here, configure your TV and radio cards.
 <BR></P>
 ") +

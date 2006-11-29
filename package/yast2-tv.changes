@@ -2,6 +2,7 @@
 Wed Nov 29 15:22:21 CET 2006 - lslezak@suse.cz
 
 - search for DVB drivers also in analog driver directory (#140468)
+- the main dialog: display an icon, use unified label (#211566)
 - 2.15.0
 
 -------------------------------------------------------------------
