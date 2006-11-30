@@ -444,6 +444,14 @@ the list in the following dialog."));
 
     UI::SetFocus (`id (`vendors_selbox));
 
+    if (Tv::current_card["dvb"]:false)
+    {
+	// disable TV channel setup for DVB cards
+	// DVB scan is currently unsupported
+	UI::ChangeWidget(`id(`channels), `Enabled, false);
+	y2milestone("DVB card - disabling TV channel setup button");
+    }
+
     do
     {
 	// Disable/enable the [Select tuner] button
