@@ -34,14 +34,16 @@
 	    Tv::proposal_valid = true;
 
 	    // Do not show any progress during Read ()
-	    Progress::off ();
+	    boolean progress = Progress::set(false);
+
 	    UI::OpenDialog(`VBox(`Label(_("Detecting TV cards..."))));
 	    Tv::ReadCardsDatabase();
 	    Tv::ReadSettings ();
 	    Tv::Detect ();
 	    Tv::ReadIRC();
 	    UI::CloseDialog();
-	    Progress::on ();
+
+	    Progress::set(progress) ;
 
 	    Tv::Propose ();
 	}
