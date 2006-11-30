@@ -3,6 +3,7 @@ Thu Nov 30 14:51:03 CET 2006 - lslezak@suse.cz
 
 - update of testsuite (build fix)
 - use Progress::set()
+- disable TV channel setup for DVB cards (not implemented)
 
 -------------------------------------------------------------------
 Wed Nov 29 15:22:21 CET 2006 - lslezak@suse.cz
