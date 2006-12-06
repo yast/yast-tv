@@ -48,9 +48,9 @@
 	return UI::PollInput () == `abort;
     };
 
-    Progress::off ();
+    boolean progress = Progress::set(false);
     boolean ret = Tv::Write (callback);
-    Progress::on ();
+    Progress::set(progress);
 
     return ret;
 }
