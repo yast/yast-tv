@@ -63,10 +63,10 @@
 	map stored = Tv::Export ();
 
 	// Do not show any progress during Read ()
-	Progress::off ();
+	boolean progress = Progress::set(false);
 	Tv::ReadCardsDatabase ();
 	Tv::ReadTunersDatabase ();
-	Progress::on ();
+	Progress::set(progress);
 
 	any seq = WFM::CallFunction ( "tv", [ .noio ] );
 
