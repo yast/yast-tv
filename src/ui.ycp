@@ -18,6 +18,7 @@ import "Package";
 import "Popup";
 import "Progress";
 import "Sequencer";
+import "String";
 import "Summary";
 import "Tv";
 import "Wizard";
@@ -1387,6 +1388,75 @@ define term StationPopup (string channel, string station, list items) ``{
 
 
 /**
+ * Detect the TV norms supported by the card (see bug #231147)
+ * @param list of default norm items (for combobox)
+ * @return updated item list
+ */
+define list DetectTVNorms (list norms_items) {
+
+    list ret	= [];
+    // busy popup
+    Popup::ShowFeedback ("", _("Detecting supported TV norms..."));
+
+    // before scan, tv module has to be loaded (maybe TV is not configured yet)
+    string start = Tv::tv_tmp_start ();
+    if (start != "")
+    {
+	Popup::ClearFeedback ();
+	// error message
+	ErrorWithDetails (_("The kernel module for TV support could not be loaded."), start);
+	UI::CloseDialog();
+	return [];
+    }
+
+    map norm_labels	= listmap (term it, (list<term>) norms_items, {
+	string norm	= it[0,0]:"";
+	return $[ norm : it [1]:norm ];
+    });
+
+    integer cardnum = Tv::current_card_no;
+    if (cardnum == nil)
+    {
+	// the card hasn't been configured yet, compute the number
+	map config = Tv::Export();
+	list<map> configured = config["cards"]:[];
+
+	cardnum = 0;
+
+	foreach(map c, configured, {
+		if (!c["dvb"]:false && !c["radio"]:false)
+		{
+		    cardnum = cardnum + 1;
+		}
+	    }
+	);
+    }
+
+    map out = (map) SCR::Execute (.target.bash_output,
+	sformat ("/usr/bin/v4lctl -c /dev/video%1 list 2>/dev/null | grep norm", cardnum));
+    string stdout	= out["stdout"]:"";
+    if (stdout != "")
+    {
+	list l	= splitstring (deletechars (stdout, "\n"), "|");
+	if (size (l) > 4)
+	{
+	    string curr	= String::CutBlanks (l[2]:"");
+	    string def	= String::CutBlanks (l[3]:"");
+	    list norms	= filter (string e, splitstring (l[4]:"", " \t"), ``(e != ""));
+	    if (contains (norms, curr))
+		def	= curr;
+	    foreach (string norm, (list<string>) norms, {
+		norm	= toupper (norm);
+		ret	= add (ret,
+		    `item (`id (norm), norm_labels[norm]:norm, norm == toupper (def)));
+	    });
+	}
+    }
+    Popup::ClearFeedback ();
+    return ret;
+}
+
+/**
  * Dialogs for TV stations management
  */
 define any ChannelsDialog () ``{
@@ -1498,10 +1568,19 @@ define any ChannelsDialog () ``{
 	// TODO Next for detected sequence...
 	Label::BackButton (), Label::OKButton () );
 
+    // detect the norm list supported by card
+    list detected_norms	= DetectTVNorms (norms);
+    if (detected_norms != [])
+	UI::ChangeWidget (`id(`norms), `Items, detected_norms);
+
     // set the starting configuation
-    string tv_norm = toupper (channels_config["defaults", "norm"]:"pal");
+    string tv_norm = toupper (channels_config["defaults", "norm"]:"");
     string tv_freqtab = channels_config["global", "freqtab"]:"europe-west";
-    UI::ChangeWidget (`id(`norms), `Value, tv_norm);
+    if (tv_norm != "")
+	UI::ChangeWidget (`id(`norms), `Value, tv_norm);
+    else if (detected_norms == [])
+	tv_norm	= "PAL";
+
     UI::ChangeWidget (`id(`freq), `Value, tv_freqtab);
 
     map new_config = $[];
