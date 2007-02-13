@@ -2047,14 +2047,6 @@ to %1."), "/etc/modprobe.d/tv"));
 		detected_cards = add(detected_cards, result);
 	    });
 
-	if (Mode::test())
-	{
-	    detected_cards =
-		[ $["name":"Bt848 TV with DMA push", "unique_key":"qluk.HvsIesmJqQ4"],
-		  $["module":"bttv", "name":"Bt848 TV Kendy's special", "unique_key":"hluk.HvsIesmXXX1"]
-		];
-	}
-
 	y2milestone("Detected cards: %1", detected_cards);
 	y2milestone("Cards: %1", cards);
 	return true;
