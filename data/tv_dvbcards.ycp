@@ -9,12 +9,17 @@ textdomain "tv";
 
 return [
     $[ "name" :  // Item text in the list of card vendors
-				_("Other vendors"),
+				_("DVB Cards"),
        "cards" :
 	[
 	    $[
 		"name" : "Technotrend-Budget / Hauppauge WinTV-NOVA-T DVB card",
 		"module" : [ "budget-ci", "tda1004x" ]
+	    ],
+	    $[
+		"name" : "LifeView FlyDVB-T trio (DVB-T)",
+		"module" : [ "saa7134-dvb", "tda1004x" ],
+		"fw_install" : false
 	    ],
 	    $[
 		"name" : "B2C2 FlexCopII DVB chip / Technisat SkyStar2 DVB card",
