@@ -6,7 +6,7 @@ BuildRequires: perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-t
 BuildRequires: yast2-sound
 %endif
 
-Requires:	yast2 yast2-sound yast2-packager
+Requires:	yast2 yast2-sound
 Provides:	yast2-config-tv yast2-db-tv
 Obsoletes:	yast2-config-tv yast2-db-tv
 Provides:	yast2-lib-hardware

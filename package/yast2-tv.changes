@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Mar 22 11:11:20 CET 2007 - lslezak@suse.cz
+
+- updated TV card DB (linux-2.6.21-rc4-git5-2)
+- removed dependency to yast2-packager (#253958)
+- 2.15.4
+
+-------------------------------------------------------------------
 Tue Feb 13 13:43:37 CET 2007 - lslezak@suse.cz
 
 - fixed build - Mode::test() is working now
