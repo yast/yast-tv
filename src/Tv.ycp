@@ -2883,8 +2883,10 @@ global define any ReadIRC () ``{
 
     cards_with_ir_kbd_gpio = (map)
 	SCR::Read (.target.yast2, "tv_cards-lirc_gpio.ycp");
-    use_irc = Service::Status ("lirc") == 0;
-    irc_module = (string) SCR::Read (.sysconfig.lirc.LIRC_MODULE);
+
+    use_irc = (Service::Info("lirc") != $[]) ? (Service::Status ("lirc") == 0) : false;
+
+    irc_module = (SCR::Read(.target.size, "/etc/sysconfig/lirc") >= 0) ? (string) SCR::Read (.sysconfig.lirc.LIRC_MODULE) : "";
     if (irc_module == nil) irc_module = "";
 
     if (SCR::Read (.target.size, "/etc/lircd.conf") != -1)
@@ -2896,10 +2898,17 @@ global define any ReadIRC () ``{
 	irc_config = "/usr/share/lirc/remotes/linux-input-layer-lircd.conf";
     }
 
-    map out = (map) SCR::Execute (.target.bash_output,
-	"/usr/bin/find  /usr/share/lirc/remotes/ -name *lircd*");
-    remotes = sort (splitstring (out["stdout"]:"", "\n"));
-    // FIXME choose from remotes
+    if (SCR::Read(.target.size, "/usr/share/lirc") >= 0)
+    {
+	map out = (map) SCR::Execute (.target.bash_output,
+	    "/usr/bin/find  /usr/share/lirc/remotes/ -name *lircd*");
+	remotes = sort (splitstring (out["stdout"]:"", "\n"));
+	// FIXME choose from remotes
+    }
+    else
+    {
+	remotes = [];
+    }
 
     return `next;
 }
@@ -2910,9 +2919,16 @@ global define any ReadIRC () ``{
  */
 global define any WriteIRC () ``{
 
-    // 1. sysconfig values
-    SCR::Write (.sysconfig.lirc.LIRC_MODULE, irc_module);
-    SCR::Write (.sysconfig.lirc, nil);
+    if (SCR::Read(.target.size, "/etc/sysconfig/lirc") >= 0)
+    {
+	// write sysconfig values
+	SCR::Write (.sysconfig.lirc.LIRC_MODULE, irc_module);
+	SCR::Write (.sysconfig.lirc, nil);
+    }
+    else
+    {
+	y2warning("/etc/syconfig/lirc doesn't exist, writing the configuration has been skipped");
+    }
 
     y2milestone("config file: %1", irc_config);
 
@@ -2933,20 +2949,31 @@ global define any WriteIRC () ``{
 	    y2milestone("config file: %1 copied to /etc/lircd.conf",irc_config);
 	}
 
-	// adjust runlevels:
-	Service::Adjust ("lirc", "enable");
-        // start the service
-	if (Service::Status ("lirc") == 0)
-	    Service::RunInitScript ("lirc", "restart");
+	// does the service exist?
+	if (Service::Info("lirc") != $[])
+	{
+	    // adjust runlevels:
+	    Service::Adjust ("lirc", "enable");
+	    // start the service
+	    if (Service::Status ("lirc") == 0)
+		Service::RunInitScript ("lirc", "restart");
+	    else
+		Service::RunInitScript ("lirc", "start");
+	}
 	else
-	    Service::RunInitScript ("lirc", "start");
+	{
+	    y2error("Service 'lirc' doesn't exist!");
+	}
     }
     else
     {
-	// adjust runlevels:
-	Service::Adjust ("lirc", "disable");
-        // stop the service
-	Service::RunInitScript ("lirc", "stop");
+	if (Service::Info("lirc") != $[])
+	{
+	    // adjust runlevels:
+	    Service::Adjust ("lirc", "disable");
+	    // stop the service
+	    Service::RunInitScript ("lirc", "stop");
+	}
     }
     return `next;
 }
