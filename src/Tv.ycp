@@ -1254,8 +1254,16 @@ Use the firmware file anyway?
 		    // find card that requires the driver
 		    string cardname = "TV";
 
+		    // is the firmware really needed?
+		    boolean firmware_needed = false;
+
 		    foreach(map card, (list<map>) cards, {
 			    list<string> drvs = card["module"]:[];
+
+			    if (card["fw_install"]:true)
+			    {
+				firmware_needed = true;
+			    }
 
 			    if (contains(drvs, drv))
 			    {
@@ -1264,6 +1272,11 @@ Use the firmware file anyway?
 			}
 		    );
 
+		    if (firmware_needed)
+		    {
+			y2milestone("Skipping firmware installation for driver '%1' (card '%2')", drv, cardname);
+			continue;
+		    }
 
 		    list<map<string,any> > fws = (list<map<string,any> >)firmware_database[drv]:[];
 
@@ -1470,6 +1483,7 @@ Use the firmware file anyway?
 	list<map> detected = (list<map>)SCR::Read(.probe.tv);
 
 	list<map> probe_dvb = (list<map>)SCR::Read(.probe.dvb);
+
 	if (probe_dvb != nil)
 	{
 	    detected = (list<map>)merge(detected, probe_dvb);
@@ -1925,6 +1939,7 @@ to %1."), "/etc/modprobe.d/tv"));
 	}
 
 	list probe_tv = (list) SCR::Read(.probe.tv);
+	y2milestone(".probe.tv: %1", probe_tv);
 	if (probe_tv == nil)
 	{
         // Warning message popup (detection problem):
@@ -1936,6 +1951,7 @@ to %1."), "/etc/modprobe.d/tv"));
 
 	// probe for DVB cards
 	list<map> probe_dvb = (list<map>) SCR::Read(.probe.dvb);
+	y2milestone(".probe.dvb: %1", probe_dvb);
 
 	if (probe_dvb == nil)
 	{
@@ -2417,6 +2433,8 @@ to %1."), "/etc/modprobe.d/tv"));
 	    }
 	);
 
+	y2milestone("cards: %1", cards);
+
 	list<map<string,any> > conf_list = maplist (map card, (list<map<string,any> >) cards, ``{
 	    map<string,any> ret = $[];
 	    boolean isdvb = card["dvb"]:false;
@@ -2456,22 +2474,29 @@ to %1."), "/etc/modprobe.d/tv"));
 		{
 		    if (firmware_database != nil && size(firmware_database) > 0)
 		    {
-			foreach(string fwmod, list<map<string,any> > fws, (map<string,list<map<string,any> > >)firmware_database, {
+			if (card["fw_install"]:nil == false)
+			{
+			    y2milestone("Card '%1' doesn't need a firmware", card ["name"]:"");
+			}
+			else
+			{
+			    foreach(string fwmod, list<map<string,any> > fws, (map<string,list<map<string,any> > >)firmware_database, {
 
-				if (contains(card["module"]:[], fwmod))
-				{
-				    foreach(map<string,any> fw, fws, {
-					    string target = fw["target"]:"";
-					    string source = fw["source"]:"";
-					    boolean inst = IsFWInstalled(firmware_prefix + target);
+				    if (contains(card["module"]:[], fwmod))
+				    {
+					foreach(map<string,any> fw, fws, {
+						string target = fw["target"]:"";
+						string source = fw["source"]:"";
+						boolean inst = IsFWInstalled(firmware_prefix + target);
 
-					    descr = add(descr, _("Firmware: ") +
-					    ((inst) ? sformat(_("Installed (%1)"), target) : sformat(_("Not installed (%1 -> %2)"), source, target)));
-					}
-				    );
+						descr = add(descr, _("Firmware: ") +
+						((inst) ? sformat(_("Installed (%1)"), target) : sformat(_("Not installed (%1 -> %2)"), source, target)));
+					    }
+					);
+				    }
 				}
-			    }
-			);
+			    );
+			}
 		    }
 		}
 
