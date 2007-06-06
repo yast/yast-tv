@@ -24,7 +24,21 @@ return [
 	    $[
 		"name" : "B2C2 FlexCopII DVB chip / Technisat SkyStar2 DVB card",
 		"module" : [ "b2c2-flexcop-pci", "mt312" ]
-	    ]
+	    ],
+	    // (#222806)
+	    $[
+		"name" : "Nova-T DVB-T Model 909",
+		"module" : [ "cx88_dvb", "bcm3510" ]
+	    ],
+	    // (#223188)
+	    $[
+		"name" : "Twinhan VisionPlus DVB-T",
+		"module" : [ "dvb-bt8xx", "bcm3510" ]
+	    ],
+	    $[
+		"name" : "AVermedia DVB-T 771",
+		"module" : [ "dvb-bt8xx", "mt352" ]
+	    ],
 	]
     ]
 ];

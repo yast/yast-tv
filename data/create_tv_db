@@ -5,6 +5,7 @@
 # $1 - the CARDLIST.bttv source file
 # $2 - the CARDLIST.saa7134 source file
 # $3 - the CARDLIST.cx88 source file
+# $4 - the CARDLIST.ivtv source file
 # ...more to come...
 
 if ($#ARGV < 1)
@@ -16,6 +17,7 @@ if ($#ARGV < 1)
 $bttv_cardlist_fname = $ARGV[0];
 $saa7134_cardlist_fname = $ARGV[1];
 $cx88_cardlist_fname = $ARGV[2];
+$ivtv_cardlist_fname = $ARGV[3];
 # ... more to come ...
 
 # Names to translate
@@ -149,6 +151,7 @@ print "return [\n";
 push @cards, ReadDatabase($bttv_cardlist_fname, "bttv");
 push @cards, ReadDatabase($saa7134_cardlist_fname, "saa7134");
 push @cards, ReadDatabase($cx88_cardlist_fname, "cx88xx");
+push @cards, ReadDatabase($ivtv_cardlist_fname, "ivtv");
 #...more to come...
 
 # Sort @cards
