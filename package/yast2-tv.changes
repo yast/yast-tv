@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Jun  6 10:30:42 CEST 2007 - lslezak@suse.cz
+
+- support for ivtv based TV cards (#130098)
+- install firmware/packages before loading drivers
+- updated DVB card DB (#222806, #223188)
+- 2.15.6
+
+-------------------------------------------------------------------
 Mon Jun  4 14:35:57 CEST 2007 - lslezak@suse.cz
 
 - tv card DB updated to kernel-default-2.6.21-12

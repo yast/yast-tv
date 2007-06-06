@@ -1248,6 +1248,8 @@ Use the firmware file anyway?
 
 	y2milestone("required modules with FW: %1", reqmod);
 
+	list<string> packages_to_install = [];
+
 	if (size(reqmod) > 0)
 	{
 	    foreach(string drv, reqmod, {
@@ -1255,24 +1257,29 @@ Use the firmware file anyway?
 		    string cardname = "TV";
 
 		    // is the firmware really needed?
-		    boolean firmware_needed = false;
+		    boolean firmware_needed = nil;
 
 		    foreach(map card, (list<map>) cards, {
 			    list<string> drvs = card["module"]:[];
-
-			    if (card["fw_install"]:true)
-			    {
-				firmware_needed = true;
-			    }
-
 			    if (contains(drvs, drv))
 			    {
 				cardname = card["name"]:"TV";
+
+				// install the firmware?
+				boolean inst = card["fw_install"]:true;
+				if (firmware_needed == nil)
+				{
+				    firmware_needed = inst;
+				}
+				else
+				{
+				    firmware_needed = firmware_needed || inst;
+				}
 			    }
 			}
 		    );
 
-		    if (firmware_needed)
+		    if (firmware_needed == false)
 		    {
 			y2milestone("Skipping firmware installation for driver '%1' (card '%2')", drv, cardname);
 			continue;
@@ -1281,19 +1288,27 @@ Use the firmware file anyway?
 		    list<map<string,any> > fws = (list<map<string,any> >)firmware_database[drv]:[];
 
 		    foreach(map<string,any> fw, fws, {
+			    list<string> required_packages = fw["packages"]:[];
+
+			    if (size(required_packages) > 0)
+			    {
+				y2milestone("Driver %1 requires these packages: %2", drv, required_packages);
+				packages_to_install = (list<string>)union(packages_to_install, required_packages);
+			    }
+
 			    string target = fw["target"]:"";
 			    string source = fw["source"]:"";
 
-			    boolean inst = IsFWInstalled(firmware_prefix + target);
-			    if (inst)
-			    {
-				// the firmware is already installed
-				y2milestone("Firmware %1 has been already installed.", firmware_prefix + target);
-				continue;
-			    }
-
 			    if (target != nil && target != "" && source != nil && source != "")
 			    {
+				boolean inst = IsFWInstalled(firmware_prefix + target);
+				if (inst)
+				{
+				    // the firmware is already installed
+				    y2milestone("Firmware %1 has been already installed.", firmware_prefix + target);
+				    continue;
+				}
+
 				boolean install = true;
 
 				// install fw in a loop until it succeeds or a wrong fw is confirmed
@@ -1365,6 +1380,21 @@ Use the firmware file anyway?
 
 		}
 	    );
+
+	    y2milestone("Collected packages: %1", packages_to_install);
+
+	    if (size(packages_to_install) > 0)
+	    {
+		// do not install the packages again
+		packages_to_install = filter(string pkg, packages_to_install, {return !Package::Installed(pkg);});
+
+		y2milestone("Packages to install: %1", packages_to_install);
+
+		if (size(packages_to_install) > 0)
+		{
+		    ret = ret && Package::DoInstall(packages_to_install);
+		}
+	    }
 	}
 
 	return ret;
@@ -2098,30 +2128,55 @@ to %1."), "/etc/modprobe.d/tv"));
 			    // Summary text (%1 is number)
 			    _("Installed as DVB card number %1."), dvbcard_no);
 
-			if (firmware_database != nil && size(firmware_database) > 0)
-			{
-			    foreach(string fwmod, list<map<string,any> > fws, (map<string,list<map<string,any> > >)firmware_database, {
+		    }
+		    else
+		    {
+			installed_str = sformat(
+			    // Summary text (%1 is number)
+			    _("Installed as TV card number %1"), card_no);
+		    }
 
-				    if (contains(card["module"]:[], fwmod))
-				    {
-					foreach(map<string,any> fw, fws, {
-						string target = fw["target"]:"";
-						string source = fw["source"]:"";
+		    if (firmware_database != nil && size(firmware_database) > 0)
+		    {
+			foreach(string fwmod, list<map<string,any> > fws, (map<string,list<map<string,any> > >)firmware_database, {
+				if (contains(card["module"]:[], fwmod))
+				{
+				    foreach(map<string,any> fw, fws, {
+					    string target = fw["target"]:"";
+					    string source = fw["source"]:"";
+
+					    if (target != "" && source != "")
+					    {
 						boolean inst = IsFWInstalled(firmware_prefix + target);
 
 						installed_str = installed_str + "<BR>" + _("Firmware: ") +
 						((inst) ? sformat(_("Installed (%1)"), target) : sformat(_("Not installed (%1)"), source));
 					    }
-					);
-				    }
+
+					    // add packages
+					    list<string> required_packages = fw["packages"]:[];
+
+					    if (size(required_packages) > 0)
+					    {
+						y2milestone("Required packages for driver %1: %2", fwmod, required_packages);
+					    }
+
+					    foreach(string pkg, required_packages,
+						{
+						    // summary string, %1 is a package name, %2 is a status string: installed
+						    installed_str = installed_str + "<BR>" + sformat(_("Package: %1 (%2)"),
+							// package status
+							pkg, Package::Installed(pkg) ? _("Installed") : _("Not Installed"));
+						}
+					    );
+					}
+				    );
+
 				}
-			    );
-			}
+			    }
+			);
 		    }
-		    else
-			installed_str = sformat(
-			    // Summary text (%1 is number)
-			    _("Installed as TV card number %1"), card_no);
+
 		    card_item = Summary::Device(name, installed_str);
 		}
 
@@ -2470,33 +2525,51 @@ to %1."), "/etc/modprobe.d/tv"));
 		}
 
 		// add firmware data if available
-		if (isdvb)
+		if (firmware_database != nil && size(firmware_database) > 0)
 		{
-		    if (firmware_database != nil && size(firmware_database) > 0)
+		    if (card["fw_install"]:nil == false)
 		    {
-			if (card["fw_install"]:nil == false)
-			{
-			    y2milestone("Card '%1' doesn't need a firmware", card ["name"]:"");
-			}
-			else
-			{
-			    foreach(string fwmod, list<map<string,any> > fws, (map<string,list<map<string,any> > >)firmware_database, {
+			y2milestone("Card '%1' doesn't need a firmware", card ["name"]:"");
+		    }
+		    else
+		    {
+			foreach(string fwmod, list<map<string,any> > fws, (map<string,list<map<string,any> > >)firmware_database, {
 
-				    if (contains(card["module"]:[], fwmod))
-				    {
-					foreach(map<string,any> fw, fws, {
-						string target = fw["target"]:"";
-						string source = fw["source"]:"";
+				if (contains(card["module"]:[], fwmod))
+				{
+				    foreach(map<string,any> fw, fws, {
+					    string target = fw["target"]:"";
+					    string source = fw["source"]:"";
+
+					    if (target != "" && source != "")
+					    {
 						boolean inst = IsFWInstalled(firmware_prefix + target);
 
 						descr = add(descr, _("Firmware: ") +
 						((inst) ? sformat(_("Installed (%1)"), target) : sformat(_("Not installed (%1 -> %2)"), source, target)));
 					    }
-					);
-				    }
+
+					    // any required package?
+					    list<string> required_packages = fw["packages"]:[];
+
+					    if (size(required_packages) > 0)
+					    {
+						y2milestone("Required packages for driver %1: %2", fwmod, required_packages);
+					    }
+
+					    foreach(string pkg, required_packages,
+						{
+						    // summary string, %1 is a package name, %2 is a status string: installed
+						    descr = add(descr, sformat(_("Package: %1 (%2)"),
+							// package status
+							pkg, Package::Installed(pkg) ? _("Installed") : _("Not Installed")));
+						}
+					    );
+					}
+				    );
 				}
-			    );
-			}
+			    }
+			);
 		    }
 		}
 
@@ -3290,17 +3363,17 @@ global define boolean InitializeStationsConfig() ``{
 
 	list<string> stages = [
             // Progress stage
-            _("Write the settings"),
-            // Progress stage
             _("Install firmware"),
+            // Progress stage
+            _("Write the settings"),
             // Progress stage
 	    _("Update sound volume")];
 
 	list steps = [
             // Progress step
-            _("Writing the settings..."),
-            // Progress step
             _("Installing firmware..."),
+            // Progress step
+            _("Writing the settings..."),
             // Progress step
 	    _("Updating the sound volume...")];
 
@@ -3334,7 +3407,14 @@ global define boolean InitializeStationsConfig() ``{
 
 	y2debug("cards: %1", cards);
 
-	// Write the settings
+	// Install firmware
+	Progress::NextStage ();
+
+	if (cards_dirty && !InstallFW())
+	{
+	    return false;
+	}
+
 	Progress::NextStage ();
 
 	// install required kernel packages
@@ -3345,13 +3425,8 @@ global define boolean InitializeStationsConfig() ``{
 	    Package::InstallKernel(kernelmodules);
 	}
 
+	// Write the settings
 	if (cards_dirty && !WriteSettings())
-	{
-	    return false;
-	}
-
-	Progress::NextStage ();
-	if (cards_dirty && !InstallFW())
 	{
 	    return false;
 	}
