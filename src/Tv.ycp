@@ -28,6 +28,7 @@
     import "Package";
     import "Sound";
     import "WizardHW";
+    import "HWConfig";
 
     textdomain "tv";
 
@@ -1604,6 +1605,54 @@ Use the firmware file anyway?
 	return file;
     }
 
+
+    /**
+     * Removes all hwcfg files created by this module (they are not needed anymore)
+     */
+    define boolean RemoveHWConfigTV() {
+	boolean ret = true;
+
+	// get list of all config files
+	list<string> cfiles = HWConfig::ConfigFiles();
+	y2milestone("Found sysconfig/hardware files: %1", cfiles);
+
+	if (size(cfiles) > 0)
+	{
+	    boolean changed = false;
+
+	    // scan each config file - search for sound card config
+	    foreach(string cfile, cfiles, {
+		string com = HWConfig::GetComment(cfile, "MODULE");
+
+		if (com != nil)
+		{
+		    list<string> coms = splitstring(com, "\n");
+
+		    foreach(string comline, coms, {
+			    // this is a hwconfig file crated by Yast
+			    // we can safely remove it
+			    if (regexpmatch(comline, "^# YaST configured TV card"))
+			    {
+				y2milestone("Removing file: %1", cfile);
+				ret = HWConfig::RemoveConfig(cfile) && ret;
+				changed = true;
+			    }
+			}
+		    );
+		}
+	    });
+
+	    if (changed)
+	    {
+		// apply the changes
+		HWConfig::Flush();
+	    }
+	}
+
+	return ret;
+    }
+
+
     /**
      * Write the TV settings to the SCR.
      * @return boolean Was the reading successful?
@@ -1696,31 +1745,10 @@ Use the firmware file anyway?
 		    );
 		}
 	    }
-
-	    // remove hwcfg file
-	    string uniq = card["unique_key"]:"";
-	    string bus = busmap[uniq]:"";
-
-	    if (bus != nil && bus != "")
-	    {
-		string file = "bus-" + bus;
-		y2milestone("Removing hwcfg file: %1", file);
-		// remove the hwcfg file
-		HWConfig::RemoveConfig(file);
-	    }
-	    else
-	    {
-		// search for static hwcfg file
-		string staticconf = FindStaticHWConfig(uniq);
-		if (staticconf != nil && staticconf != "")
-		{
-		    // there is a static config file, remove it
-		    y2milestone("Removing hwcfg file: %1", staticconf);
-		    // remove the hwcfg file
-		    HWConfig::RemoveConfig(staticconf);
-		}
-	    }
 	});
+
+	// remove hwcfg files (not needed anymore)
+	RemoveHWConfigTV();
 
 	boolean result = true;
 
@@ -1735,9 +1763,8 @@ Use the firmware file anyway?
 	//                         no_of_the_card ----^-------^-------^
 	map modules_parameters = $[];
 
-	// remember all created hwconfig files
-	// $["sysconfig_name" : "card_name"]
-	map<string,string> hwconfigfiles = $[];
+	// commands to start the devices $[ "device_name" : "commmand" ]
+	list<map<string,string> > start_commands = [];
 
 	// do this for each card...
 	integer tv_card_no = 0;
@@ -1767,25 +1794,7 @@ Use the firmware file anyway?
 		y2milestone ("Writing alias %2 %1 to /etc/modprobe.d/tv",
 		    module_names, alias);
 
-
-		string uniq = card["unique_key"]:"";
-		string bus = busmap[uniq]:"";
-
-		// set sysconfig file name
-		string file = "";
-
-		if (bus != nil && bus != "")
-		{
-		    file = "bus-" + bus;
-		}
-		else
-		{
-		    file = GetStaticConfig(uniq);
-		}
-
-		hwconfigfiles = add(hwconfigfiles, file, card_name);
-
-		// sysconfig comment
+		// modprobe comment
 		string comment =
 		( radio ? "# YaST configured radio card\n"
 			: "# YaST configured TV card\n" ) +
@@ -1795,13 +1804,7 @@ Use the firmware file anyway?
 		{
 		    // write alias
 		    SCR::Write(add(.modprobe_tv.alias, alias), module_names[0]:"");
-
-		    // write sysconfig
-		    // set module name
-		    HWConfig::SetValue(file, "MODULE", module_names[0]:"");
-		    HWConfig::SetComment(file, "MODULE", comment);
-		    // set automatic start at boot
-		    HWConfig::SetValue(file, "STARTMODE", "auto");
+		    start_commands = add(start_commands, $["model" : card_name, "cmd" : "/sbin/modprobe " + module_names[0]:""] );
 		}
 		else if (size(module_names) > 1)
 		{
@@ -1814,26 +1817,13 @@ Use the firmware file anyway?
 				install_string = install_string + "; ";
 			    }
 
-			    string varname = "MODULE";
-
-			    if (index != 0)
-			    {
-				varname = sformat("%1_%2", varname, index);
-			    }
-
-			    HWConfig::SetValue(file, varname, m);
-
 			    install_string = install_string + "/sbin/modprobe " + m;
 
 			    index = index + 1;
 			}
 		    );
 
-		    // add the first module entry
-		    HWConfig::SetComment(file, "MODULE", comment);
-		    // set automatic start at boot
-		    HWConfig::SetValue(file, "STARTMODE", "auto");
-
+		    start_commands = add(start_commands, $[ "model" : card_name, "cmd" : install_string]);
 		    SCR::Write(add(.modprobe_tv.install, alias), install_string);
 		}
 		else
@@ -1883,8 +1873,6 @@ Use the firmware file anyway?
 		tv_card_no = tv_card_no + 1;
 	});
 
-	HWConfig::Flush();
-
 	// write the parameters
 	if (!WriteModulesParameters (modules_parameters))
 	{
@@ -1920,18 +1908,19 @@ to %1."), "/etc/modprobe.d/tv"));
 	}
 
 	// start up the configured devices
-	foreach(string hwconf, string cname, hwconfigfiles, {
-		string hwup = "/sbin/hwup " + hwconf;
-		y2milestone("Startting device: %1", hwup);
+	foreach(map<string,string> dev, start_commands,
+	    {
+		y2milestone("Starting: %1", dev);
 
-		integer res = (integer)SCR::Execute (.target.bash, hwup);
+		integer res = (integer)SCR::Execute (.target.bash, dev["cmd"]:"");
 		if (res != 0)
 		{
-		    Report::Error(sformat(_("Cannot start device %1."), cname));
+		    Report::Error(sformat(_("Cannot start device %1."), dev["model"]:""));
 		    result = false;
 		}
 	    }
 	);
+
 	return result;
     }
 
