@@ -1,4 +1,13 @@
 -------------------------------------------------------------------
+Thu Aug 23 09:14:16 CEST 2007 - lslezak@suse.cz
+
+- don't read/write hwcfg files, remove the old files from
+  previous versions (#303713)
+- fixed build (FindStaticHWConfig() has been removed from
+  yast2-sound)
+- 2.15.7
+
+-------------------------------------------------------------------
 Wed Jun  6 10:30:42 CEST 2007 - lslezak@suse.cz
 
 - support for ivtv based TV cards (#130098)
