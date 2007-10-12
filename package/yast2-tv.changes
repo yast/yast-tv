@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Oct 12 15:36:53 CEST 2007 - lslezak@suse.cz
+
+- fixed state of the buttons in the expert dialog in Gtk UI
+  (#327492), don't recreate the table if not necessary
+- 2.16.0
+
+-------------------------------------------------------------------
 Thu Aug 23 09:14:16 CEST 2007 - lslezak@suse.cz
 
 - don't read/write hwcfg files, remove the old files from
