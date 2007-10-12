@@ -868,6 +868,9 @@ of available kernel modules...")),
 	    UI::ChangeWidget (`id(`parameter_entry), `Label,
 		sformat(parameter_label, selected_parameter));
 	    UI::ChangeWidget (`id(`parameter_entry), `Value, value);
+	    UI::ChangeWidget (`id(`parameter_entry), `Enabled, true);
+	    UI::ChangeWidget (`id(`set_button), `Enabled, true);
+	    UI::ChangeWidget (`id(`reset_button), `Enabled, true);
 	}
 
 	// Set the value in the table
@@ -894,29 +897,8 @@ than a-z, A-Z, _, -, +, /, and 0-9."));
 		{
 		    parameters = add (parameters, selected_parameter, value);
 
-		    // Redraw the table
-		    if (dvb)
-		    {
-			if (index == 1)
-			{
-			    UI::ChangeWidget ( `id(`parameters_table), `Items,
-			    Tv::ModuleParametersAsItems(Tv::dvb_modules, selected_module, parameters));
-			}
-			else
-			{
-			    UI::ChangeWidget ( `id(`parameters_table), `Items,
-			    Tv::ModuleParametersAsItems(Tv::dvb_core_drivers, selected_module, parameters));
-			}
-		    }
-		    else if (!radio)
-			UI::ChangeWidget (`id(`parameters_table), `Items,
-			    Tv::ModuleParametersAsItems(Tv::kernel_modules, selected_module, parameters));
-		    else
-			UI::ChangeWidget (`id(`parameters_table), `Items,
-			    Tv::ModuleParametersAsItems(Tv::radio_modules, selected_module, parameters));
-
-		    UI::ChangeWidget (`id(`parameters_table), `CurrentItem,
-			selected_parameter);
+		    string current = (string) UI::QueryWidget (`id(`parameters_table), `CurrentItem);
+		    UI::ChangeWidget(`id(`parameters_table), `Item(current, 1), value);
 		}
 	    }
 	}
@@ -933,29 +915,8 @@ to edit."));
 	    {
 		parameters = add (parameters, selected_parameter, "");
 
-		// Redraw the table
-		if (dvb)
-		{
-		    if (index == 1)
-		    {
-			UI::ChangeWidget ( `id(`parameters_table), `Items,
-			Tv::ModuleParametersAsItems(Tv::dvb_modules, selected_module, parameters));
-		    }
-		    else
-		    {
-			UI::ChangeWidget ( `id(`parameters_table), `Items,
-			Tv::ModuleParametersAsItems(Tv::dvb_core_drivers, selected_module, parameters));
-		    }
-		}
-		else if (!radio)
-		    UI::ChangeWidget ( `id(`parameters_table), `Items,
-			Tv::ModuleParametersAsItems(Tv::kernel_modules, selected_module, parameters));
-		else
-		    UI::ChangeWidget ( `id(`parameters_table), `Items,
-			Tv::ModuleParametersAsItems(Tv::radio_modules, selected_module, parameters));
-
-		UI::ChangeWidget ( `id(`parameters_table), `CurrentItem,
-		    selected_parameter);
+		string current = (string) UI::QueryWidget (`id(`parameters_table), `CurrentItem);
+		UI::ChangeWidget(`id(`parameters_table), `Item(current, 1), value);
 	    }
 	}
     } while (ret != `back && ret != `abort && ret != `next);
