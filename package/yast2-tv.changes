@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Jan 10 11:31:57 CET 2008 - lslezak@suse.cz
+
+- fixed a typo
+- 2.16.2
+
+-------------------------------------------------------------------
 Thu Jan 10 10:29:10 CET 2008 - lslezak@suse.cz
 
 - remove the configured card from the blacklist, a blacklisted card
