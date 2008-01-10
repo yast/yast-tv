@@ -2,7 +2,7 @@
  * File:	clients/irc.ycp
  * Package:	TV cards configuration
  * Summary:	Client for stand-alone IRC configuration
- * Authors:
+ * Authors:	Jiri Suchomel <jsuchome@novell.com>
  *
  * $Id$
  *
