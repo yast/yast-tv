@@ -1517,35 +1517,6 @@ Use the firmware file anyway?
 	return result;
     }
 
-    global map<string, string> GetBusInfo() {
-	list<map> detected = (list<map>)SCR::Read(.probe.tv);
-
-	list<map> probe_dvb = (list<map>)SCR::Read(.probe.dvb);
-
-	if (probe_dvb != nil)
-	{
-	    detected = (list<map>)merge(detected, probe_dvb);
-	}
-
-	map<string, string> ret = $[];
-
-	foreach(map d, detected, {
-		string uniq = d["unique_key"]:"";
-		string bus = d["bus_hwcfg"]:"";
-		string busid = d["sysfs_bus_id"]:"";
-
-		if (uniq != nil && uniq != "" && bus != nil && bus != "" && busid != nil && busid != "")
-		{
-		    ret[uniq] = bus + "-" + busid;
-		}
-	    }
-	);
-
-	y2milestone("businfo: %1", ret);
-
-	return ret;
-    }
-
     define string GetStaticConfig(string uniq)
     {
 	string file = "";
@@ -1851,10 +1822,6 @@ Use the firmware file anyway?
 	    SCR::Write ( add (.modprobe_tv.alias, alias), "off");
 	    i = i + 1;
 	}
-
-	// get card info
-	// FIXME: not used
-	map<string, string> busmap = GetBusInfo();
 
 	// for cards choosed to delete...
 	foreach (map card, (list<map<string,any> >) cards_to_del, ``{
@@ -3812,13 +3779,6 @@ Install it now?</p>"), "kradio"));
 	});
 	return Summary::DevicesList (
 	    (list<string>) union (detected_list, installed_list) );
-    }
-
-    // FIXME: remove, not used
-    boolean ProbeModules(list<string> modules) {
-	boolean ret = true;
-
-	return ret;
     }
 
 /* EOF */
