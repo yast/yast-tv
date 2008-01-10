@@ -437,7 +437,7 @@ define any ManualDialog (boolean warn) ``{
 		    // PushButton label:
 		    _("&Expert Settings...")),
 		// PushButton label:
-		`PushButton (`id(`channels), `opt(`key_F8), _("TV Channels..."))
+		`PushButton (`id(`channels), `opt(`key_F8), _("TV &Channels..."))
 	      )
 	    )
 	),
@@ -1303,10 +1303,10 @@ define term StationPopup (string channel, string station, list items) ``{
 	    `VSpacing(0.5),
 	    `HBox (
 		// textentry label
-		`TextEntry (`id (`channel), _("Channel"), channel),
+		`TextEntry (`id (`channel), _("&Channel"), channel),
 		`HSpacing(0.5),
 		// textentry label
-		`TextEntry (`id (`station), _("Station Name"), station)
+		`TextEntry (`id (`station), _("Station &Name"), station)
 	    ),
 	    `VSpacing(0.5),
 	    `HBox(
@@ -1512,14 +1512,14 @@ define any ChannelsDialog () ``{
         `VSpacing (2),
 	`HBox (
 	    // combobox label for values like NTSC and PAL
-	    `ComboBox (`id(`norms), _("TV Standard"), norms),
+	    `ComboBox (`id(`norms), _("&TV Standard"), norms),
 	    // combobox label
-	    `ComboBox (`id(`freq), _("Frequency Table"), freqs_items),
+	    `ComboBox (`id(`freq), _("&Frequency Table"), freqs_items),
 	    `HStretch (),
 	    `VBox(
 		`Label (""),
 		// button label
-		`PushButton (`id(`scan), _("Scan the Channels"))
+		`PushButton (`id(`scan), _("&Scan the Channels"))
 	    )
 	),
         `VSpacing (0.5),

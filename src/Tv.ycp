@@ -1006,10 +1006,10 @@ press Continue to install the firmware.
 		`HSpacing(2),
 		`Frame(`id(`fr), _("Install Firmware"),
 		    `HBox(
-			`TextEntry(`id(`firmware), _("&File"), filename),
+			`TextEntry(`id(`firmware), Label::Filename(), filename),
 			`VBox(
 			    `Label(""),
-			    `PushButton(`id(`browse), _("Browse..."))
+			    `PushButton(`id(`browse), Label::BrowseButton())
 			)
 		    )
 		),

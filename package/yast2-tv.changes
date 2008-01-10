@@ -1,8 +1,10 @@
 -------------------------------------------------------------------
-Thu Jan 10 10:11:11 CET 2008 - lslezak@suse.cz
+Thu Jan 10 10:29:10 CET 2008 - lslezak@suse.cz
 
 - remove the configured card from the blacklist, a blacklisted card
   is not automatically configured (bug #330109)
+- added key shortcuts, use Label::
+- 2.16.1
 
 -------------------------------------------------------------------
 Fri Oct 12 15:36:53 CEST 2007 - lslezak@suse.cz

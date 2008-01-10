@@ -2,7 +2,7 @@
  * File:
  * Package:	TV cards configuration
  * Summary:	User interface functions.
- * Authors:
+ * Authors:	Jiri Suchomel <jsuchome@novell.com>
  *
  * $Id$
  *
@@ -252,11 +252,11 @@ define any IRCDialog (boolean alone) ``{
 		*/
 		`ComboBox (`id(`mods), `opt(`notify, `hstretch),
 		    // combobox label
-		    _("Kernel Module"), mods),
+		    _("&Kernel Module"), mods),
 		`Left(
 		    `CheckBox (`id(`desc_ch), `opt (`notify),
 			//checkbox label
-			_("Show Module Description"), false)
+			_("Show Module &Description"), false)
 		),
 		`ReplacePoint (`id(`rp), `Empty ()),
 		`VSpacing (0.5),
