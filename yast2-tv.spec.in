@@ -6,6 +6,8 @@ BuildRequires: perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-t
 BuildRequires: yast2-sound
 %endif
 
+# .modprobe_blacklist agent
+Requires:	yast2-core >= 2.16.19
 Requires:	yast2 yast2-sound
 Provides:	yast2-config-tv yast2-db-tv
 Obsoletes:	yast2-config-tv yast2-db-tv

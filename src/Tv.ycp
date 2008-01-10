@@ -272,6 +272,13 @@
 
     map<string, string> fw_source_cache = $[];
 
+    // cache for the blacklist
+    // modalias blacklist
+    list<string> blacklisted_aliases = nil;
+    // driver blacklist
+    list<string> blacklisted_modules = nil;
+
+
     // ------------------- function prototypes for include files:
 
     global define boolean IsDirty ();
@@ -1652,6 +1659,153 @@ Use the firmware file anyway?
 	return ret;
     }
 
+    // initialize the blacklists from /etc/modprobe.d/blacklist file
+    void LoadBlackList()
+    {
+	if (blacklisted_aliases == nil)
+	{
+	    blacklisted_aliases = (list<string>)SCR::Dir(.modprobe_blacklist.alias);
+
+	    // leave only "bttv_skip_it" aliases, the others might be needed...
+	    blacklisted_aliases = filter(string modalias, blacklisted_aliases,
+		{
+		    return (string)SCR::Read(.modprobe_blacklist.alias + modalias) == "bttv_skip_it";
+		}
+	    );
+
+	    if (blacklisted_aliases == nil)
+	    {
+		blacklisted_aliases = [];
+	    }
+
+	    y2milestone("Loaded alias blacklist: %1", blacklisted_aliases);
+	}
+
+	if (blacklisted_modules == nil)
+	{
+	    // driver blacklist
+	    blacklisted_modules = (list<string>)SCR::Dir(.modprobe_blacklist.blacklist);
+
+	    if (blacklisted_modules == nil)
+	    {
+		blacklisted_modules = [];
+	    }
+
+	    y2milestone("Loaded modules blacklist: %1", blacklisted_modules);
+	}
+    }
+
+    // is the driver blacklisted?
+    boolean IsDriverBlacklisted(string driver)
+    {
+	LoadBlackList();
+
+	boolean ret = contains(blacklisted_modules, driver);
+
+	if (ret)
+	{
+	    y2warning("Driver '%1' is blacklisted", driver);
+	}
+
+	return ret;
+    }
+
+    // is any driver from the list blacklisted?
+    boolean AnyDriverBlacklisted(list<string> drivers)
+    {
+	foreach(string drv, drivers,
+	    {
+		if (IsDriverBlacklisted(drv))
+		{
+		    return true;
+		}
+	    }
+	);
+
+	return false;
+    }
+
+    // is the card blacklisted using modalias?
+    boolean IsModaliasBlacklisted(string alias)
+    {
+	LoadBlackList();
+
+	boolean ret = contains(blacklisted_aliases, alias);
+
+	if (ret)
+	{
+	    y2warning("Modalias '%1' is blacklisted", alias);
+	}
+
+	return ret;
+    }
+
+    // is the card blacklisted? (is a driver or the modalias of the card blacklisted?)
+    global boolean IsCardBlacklisted(map card)
+    {
+	// the card is blacklisted when it is in the modalias blacklist
+	// or at least one driver is blacklisted
+	boolean ret = IsModaliasBlacklisted(card["modalias"]:"") || AnyDriverBlacklisted(card["module"]:[]);
+
+	if (ret)
+	{
+	    y2warning("Card '%1' is blacklisted", card["name"]:"");
+	}
+
+	return ret;
+    }
+
+
+    /**
+     * Remove the configured cards from the blacklist (/etc/modprobe.d/blacklist) to enable
+     * automatic module loading after reboot of the system (see bug #330109).
+     */
+    void FixBlackListFile()
+    {
+	boolean blacklist_changed = false;
+
+	// initialize the blacklists when needed
+	LoadBlackList();
+
+	foreach (map card, (list<map>) cards,
+	    {
+		string card_modalias = card["modalias"]:"";
+
+		// check modalias blacklist
+		if (IsModaliasBlacklisted(card_modalias))
+		{
+		    y2warning("Removing modalias '%1' (card '%2') from the blacklist", card_modalias, card["name"]:"");
+
+		    // remove the modalias from the blacklist
+		    SCR::Write(.modprobe_blacklist.alias + card_modalias, nil);
+
+		    blacklist_changed = true;
+		}
+
+		// check all drivers
+		foreach(string mod, card["module"]:[],
+		    {
+			if (IsDriverBlacklisted(mod))
+			{
+			    y2warning("Removing module '%1' (card '%2') from the blacklist", mod, card["name"]:"");
+
+			    // remove the module from the blacklist
+			    SCR::Write(.modprobe_blacklist.blacklist + mod, nil);
+
+			    blacklist_changed = true;
+			}
+		    }
+		);
+	    }
+	);
+
+	// flush the changes
+	if (blacklist_changed)
+	{
+	    SCR::Write (.modprobe_blacklist, nil);
+	}
+    }
+
 
     /**
      * Write the TV settings to the SCR.
@@ -1699,6 +1853,7 @@ Use the firmware file anyway?
 	}
 
 	// get card info
+	// FIXME: not used
 	map<string, string> busmap = GetBusInfo();
 
 	// for cards choosed to delete...
@@ -1921,6 +2076,13 @@ to %1."), "/etc/modprobe.d/tv"));
 	    }
 	);
 
+	// Remove the configured cards from the blacklist file,
+	// enable automatic loading after reboot.
+	// NOTE: Do this AFTER loading the drivers in the previous code!
+	// (When a blacklisted module freezes the system it will not be loaded
+	// automatically after reboot.)
+	FixBlackListFile();
+
 	return result;
     }
 
@@ -2009,6 +2171,12 @@ to %1."), "/etc/modprobe.d/tv"));
 		if (unique_key != nil)
 		{
 		    result = add(result, "unique_key", unique_key);
+		}
+
+		string modalias = (string)tv_card["modalias"]:nil;
+		if (modalias != nil)
+		{
+		    result = add(result, "modalias", modalias);
 		}
 
 		// add DVB flag and info from DB
@@ -2510,7 +2678,7 @@ to %1."), "/etc/modprobe.d/tv"));
 
 		if (card["sound_card_no"]:nil != nil)
 		{
-		    descr = add(descr, sformat(_("Attached to sound card <B>%1</B>"), sndmap[card["sound_card_no"]:-1]:""));
+		    descr = add(descr, sformat(_("Attached to sound card '%1'"), sndmap[card["sound_card_no"]:-1]:""));
 		}
 
 		// add firmware data if available
@@ -3568,14 +3736,18 @@ Install it now?</p>"), "kradio"));
 	    string uk = (string) card["unique_key"]:nil;
 
 	    list<string> cardmodules = (list<string>)card["module"]:[];
+
+	    // check whether the card can be automatically configured
+	    // do not autoconfigure blacklisted cards
 	    if (uk != nil &&
-		!contains(installed_uk, uk) && cardmodules != nil && size(cardmodules) > 0 && !(card["dvb"]:false && card["unknown"]:false))
+		!contains(installed_uk, uk) && cardmodules != nil && size(cardmodules) > 0 && !(card["dvb"]:false && card["unknown"]:false) && !IsCardBlacklisted(card))
 	    {
 		current_card    = card;
 		current_card_no = nil;
 
 		// add the card
 		CardAddCurrent ();
+		y2milestone("Autoconfigured card: %1", card);
 
 		any_tv_configured = true;
 	    }
@@ -3615,15 +3787,34 @@ Install it now?</p>"), "kradio"));
 	foreach (map card, (list<map<string,any> >) detected_cards, ``{
 	    if (!contains (installed_uk, card["unique_key"]:"none"))
 	    {
-		detected_list = add (detected_list,
-		    Summary::Device (card["name"]:"",Summary::NotConfigured()));
+		// blacklist info details
+		list<string> blacklist_reasons = [];
+
+		if (AnyDriverBlacklisted(card["modules"]:[]))
+		{
+		    // automatic configuration skipped - details
+		    blacklist_reasons = add(blacklist_reasons, sformat(_("the driver is disabled")));
+		}
+
+		if (IsModaliasBlacklisted(card["modalias"]:""))
+		{
+		    // automatic configuration skipped - details
+		    blacklist_reasons = add(blacklist_reasons, sformat(_("the card is disabled")));
+		}
+
+		string summary_line = Summary::Device(card["name"]:"", size(blacklist_reasons) > 0 ?
+		    // summary line in the HW proposal, %1 - details why it cannot be autoconfigured
+		    sformat(_("Automatic configuration skipped (%1)"), mergestring(blacklist_reasons, ", "))
+		    : Summary::NotConfigured());
+
+		detected_list = add (detected_list, summary_line);
 	    }
 	});
 	return Summary::DevicesList (
 	    (list<string>) union (detected_list, installed_list) );
     }
 
-
+    // FIXME: remove, not used
     boolean ProbeModules(list<string> modules) {
 	boolean ret = true;
 

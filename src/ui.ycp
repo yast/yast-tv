@@ -173,6 +173,24 @@ define any HardwareDialog() ``{
 		    module_found = size(Tv::current_card["module"]:[]) > 0;
 		}
 
+		// display a confirmation popup if the card is blacklisted
+		if (Tv::IsCardBlacklisted(Tv::current_card))
+		{
+		    if (!Popup::ContinueCancel(sformat(_("Card '%1' (or its driver) is currently disabled.
+
+There might be serious reasons for this like:
+- the card is not supported by the driver
+- the driver does not work correctly with this card
+- the system may be unstable or may completely freeze
+
+Really configure and enable the card?"), Tv::current_card["name"]:"")))
+		    {
+			continue;
+		    }
+
+		    y2warning("Configuring a blacklisted card");
+		}
+
 		if (!module_found)
 		{
 		    ret = `add_manually_warn;
