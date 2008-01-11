@@ -1,3 +1,5 @@
+Dir	.modprobe_blacklist.alias: []
+Dir	.modprobe_blacklist.blacklist: []
 Dir	.audio.alsa.cards: []
 Execute	.audio.alsa.store 0 0 true
 Return	nil
