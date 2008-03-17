@@ -22,3 +22,4 @@ Exec=/sbin/yast2 tv
 Name=TV Card
 GenericName=Configure a TV card
 X-KDE-SubstituteUID=true
+StartupNotify=true
