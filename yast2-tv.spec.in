@@ -8,7 +8,9 @@ BuildRequires: yast2-sound
 
 # .modprobe_blacklist agent
 Requires:	yast2-core >= 2.16.19
-Requires:	yast2 yast2-sound
+# GetInstArgs::automatic_configuration
+Requires:	yast2 >= 2.16.46
+Requires:	yast2-sound
 Provides:	yast2-config-tv yast2-db-tv
 Obsoletes:	yast2-config-tv yast2-db-tv
 Provides:	yast2-lib-hardware
