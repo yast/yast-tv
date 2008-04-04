@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Apr  4 19:01:01 CEST 2008 - locilka@suse.cz
+
+- Improved user-feedback during automatic installation.
+- Adjusted RPM dependencies.
+- 2.16.4
+
+-------------------------------------------------------------------
 Mon Mar 17 12:43:32 CET 2008 - jsrain@suse.cz
 
 - added 'StartupNotify=true' to the desktop file (bnc #304964)
