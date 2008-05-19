@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Mon May 19 12:22:34 CEST 2008 - lslezak@suse.cz
+
+- install "motv", "zapping" has been dropped (bnc#390300)
+- check also for kdelibs4 package when detecting a KDE system
+- 2.16.6
+
+-------------------------------------------------------------------
 Fri May 16 16:40:22 CEST 2008 - jsrain@suse.cz
 
 - added categories Settings and System into desktop file
