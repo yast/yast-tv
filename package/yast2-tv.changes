@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Jun 16 11:51:21 CEST 2008 - lslezak@suse.cz
+
+- OK/Cancel buttons in the main dialog (bnc#398490) 
+
+-------------------------------------------------------------------
 Mon May 19 12:22:34 CEST 2008 - lslezak@suse.cz
 
 - install "motv", "zapping" has been dropped (bnc#390300)
