@@ -2,6 +2,8 @@
 Thu Jun 19 07:58:49 CEST 2008 - lslezak@suse.cz
 
 - added "Hauppauge WinTV Nova-DT" to the DVB card DB (bnc#398320)
+- build the tuner database also for cx88xx driver (bnc#397804)
+- 2.17.0
 
 -------------------------------------------------------------------
 Mon Jun 16 11:51:21 CEST 2008 - lslezak@suse.cz

@@ -39,11 +39,12 @@ sub get_name_cmp
 sub dbBTTV
 {
     $name = shift;
+    $driver = shift;
     open (DB, $name) or die "Cannot open $name!";
 
     @tuner_array = ();
 
-    print "    \"bttv\" : [\n";
+    print "    \"$driver\" : [\n";
 
     while (<DB>)
     {
@@ -94,7 +95,7 @@ sub dbBTTV
 	print  "\t]";
     }
     
-    print "\n    ]";
+    print "\n    ],\n";
     
     close(DB);
 }
@@ -111,7 +112,9 @@ print "{\n";
 print "textdomain \"tv\";\n";
 print "return \$[\n";
 
-dbBTTV($bttv_cardlist);
+# the tuner db is used by "bttv" and "cx88xx" driver
+dbBTTV($bttv_cardlist, "bttv");
+dbBTTV($bttv_cardlist, "cx88xx");
 #...more to come...
 
 print "\n];\n}\n";
