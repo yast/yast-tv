@@ -133,6 +133,14 @@ return $[
 	    ]
 	],
 
+    "dvb_usb_dib0700" :
+	[
+	    $[
+		"source" : "dvb-usb-dib0700-1.10.fw",
+		"target" : "dvb-usb-dib0700-1.10.fw",
+	    ]
+	],
+
     "ivtv" :
 	[
 	    $[

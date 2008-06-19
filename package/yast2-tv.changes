@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Jun 19 07:58:49 CEST 2008 - lslezak@suse.cz
+
+- added "Hauppauge WinTV Nova-DT" to the DVB card DB (bnc#398320)
+
+-------------------------------------------------------------------
 Mon Jun 16 11:51:21 CEST 2008 - lslezak@suse.cz
 
 - OK/Cancel buttons in the main dialog (bnc#398490) 
