@@ -3588,10 +3588,10 @@ global define boolean InitializeStationsConfig() ``{
 
 	    y2milestone("Detected TV card: %1, Radio card: %2", tv, radio);
 
-	    if (Package::Installed("kdelibs3") || Package::Installed("kdelibs4"))
-		tv_app = "kdetv";
-	    else if (Package::Installed ("gnome-panel"))
+	    if (Package::Installed ("gnome-panel"))
 		tv_app = "motv";
+	    else if (Package::Installed("kdelibs3") || Package::Installed("kdelibs4"))
+		tv_app = "kdetv";
 
 	    boolean tv_app_installed = Package::Installed (tv_app);
 	    boolean radio_app_installed = Package::Installed ("kradio");
