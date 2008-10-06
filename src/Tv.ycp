@@ -2080,7 +2080,7 @@ to %1."), "/etc/modprobe.d/tv"));
     global define boolean Detect() ``{
 
 	/* Confirmation: label text (detecting hardware: xxx) */
-	if (!Confirm::Detection (_("TV cards")))
+	if (!Confirm::Detection (_("TV cards"), "yast-tv"))
 	{
 	    detected_cards = [];
 	    return true;
