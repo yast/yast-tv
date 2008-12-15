@@ -29,6 +29,7 @@
     import "Sound";
     import "WizardHW";
     import "HWConfig";
+    import "String";
 
     textdomain "tv";
 
@@ -1926,7 +1927,8 @@ Use the firmware file anyway?
 		{
 		    // write alias
 		    SCR::Write(add(.modprobe_tv.alias, alias), module_names[0]:"");
-		    start_commands = add(start_commands, $["model" : card_name, "cmd" : "/sbin/modprobe " + module_names[0]:""] );
+		    start_commands = add(start_commands, $["model" : card_name, "cmd"
+			: sformat("/sbin/rmmod '%1' 2> /dev/null; /sbin/modprobe '%1'", String::Quote(module_names[0]:""))]);
 		}
 		else if (size(module_names) > 1)
 		{
@@ -1939,7 +1941,7 @@ Use the firmware file anyway?
 				install_string = install_string + "; ";
 			    }
 
-			    install_string = install_string + "/sbin/modprobe " + m;
+			    install_string = install_string + sformat("/sbin/rmmod '%1' 2> /dev/null; /sbin/modprobe '%1'", String::Quote(m));
 
 			    index = index + 1;
 			}
@@ -2032,7 +2034,7 @@ to %1."), "/etc/modprobe.d/tv"));
 	// start up the configured devices
 	foreach(map<string,string> dev, start_commands,
 	    {
-		y2milestone("Starting: %1", dev);
+		y2milestone("Starting card %1: %2", dev["model"]:"", dev["cmd"]:"");
 
 		integer res = (integer)SCR::Execute (.target.bash, dev["cmd"]:"");
 		if (res != 0)
