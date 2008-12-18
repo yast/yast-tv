@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Dec 18 09:38:14 CET 2008 - lslezak@suse.cz
+
+- install additional packages automatically when
+  'Automatic Configuration' was selected in the first stage
+
+-------------------------------------------------------------------
 Mon Dec 15 15:57:10 CET 2008 - lslezak@suse.cz
 
 - reload the driver to activate the changed module options
