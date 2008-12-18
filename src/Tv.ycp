@@ -279,6 +279,8 @@
     // driver blacklist
     list<string> blacklisted_modules = nil;
 
+    // confirm installation of extra packages
+    boolean confirm_packages = true;
 
     // ------------------- function prototypes for include files:
 
@@ -291,6 +293,24 @@
 
     // ------------------- function definitions:
 
+    /**
+     * Set confirmation flag - when set to false the extra recommended packages are installed automatically
+     * @param ask new confirmation flag
+     */
+    global void SetConfirmPackages(boolean ask)
+    {
+	y2milestone("Confirm additional package installation: %1", ask);
+	confirm_packages = ask;
+    }
+
+    /**
+     * Get the current value of the confirmation flag
+     * @return boolean true if confirmation is enabled
+     */
+    global boolean ConfirmPackages()
+    {
+	return confirm_packages;
+    }
 
     /**
      * Dialog which asks for installing proposed application
@@ -299,26 +319,31 @@
      */
     define void InstallApplication (list apps, string text) ``{
 
-	UI::OpenDialog (`opt(`decorated), `VBox(
-            `HSpacing(50),
-            `RichText (`id(`rt), text),
-            `CheckBox (`id(`ch), `opt(`notify),
-                // checkbox label
-                _("Do Not Show This Message &Again")),
-            `HBox(
-              `PushButton (`id(`ok),`opt(`key_F10), Label::YesButton()),
-              `PushButton (`id(`cancel),`opt(`key_F9), Label::NoButton())
-            ))
-	);
-	any ret = nil;
-	do {
-	    ret = UI::UserInput();
-	    if (ret == `ch) ret = nil;
-	}
-	while (ret == nil);
+	any ret = `ok;
 
-	not_ask = (boolean) UI::QueryWidget(`id(`ch), `Value);
-	UI::CloseDialog();
+	if (ConfirmPackages())
+	{
+	    UI::OpenDialog (`opt(`decorated), `VBox(
+		`HSpacing(50),
+		`RichText (`id(`rt), text),
+		`CheckBox (`id(`ch), `opt(`notify),
+		    // checkbox label
+		    _("Do Not Show This Message &Again")),
+		`HBox(
+		  `PushButton (`id(`ok),`opt(`key_F10), Label::YesButton()),
+		  `PushButton (`id(`cancel),`opt(`key_F9), Label::NoButton())
+		))
+	    );
+	    do {
+		ret = UI::UserInput();
+		if (ret == `ch) ret = nil;
+	    }
+	    while (ret == nil);
+
+	    not_ask = (boolean) UI::QueryWidget(`id(`ch), `Value);
+	    UI::CloseDialog();
+	}
+
 	if (ret == `ok)
 	{
 	    list<string> to_install = [];
@@ -327,7 +352,17 @@
 		if (Package::Available (app))
 		    to_install = add (to_install, app);
 	    });
-	    Package::InstallAll (to_install);
+
+	    if (ConfirmPackages())
+	    {
+		// display a confirmation dialog
+		Package::InstallAll(to_install);
+	    }
+	    else
+	    {
+		// do not ask the user, install the packages immediately
+		Package::DoInstall(to_install);
+	    }
 	}
     }
 

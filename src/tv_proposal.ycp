@@ -106,6 +106,9 @@
 
 	if (Tv::IsDirty ())
 	{
+	    // do not confirm package installation in the automatic mode
+	    Tv::SetConfirmPackages(!GetInstArgs::automatic_configuration());
+
 	    block<boolean> abort = ``{ return false; };
 	    success = Tv::Write ( abort );
 	}
