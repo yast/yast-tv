@@ -110,6 +110,8 @@ define any HardwareDialog() ``{
     Wizard::SetNextButton(`next, Label::OKButton());
     Wizard::SetAbortButton(`abort, Label::CancelButton());
 
+    if (!Mode::installation()) Wizard::HideBackButton();
+
     symbol ret = `_dummy;
 
     do {
@@ -235,6 +237,7 @@ of %1?"), Tv::current_card["name"]:""));
     } while (!contains([`back, `abort, `next, `add_manually, `add_manually_warn, `add_detected, `edit, `edit_button_radio],ret));
 
     Wizard::RestoreNextButton();
+    if (!Mode::installation()) Wizard::RestoreBackButton();
 
     return ret;
 }
