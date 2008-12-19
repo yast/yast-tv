@@ -16,7 +16,6 @@ textdomain "tv";
 import "Label";
 import "Package";
 import "Popup";
-import "Progress";
 import "Sequencer";
 import "String";
 import "Summary";

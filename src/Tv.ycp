@@ -3437,65 +3437,30 @@ global define boolean InitializeStationsConfig() ``{
 
 	// Title of initialization dialog
 	string caption = _("Initializing TV and Radio Card Configuration");
-	// Set the right number of stages
-	//   1+2: Read databases (tv, tuner)
-	//   3:   Read the settings
-	//   4:   Detect
-	integer no_of_steps = 4;
-
-	// We do not set help text here, because it was set outside
-	Progress::New ( caption, " ", no_of_steps,
-               // Progress stage
-		       [ _("Read the database"),
-               // Progress stage
-			 _("Read the previous settings"),
-               // Progress stage
-			 _("Detect the devices") ],
-               // Progress step
-		       [ _("Reading the database..."),
-               // Progress step
-			 _("Reading the previous settings..."),
-               // Progress step
-			 _("Detecting the devices..."),
-               // Progress step
-			 _("Finished") ],
-		       "" );
-
-	// Read the databases
-	Progress::NextStage ();
-	if ( !ReadCardsDatabase() || eval (abort) )
+	if ( !ReadCardsDatabase() )
 	{
 	    return false;
 	}
 
-	Progress::NextStep ();
-	if ( !ReadTunersDatabase() || eval (abort) )
+	if ( !ReadTunersDatabase() )
 	{
 	    return false;
 	}
 
-	// Read the previous settings
-	Progress::NextStage ();
-	if ( !ReadSettings() || eval (abort) )
+	if ( !ReadSettings() )
 	{
 	    return false;
 	}
 
-	// Detect the devices
-	Progress::NextStage ();
-	if ( !Detect() || eval (abort) )
+	if ( !Detect() )
 	{
 	    return false;
 	}
 
-	ReadIRC(); // TODO add progress
+	ReadIRC();
 	tmpdir = (string) SCR::Read(.target.tmpdir);
 
-	// TODO add progress
 	InitializeStationsConfig ();
-
-	// increase the progress to "finish"
-	Progress::NextStage ();
 
 	y2milestone("All cards (read & detected): %1", cards);
 
