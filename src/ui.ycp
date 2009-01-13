@@ -23,6 +23,7 @@ import "Tv";
 import "Wizard";
 import "Wizard_hw";
 import "WizardHW";
+import "Mode";
 
 include "tv/helps.ycp";
 include "tv/misc.ycp";
