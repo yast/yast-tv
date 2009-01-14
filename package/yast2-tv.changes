@@ -4,6 +4,11 @@ Tue Jan 13 15:08:25 CET 2009 - lslezak@suse.cz
 - 2.18.0
 
 -------------------------------------------------------------------
+Mon Dec 22 12:22:56 CET 2008 - ro@suse.de
+
+- no ifarch/ifnarch in a noarch package 
+
+-------------------------------------------------------------------
 Fri Dec 19 14:55:25 CET 2008 - lslezak@suse.cz
 
 - removed the progress dialog at start up (bnc#447571)
