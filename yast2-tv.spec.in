@@ -1,7 +1,7 @@
 @HEADER-COMMENT@
 
 @HEADER@
-BuildRequires: perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-testsuite
+BuildRequires: perl-XML-Writer update-desktop-files yast2 yast2-devtools yast2-sound yast2-testsuite
 
 # .modprobe_blacklist agent
 Requires:	yast2-core >= 2.16.19
@@ -29,6 +29,12 @@ Summary:	Configuration of TV cards
 @INSTALL@
 
 @CLEAN@
+
+%post
+# rename the config file to the new modprobe schema
+if test -e /etc/modprobe.d/tv; then
+    mv -f /etc/modprobe.d/tv /etc/modprobe.d/50-tv.conf
+fi
 
 %files
 %defattr(-,root,root)

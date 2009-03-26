@@ -163,7 +163,7 @@
 
     /**
      * This is true, if tv data were read from /etc/modprobe.conf
-     * On write, they shoud be removed and written only to /etc/modprobe.d/tv
+     * On write, they shoud be removed and written only to /etc/modprobe.d/50-tv.conf
      */
     global boolean used_modprobe_conf   = false;
 
@@ -684,7 +684,7 @@ available kernel modules."));
 
     /**
      * Returns a list of all char-major-81-* in modprobe config file
-     * @param mod_path path to agent (using modprobe.conf or modprobe.d/tv)
+     * @param mod_path path to agent (using modprobe.conf or modprobe.d/50-tv.conf)
      * @return list List [ "char-major-81-0", "char-major-81-3" ] or so...
      */
     define list<string> GetMajor81Aliases (path mod_path) ``{
@@ -700,7 +700,7 @@ available kernel modules."));
 
     /**
      * Returns a list of all char-major-212-* in modprobe config file
-     * @param mod_path path to agent (using modprobe.conf or modprobe.d/tv)
+     * @param mod_path path to agent (using modprobe.conf or modprobe.d/50-tv.conf)
      * @return list List [ "char-major-212-3" ] or so...
      */
     define list<string> GetMajorInstalls(path mod_path) ``{
@@ -718,7 +718,7 @@ available kernel modules."));
 
     /**
      * Read parameters of one module.
-     * @param mod_path path to agent (using modprobe.conf or modprobe.d/tv)
+     * @param mod_path path to agent (using modprobe.conf or modprobe.d/50-tv.conf)
      * @param module_name Name of the module
      * @return map Map with parameters
      * @example
@@ -786,16 +786,16 @@ available kernel modules."));
 
     /**
      * Reads saved TV cards data from given file
-     * @param mod_path path to agent (using modprobe.conf or modprobe.d/tv)
+     * @param mod_path path to agent (using modprobe.conf or modprobe.d/50-tv.conf)
      * @return list of TV cards
      */
     define list read_modprobe (path mod_path) {
 
 	if (mod_path == .modprobe_tv &&
-	    SCR::Read (.target.size, "/etc/modprobe.d/tv") == -1)
+	    SCR::Read (.target.size, "/etc/modprobe.d/50-tv.conf") == -1)
 	{
-	    y2milestone ("creating /etc/modprobe.d/tv...");
-	    SCR::Execute (.target.bash, "/bin/touch /etc/modprobe.d/tv");
+	    y2milestone ("creating /etc/modprobe.d/50-tv.conf...");
+	    SCR::Execute (.target.bash, "/bin/touch /etc/modprobe.d/50-tv.conf");
 	    return [];
 	}
 
@@ -807,7 +807,7 @@ available kernel modules."));
 	list<string> tv_aliases = GetMajor81Aliases (mod_path);
 	list<string> tv_installs = GetMajorInstalls(mod_path);
 
-	// the parameters read from modprobe.d/tv
+	// the parameters read from modprobe.d/50-tv.conf
 	// $[ "module" :  $[ parameter_name: $[ 0: nil, 1: "3", 2: "2" ] ] ]
 	//                   no_of_the_card ----^-------^-------^
 	map modules_parameters = $[];
@@ -1666,7 +1666,7 @@ Use the firmware file anyway?
 	return ret;
     }
 
-    // initialize the blacklists from /etc/modprobe.d/blacklist file
+    // initialize the blacklists from /etc/modprobe.d/50-blacklist.conf file
     void LoadBlackList()
     {
 	if (blacklisted_aliases == nil)
@@ -1820,7 +1820,7 @@ Use the firmware file anyway?
      */
     define boolean WriteSettings() ``{
 	// common settings
-	y2debug ("Writing char-major-81 (videodev) to /etc/modprobe.d/tv");
+	y2debug ("Writing char-major-81 (videodev) to /etc/modprobe.d/50-tv.conf");
 	SCR::Write (.modprobe_tv.alias."char-major-81", "videodev");
 
 	// fix of bug #18033: (slow initialization on some machines)
@@ -1832,7 +1832,7 @@ Use the firmware file anyway?
 	});
 	if (used_modprobe_conf)
 	{
-	    y2milestone ("removing old tv configuration from /etc/modprobe.conf (it will be saved to /etc/modprobe.d/tv)");
+	    y2milestone ("removing old tv configuration from /etc/modprobe.conf (it will be saved to /etc/modprobe.d/50-tv.conf)");
 	    // remove aliases from old config file
 	    foreach (string alias, GetMajor81Aliases (.modules), {
 		SCR::Write (add (.modules.alias, alias) , nil);
@@ -1867,7 +1867,7 @@ Use the firmware file anyway?
 		    if (module_name == "") return;
 		    if (contains (SCR::Dir (.modprobe_tv.options), module_name))
 		    {
-			y2milestone ("Deleting module %1 from /etc/modprobe.d/tv",
+			y2milestone ("Deleting module %1 from /etc/modprobe.d/50-tv.conf",
 			    module_name);
 			// ... delete module's options from modprobe file
 			SCR::Write (add (.modprobe_tv.options, module_name), nil);
@@ -1949,7 +1949,7 @@ Use the firmware file anyway?
 		    alias = sformat("char-major-212-%1", 64 * dvb_card_no + 3);
 		}
 
-		y2milestone ("Writing alias %2 %1 to /etc/modprobe.d/tv",
+		y2milestone ("Writing alias %2 %1 to /etc/modprobe.d/50-tv.conf",
 		    module_names, alias);
 
 		// modprobe comment
@@ -2014,7 +2014,7 @@ Use the firmware file anyway?
 		);
 
 		// write comment with unique key and the card name
-		y2debug ("Writing comment to alias %1 in /etc/modprobe.d/tv",
+		y2debug ("Writing comment to alias %1 in /etc/modprobe.d/50-tv.conf",
 		    alias);
 
 		path modpath = (size(module_names) > 1) ? .install : .alias;
@@ -2037,7 +2037,7 @@ Use the firmware file anyway?
 	{
 	    // Error message popup, %1 is file name
 	    Report::Error (sformat (_("Unable to write parameters
-to %1."), "/etc/modprobe.d/tv"));
+to %1."), "/etc/modprobe.d/50-tv.conf"));
 	    result = false;
 	}
 
@@ -2054,7 +2054,7 @@ to %1."), "/etc/modprobe.d/tv"));
 	{
 	    // Error message popup,  %1 is file name
 	    Report::Error (sformat (_("Unable to write %1."),
-		"/etc/modprobe.d/tv"));
+		"/etc/modprobe.d/50-tv.conf"));
 	    result = false;
 	}
 
