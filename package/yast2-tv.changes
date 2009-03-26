@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Mar 26 08:20:36 CET 2009 - lslezak@suse.cz
+
+- Use /etc/modprobe.d/50-tv.conf config file instead of
+  /etc/modprobe.d/tv (bnc#485942)
+- 2.18.1
+
+-------------------------------------------------------------------
 Wed Jan 14 17:09:48 CET 2009 - ro@suse.de
 
 - re-add yast2-sound to buildrequires 

@@ -26,6 +26,6 @@
 .modprobe_tv
 
 `ag_modules(
-    `ModulesConf("/etc/modprobe.d/tv")
+    `ModulesConf("/etc/modprobe.d/50-tv.conf")
 //    `ModulesConf("/etc/modprobe.conf")
 )
