@@ -3,6 +3,9 @@ Fri Apr  3 10:02:21 CEST 2009 - lslezak@suse.cz
 
 - Do not try installing unavailable packages (TV applications)
   (bnc #480179)
+- Display more details in lirc error popup, describe the details
+  (bnc#449327)
+- 2.18.2
 
 -------------------------------------------------------------------
 Thu Mar 26 08:20:36 CET 2009 - lslezak@suse.cz

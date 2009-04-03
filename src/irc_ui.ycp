@@ -39,10 +39,10 @@ define boolean IRCTestPopup (string config_file, string mod, boolean modified) `
      * start with temporary LIRC configuration to enable the test
      * @return empty string on success, error message otherwise
      */
-    define string lirc_tmp_start () ``{
+    define map lirc_tmp_start () ``{
 
 	if (!modified)
-	    return "";
+	    return $[];
 	// store old configuration
 	orig_module = (string) SCR::Read (.sysconfig.lirc.LIRC_MODULE);
 	if (SCR::Read (.target.size, "/etc/lircd.conf") != -1)
@@ -69,7 +69,7 @@ define boolean IRCTestPopup (string config_file, string mod, boolean modified) `
 	    out = (map) SCR::Execute (.target.bash_output, "rclirc restart");
 	else
 	    out = (map) SCR::Execute (.target.bash_output, "rclirc start");
-	return out["stderr"]:"";
+	return out;
     }
 
     /**
@@ -99,11 +99,11 @@ define boolean IRCTestPopup (string config_file, string mod, boolean modified) `
         `Label(_("Initializing..."))
     );
 
-    string start = lirc_tmp_start ();
-    if (start != "")
+    map start = lirc_tmp_start ();
+    if (start["exit"]:-1 != 0)
     {
 	// error popup text
-	ErrorWithDetails (_("Starting the 'lirc' service failed."), start);
+	ErrorWithDetails (_("Starting the 'lirc' service failed."), _("Output from /etc/init.d/lirc command:\n\n") + start["stdout"]:"" + "\n" + start["stderr"]:"");
 	UI::CloseDialog();
 	lirc_tmp_stop ();
 	return false;
