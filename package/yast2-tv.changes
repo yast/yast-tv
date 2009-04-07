@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Tue Apr  7 14:59:18 CEST 2009 - lslezak@suse.cz
+
+- Added extra "No tuner" string marked for translation, it was
+  originally only in a generated file which might be missing when
+  creating .pot file (bnc#371289)
+
+-------------------------------------------------------------------
 Wed Jun 28 08:48:14 CEST 2006 - lslezak@suse.cz
 
 - don't install TV applications when X11 is not installed
