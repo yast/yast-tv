@@ -122,6 +122,10 @@ define void ErrorWithDetails (string error, string details) ``{
     UI::CloseDialog();
 }
 
+// Force translation of "No tuner" string, it is in a generated file
+// which might be missing when generating .pot file
+// (see bnc#371289, esp. comment #6)
+string no_tuner = _("No tuner");
 
 /* EOF */
 }
