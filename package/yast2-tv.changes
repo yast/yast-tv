@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Tue Jun 16 14:29:31 CEST 2009 - mvidner@suse.cz
+
+- Using autodocs-ycp.ami, which contains a fix for automake 1.11.
+
+-------------------------------------------------------------------
 Tue Apr  7 14:59:18 CEST 2009 - lslezak@suse.cz
 
 - Added extra "No tuner" string marked for translation, it was
