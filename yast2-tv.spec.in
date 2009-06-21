@@ -17,7 +17,7 @@ Obsoletes:	yast2-trans-tv
 
 BuildArchitectures:	noarch
 
-Summary:	Configuration of TV cards
+Summary:	YaST2 - TV Configuration
 
 %description
 -
