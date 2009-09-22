@@ -144,7 +144,7 @@ return $[
     "ivtv" :
 	[
 	    $[
-		"packages" : [ "ivtv", "ivtv-firmware", "ivtv-kmp-default" ]
+		"packages" : [ "ivtv", "ivtv-firmware" ]
 	    ]
 	],
 ];
