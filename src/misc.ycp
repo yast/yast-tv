@@ -95,7 +95,7 @@ define void ErrorWithDetails (string error, string details) ``{
 	    `VSpacing (0.5),
 	    // label
 	    `Left(`Heading (Label::ErrorMsg())),
-	    `Label (error),
+	    `Left(`Label (error)),
 	    `ReplacePoint (`id(`rp), `Empty()),
 	    `VSpacing (0.5),
 	    `Left(`CheckBox (`id(`details), `opt (`notify),
@@ -113,7 +113,7 @@ define void ErrorWithDetails (string error, string details) ``{
 	if (ret == `details)
 	{
 	    if ((boolean)UI::QueryWidget (`id(`details), `Value))
-		UI::ReplaceWidget (`id(`rp), `VBox (`Label (details)));
+		UI::ReplaceWidget (`id(`rp), `Frame(_("Details"), `Left(`Label (details))));
 	    else
 		UI::ReplaceWidget (`id(`rp), `Empty());
 	}
@@ -122,6 +122,10 @@ define void ErrorWithDetails (string error, string details) ``{
     UI::CloseDialog();
 }
 
+// Force translation of "No tuner" string, it is in a generated file
+// which might be missing when generating .pot file
+// (see bnc#371289, esp. comment #6)
+string no_tuner = _("No tuner");
 
 /* EOF */
 }
