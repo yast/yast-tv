@@ -1,4 +1,19 @@
 -------------------------------------------------------------------
+Tue Apr  7 14:59:18 CEST 2009 - lslezak@suse.cz
+
+- Added extra "No tuner" string marked for translation, it was
+  originally only in a generated file which might be missing when
+  creating .pot file (bnc#371289)
+
+-------------------------------------------------------------------
+Fri Apr  3 10:02:21 CEST 2009 - lslezak@suse.cz
+
+- Do not try installing unavailable packages (TV applications)
+  (bnc #480179)
+- Display more details in lirc error popup, describe the details
+  (bnc#449327)
+
+-------------------------------------------------------------------
 Mon Dec 15 15:57:10 CET 2008 - lslezak@suse.cz
 
 - reload the driver to activate the changed module options
