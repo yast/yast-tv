@@ -6,6 +6,8 @@
 # $2 - the CARDLIST.saa7134 source file
 # $3 - the CARDLIST.cx88 source file
 # $4 - the CARDLIST.ivtv source file
+# $5 - the CARDLIST.em28xx source file
+# $6 - the CARDLIST.cx23885 source file
 # ...more to come...
 
 if ($#ARGV < 1)
@@ -18,6 +20,8 @@ $bttv_cardlist_fname = $ARGV[0];
 $saa7134_cardlist_fname = $ARGV[1];
 $cx88_cardlist_fname = $ARGV[2];
 $ivtv_cardlist_fname = $ARGV[3];
+$em28xx_cardlist_fname = $ARGV[4];
+$cx23885_cardlist_fname = $ARGV[5];
 # ... more to come ...
 
 # Names to translate
@@ -30,8 +34,8 @@ $ivtv_cardlist_fname = $ARGV[3];
 
 # List of the known vendors
 $known_vendors = 
-    "\(ATI\|Askey\|Asus\|AVerMedia\|BESTBUY\|Compro\|FlyVideo\|GrandTec\|Hauppauge\|Intel\|".
-    "Leadtek\|LifeView\|MATRIX-Vision\|MIRO\|Osprey\|Phoebe\|Pinnacle\|Prolink\|".
+    "\(ATI\|Askey\|Asus\|AVerMedia\|AverTV\|Beholder\|BESTBUY\|Compro\|DViCO\|FlyVideo\|GrandTec\|Hauppauge\|Intel\|".
+    "KWorld\|Leadtek\|LifeView\|MATRIX-Vision\|MIRO\|MSI\|Osprey\|Phoebe\|Pinnacle\|Prolink\|".
     "STB\|Terratec\|Zoltrix\)";
 
 # This is for the sort function...
@@ -152,6 +156,8 @@ push @cards, ReadDatabase($bttv_cardlist_fname, "bttv");
 push @cards, ReadDatabase($saa7134_cardlist_fname, "saa7134");
 push @cards, ReadDatabase($cx88_cardlist_fname, "cx88xx");
 push @cards, ReadDatabase($ivtv_cardlist_fname, "ivtv");
+push @cards, ReadDatabase($em28xx_cardlist_fname, "em28xx");
+push @cards, ReadDatabase($cx23885_cardlist_fname, "cx23885");
 #...more to come...
 
 # Sort @cards
