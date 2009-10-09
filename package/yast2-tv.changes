@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Oct  9 15:08:05 CEST 2009 - lslezak@suse.cz
+
+- added cx23885 and em28xx based devices to the database
+  (bnc#465139)
+- 2.18.4
+
+-------------------------------------------------------------------
 Tue Sep 22 14:52:27 CEST 2009 - lslezak@suse.cz
 
 - do not require ivtv-kmp-default package, the driver has been
