@@ -325,7 +325,7 @@
 	{
 	    UI::OpenDialog (`opt(`decorated), `VBox(
 		`HSpacing(50),
-		`RichText (`id(`rt), text),
+		`HBox(`VSpacing(6.5), `RichText (`id(`rt), text)),
 		`CheckBox (`id(`ch), `opt(`notify),
 		    // checkbox label
 		    _("Do Not Show This Message &Again")),
