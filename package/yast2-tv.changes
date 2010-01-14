@@ -1,4 +1,11 @@
 ------------------------------------------------------------------
+Thu Jan 14 14:43:01 UTC 2010 - lslezak@suse.cz
+
+- copy the correct lircd.conf file to /etc/lircd.conf,
+  check whether the file exists (bnc#492345)
+- 2.19.1
+
+-------------------------------------------------------------------
 Wed Jan 13 18:56:03 CET 2010 - kmachalkova@suse.cz
 
 - Adjusted .desktop file(s) to wrap /sbin/yast2/ calls in xdg-su
