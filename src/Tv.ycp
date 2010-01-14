@@ -30,6 +30,7 @@
     import "WizardHW";
     import "HWConfig";
     import "String";
+    import "FileUtils";
 
     textdomain "tv";
 
@@ -3141,13 +3142,19 @@ global define any ReadIRC () ``{
     irc_module = (SCR::Read(.target.size, "/etc/sysconfig/lirc") >= 0) ? (string) SCR::Read (.sysconfig.lirc.LIRC_MODULE) : "";
     if (irc_module == nil) irc_module = "";
 
-    if (SCR::Read (.target.size, "/etc/lircd.conf") != -1)
+    if (FileUtils::Exists("/etc/lircd.conf"))
     {
 	irc_config = "/etc/lircd.conf";
     }
     else
     {
-	irc_config = "/usr/share/lirc/remotes/linux-input-layer-lircd.conf";
+	irc_config = "/usr/share/lirc/remotes/devinput/lircd.conf.devinput";
+
+	if (!FileUtils::Exists(irc_config))
+	{
+	    // error message, %1 is a file name
+	    Report::Error(sformat(_("File %1 is missing,\ncheck your installation."), irc_config));
+	}
     }
 
     if (SCR::Read(.target.size, "/usr/share/lirc") >= 0)
