@@ -20,6 +20,7 @@ import "Tv";
 import "Wizard";
 import "Wizard_hw";
 import "Message";
+import "Report";
 
 include "tv/helps.ycp";
 include "tv/misc.ycp";
