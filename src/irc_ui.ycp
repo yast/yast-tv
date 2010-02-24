@@ -19,7 +19,7 @@ import "Service";
 import "Tv";
 import "Wizard";
 import "Wizard_hw";
-
+import "Message";
 
 include "tv/helps.ycp";
 include "tv/misc.ycp";
@@ -330,14 +330,12 @@ of kernel module descriptions...
             use_irc = (ret == `yes);
 	    if (use_irc)
 	    {
-		boolean lirc_installed = Package::Installed ("lirc");
+		boolean lirc_installed = Tv::lirc_installed;
 
-		if (!Package::InstallMsg ("lirc",
-		// popup label (install required application?)
-		_("Package 'lirc' is required for using infrared devices.
-Install it now?
-")))
+		if (!lirc_installed && !Package::InstallAll(["lirc", "lirc-remotes"]))
 		{
+		    Report::Error(Message::FailedToInstallPackages());
+
 		    use_irc = false;
 		    UI::ChangeWidget (`id(`rd), `CurrentButton, `no);
 		}
@@ -347,6 +345,9 @@ Install it now?
 		    {
 			// the package has been just installed - make ini-agent reread the config file
 			SCR::UnmountAgent(.sysconfig.lirc);
+
+			// read IRC settings
+			Tv::ReadIRC();
 		    }
 		}
 	    }

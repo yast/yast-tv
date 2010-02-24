@@ -1,3 +1,10 @@
+-------------------------------------------------------------------
+Wed Feb 24 14:50:23 UTC 2010 - lslezak@suse.cz
+
+- don't display an error popup when lirc is not installed,
+  install it when needed (bnc#578406)
+- 2.19.2
+
 ------------------------------------------------------------------
 Thu Jan 14 14:43:01 UTC 2010 - lslezak@suse.cz
 

@@ -283,6 +283,8 @@
     // confirm installation of extra packages
     boolean confirm_packages = true;
 
+    global boolean lirc_installed = false;
+
     // ------------------- function prototypes for include files:
 
     global define boolean IsDirty ();
@@ -3134,6 +3136,14 @@ to %1."), "/etc/modprobe.d/50-tv.conf"));
  */
 global define any ReadIRC () ``{
 
+    if (!Package::InstalledAll(["lirc", "lirc-remotes"]))
+    {
+	y2warning("lirc and lirc-remotes are missing, not reading LIRC config");
+	return `next;
+    }
+
+    lirc_installed = true;
+
     cards_with_ir_kbd_gpio = (map)
 	SCR::Read (.target.yast2, "tv_cards-lirc_gpio.ycp");
 
@@ -3177,6 +3187,12 @@ global define any ReadIRC () ``{
  * @return Symbol for next or abort dialog.
  */
 global define any WriteIRC () ``{
+
+    if (!lirc_installed)
+    {
+	y2warning("lirc is not installed, not writing lirc config");
+	return `next;
+    }
 
     if (SCR::Read(.target.size, "/etc/sysconfig/lirc") >= 0)
     {
