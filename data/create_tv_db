@@ -23,7 +23,7 @@ $ivtv_cardlist_fname = $ARGV[3];
 # Names to translate
 %clean_names =
     (
-    	"*** UNKNOWN/GENERIC ***" => " // Item text in the list of cards\n\t\t\t_(\"Unknown bttv Card\")",
+    	"*** UNKNOWN/GENERIC ***" => " // Item text in the list of cards\n\t\t\t_(\"Unknown card (driver bttv)\")",
     	"Askey CPH05X/06X (bt878) [many vendors]" => "\"CPH05X/06X (bt878)\"",
     	"Flyvideo 98EZ (capture only)" => " // Item text in the cards list (translate \"capture only\")\n\t\t\t\t\t_(\"FlyVideo 98EZ (capture only)\")",
     );
@@ -114,7 +114,7 @@ sub ReadDatabase
 
 	    if ($card_name eq "\"UNKNOWN/GENERIC\"")
 	    {
-		$card_name = " // Item text in the list of cards\n\t\t\t_(\"Unknown $driver Card\")";
+		$card_name = " // Item text in the list of cards\n\t\t\t_(\"Unknown card (driver $driver)\")";
 	    }
 
 	    $item =
