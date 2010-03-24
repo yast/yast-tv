@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Mar 24 08:22:27 UTC 2010 - lslezak@suse.cz
+
+- make some generated strings translatable (bnc#583240)
+- 2.19.3
+
+-------------------------------------------------------------------
 Wed Feb 24 14:50:23 UTC 2010 - lslezak@suse.cz
 
 - don't display an error popup when lirc is not installed,
