@@ -127,5 +127,13 @@ define void ErrorWithDetails (string error, string details) ``{
 // (see bnc#371289, esp. comment #6)
 string no_tuner = _("No tuner");
 
+// table item for all other card vendors (bnc#583240)
+string other_vendors = _("Other vendors");
+// unknown/generic card using 'bttv' driver
+string unknown_bttv_card = _("Unknown card (driver bttv)");
+// unknown/generic card using 'cx88xx' driver
+string unknown_cx88xx_card = _("Unknown card (driver cx88xx)");
+// unknown/generic card using 'saa7134' driver
+string unknown_saa7134_card = _("Unknown card (driver saa7134)");
 /* EOF */
 }
