@@ -8,6 +8,8 @@
 # $4 - the CARDLIST.ivtv source file
 # $5 - the CARDLIST.em28xx source file
 # $6 - the CARDLIST.cx23885 source file
+# $7 - the CARDLIST.saa7164 source file
+# $8 - the CARDLIST.au0828 source file
 # ...more to come...
 
 if ($#ARGV < 1)
@@ -22,6 +24,8 @@ $cx88_cardlist_fname = $ARGV[2];
 $ivtv_cardlist_fname = $ARGV[3];
 $em28xx_cardlist_fname = $ARGV[4];
 $cx23885_cardlist_fname = $ARGV[5];
+$saa7164_cardlist_fname = $ARGV[6];
+$au0828_cardlist_fname = $ARGV[7];
 # ... more to come ...
 
 # Names to translate
@@ -113,6 +117,12 @@ sub ReadDatabase
 		{
 		    $card_name = $1;
 		}
+		
+		if ($card_name =~ /^(.*\S)\s*\((em|au).*\)$/)
+		{
+		    $card_name = $1;
+		}
+
 		$card_name = "\"$card_name\"";
 	    }
 
@@ -141,7 +151,7 @@ sub ReadDatabase
 
 print "/* YaST2 TV cards database\n";
 print " *\n";
-print " * Generated ".qx(date);
+print " * Generated at ".qx(LC_ALL=C date);
 print " * From: @ARGV\n";
 print " */";
 print "\n";
@@ -158,6 +168,8 @@ push @cards, ReadDatabase($cx88_cardlist_fname, "cx88xx");
 push @cards, ReadDatabase($ivtv_cardlist_fname, "ivtv");
 push @cards, ReadDatabase($em28xx_cardlist_fname, "em28xx");
 push @cards, ReadDatabase($cx23885_cardlist_fname, "cx23885");
+push @cards, ReadDatabase($saa7164_cardlist_fname, "saa7164");
+push @cards, ReadDatabase($au0828_cardlist_fname, "au0828");
 #...more to come...
 
 # Sort @cards

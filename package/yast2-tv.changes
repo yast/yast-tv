@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Wed Mar  9 14:36:04 UTC 2011 - lslezak@suse.cz
+
+- updated TV card database
+- 2.21.0
+
+-------------------------------------------------------------------
 Wed Mar 24 08:22:27 UTC 2010 - lslezak@suse.cz
 
 - make some generated strings translatable (bnc#583240)
