@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Fri Aug  5 12:35:41 CEST 2011 - tgoettlicher@suse.de
+
+- fixed .desktop file (bnc #681249)
+
+-------------------------------------------------------------------
 Wed Mar  9 14:36:04 UTC 2011 - lslezak@suse.cz
 
 - updated TV card database
