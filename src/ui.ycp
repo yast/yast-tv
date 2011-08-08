@@ -308,11 +308,9 @@ define map ChooseTuner(string kernel_module, map selected_tuner) ``{
 			    _("&Tuner"),
 			    Tv::TunersDBAsItems (kernel_module, selected_tuner)),
 	      `VSpacing(0.3),
-	      `HBox(`HStretch(),
+	      `ButtonBox(
 		    `PushButton(`id(`ok), Label::OKButton()),
-		    `HSpacing(2),
-		    `PushButton(`id(`cancel), Label::CancelButton()),
-		    `HStretch()
+		    `PushButton(`id(`cancel), Label::CancelButton())
 	      )
 	);
 
@@ -1191,7 +1189,7 @@ define list ChannelsScanPopup (string norm, string freq) ``{
         `VSpacing(0.5),
         `LogView (`id (`scantv), "", 10, 0),
         `VSpacing(0.5),
-	`HBox (
+	`ButtonBox(
 	    `PushButton(`id(`ok), Label::OKButton()),
 	    `PushButton(`id(`cancel), Label::CancelButton())
 	),
@@ -1313,7 +1311,7 @@ define term StationPopup (string channel, string station, list items) ``{
 		`TextEntry (`id (`station), _("Station &Name"), station)
 	    ),
 	    `VSpacing(0.5),
-	    `HBox(
+	    `ButtonBox(
 		`PushButton(`id(`ok),`opt(`default),Label::OKButton()),
 		`PushButton(`id(`cancel), Label::CancelButton())
 	    ),
