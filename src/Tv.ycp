@@ -1048,12 +1048,9 @@ press Continue to install the firmware.
 		`HSpacing(2)
 	    ),
 	    `VSpacing(1.5),
-	    `HBox(
-		`HStretch(),
-		`HWeight(1, `PushButton(`id(`cont), `opt(`default), Label::ContinueButton())),
-		`HSpacing(2),
-		`HWeight(1, `PushButton(`id(`cancel), Label::CancelButton())),
-		`HStretch()
+	    `ButtonBox(
+		`PushButton(`id(`cont), `opt(`default), Label::ContinueButton()),
+		`PushButton(`id(`cancel), Label::CancelButton())
 	    ),
 	    `VSpacing(0.5)
 	);
