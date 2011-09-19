@@ -21,7 +21,7 @@ import "String";
 import "Summary";
 import "Tv";
 import "Wizard";
-import "Wizard_hw";
+import "UIHelper";
 import "WizardHW";
 import "Mode";
 
@@ -315,7 +315,7 @@ define map ChooseTuner(string kernel_module, map selected_tuner) ``{
 	);
 
     UI::OpenDialog (
-	Wizard_hw::SizeAtLeast (contents, 40.0, 10.0)
+	UIHelper::SizeAtLeast (contents, 40.0, 10.0)
     );
 
     any ret = nil;
@@ -614,7 +614,7 @@ define any ManualDetailsDialog(boolean allow_changeoftype, integer index) ``{
     if (Tv::kernel_modules == nil)
     {
 	UI::OpenDialog (
-	    Wizard_hw::SpacingAround (
+	    UIHelper::SpacingAround (
         // Busy popup text (waiting for other action):
 		`Label(_("Getting list
 of available kernel modules...")),
