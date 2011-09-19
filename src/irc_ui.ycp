@@ -18,7 +18,7 @@ import "Package";
 import "Service";
 import "Tv";
 import "Wizard";
-import "Wizard_hw";
+import "UIHelper";
 import "Message";
 import "Report";
 
@@ -305,7 +305,7 @@ define any IRCDialog (boolean alone) ``{
 		if (Tv::irc_modules == $[])
 		{
 		    UI::OpenDialog (
-			Wizard_hw::SpacingAround (
+			UIHelper::SpacingAround (
 			    // busy popup text (waiting for other action):
 			    `Label(_("Retrieving list
 of kernel module descriptions...

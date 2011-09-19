@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Mon Sep 19 09:09:21 CEST 2011 - visnov@suse.cz
+
+- remove dependency on Wizard_hw 
+
+-------------------------------------------------------------------
 Mon Aug  8 12:12:51 UTC 2011 - lslezak@suse.cz
 
 - use ButtonBox for push button widgets (bnc#701273)
