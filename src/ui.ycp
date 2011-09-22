@@ -92,7 +92,7 @@ define void SetItems() {
     y2debug("items: %1", items);
 
     WizardHW::SetContents(items);
-    Wizard::SetDesktopIcon("tv");
+    Wizard::SetDesktopTitleAndIcon("tv");
 }
 
 
@@ -1896,7 +1896,7 @@ define any TvSequence () ``{
     ];
 
     Wizard::CreateDialog ();
-    Wizard::SetDesktopIcon("tv");
+    Wizard::SetDesktopTitleAndIcon("tv");
     any ret = Sequencer::Run (aliases, sequence);
     UI::CloseDialog ();
 
