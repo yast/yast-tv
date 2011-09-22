@@ -21,6 +21,7 @@
 
     Wizard::CreateDialog();
     Wizard::SetDesktopIcon("tv"); //FIXME need irc icon
+    Wizard::SetDialogTitle(_("IRC")); //FIXME need irc icon
 
     block<boolean> callback = ``{ return UI::PollInput () == `abort;};
     Tv::Read (callback);
