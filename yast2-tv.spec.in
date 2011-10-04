@@ -16,7 +16,7 @@ Provides:	yast2-lib-hardware
 Obsoletes:	yast2-lib-hardware
 Provides:	yast2-trans-tv
 Obsoletes:	yast2-trans-tv
-PreRequires:	sed
+PreReq:		sed
 
 BuildArchitectures:	noarch
 
