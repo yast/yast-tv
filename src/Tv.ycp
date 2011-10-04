@@ -1816,9 +1816,6 @@ Use the firmware file anyway?
 	y2debug ("Writing char-major-81 (videodev) to /etc/modprobe.d/50-tv.conf");
 	SCR::Write (.modprobe_tv.alias."char-major-81", "videodev");
 
-	// fix of bug #18033: (slow initialization on some machines)
-	SCR::Write (add(.modprobe_tv.options,"i2c-algo-bit"),$["bit_test":"1"]);
-
 	// reset the old settings (all char-major-81-* aliases)
 	foreach (string alias, GetMajor81Aliases (.modprobe_tv), {
 	    SCR::Write ( add (.modprobe_tv.alias, alias) , nil);

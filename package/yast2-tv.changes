@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Tue Oct  4 13:13:35 UTC 2011 - lslezak@suse.cz
+
+- do not write "options i2c-algo-bit bit_test=1" line to 
+  /etc/modprobe.d/50-tv.conf file, remove the option during upgrade
+  (bnc#712023)
+- 2.21.4
+
+-------------------------------------------------------------------
 Thu Sep 22 14:31:32 CEST 2011 - visnov@suse.cz
 
 - Set dialog title
