@@ -16,6 +16,7 @@ Provides:	yast2-lib-hardware
 Obsoletes:	yast2-lib-hardware
 Provides:	yast2-trans-tv
 Obsoletes:	yast2-trans-tv
+PreRequires:	sed
 
 BuildArchitectures:	noarch
 
@@ -37,6 +38,12 @@ This package contains the YaST2 component for TV card configuration.
 if test -e /etc/modprobe.d/tv; then
     mv -f /etc/modprobe.d/tv /etc/modprobe.d/50-tv.conf
 fi
+
+# comment out bit_test option (bnc#712023)
+if test -e /etc/modprobe.d/50-tv.conf; then
+    sed -i -e 's/^\([ \t]*options[ \t]*i2c-algo-bit[ \t]*bit_test=1\)/# \1/' /etc/modprobe.d/50-tv.conf
+fi
+
 
 %files
 %defattr(-,root,root)
