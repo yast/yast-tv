@@ -182,11 +182,12 @@ define any HardwareDialog() ``{
 		    if (!Popup::ContinueCancel(sformat(_("Card '%1' (or its driver) is currently disabled.
 
 There might be serious reasons for this like:
-- the card is not supported by the driver
-- the driver does not work correctly with this card
-- the system may be unstable or may completely freeze
+- the card is not supported by the driver,
+- the driver does not work correctly with this card,
+- enabling the card may make the system unstable or freeze it.
 
-Really configure and enable the card?"), Tv::current_card["name"]:"")))
+Really configure and enable the card?
+"), Tv::current_card["name"]:"")))
 		    {
 			continue;
 		    }
