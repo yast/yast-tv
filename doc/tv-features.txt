@@ -1,4 +1,4 @@
-Fetures of a new YaST2 module
+Fetures of a the YaST2 module
 =============================
 
 Name: YaST2 TV configurator
@@ -7,14 +7,12 @@ Purpose:
 ~~~~~~~~
 Configure the TV card using autodetection or manual configuration.
 
-Possible additional features:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Additional features:
+~~~~~~~~~~~~~~~~~~~~
 - provide a database of cards for manual configuration.
 - configure the volume of the soundcard, if the TV card's output is connected
-  to the soundcard (ask user about it). Configure the sondcard entirely
+  to the soundcard (ask user about it). Configure the soundcard entirely
   if it is not configured yet.
 - support more cards in one computer
+- scan for the channels (only analog broadcasting)
 
-- scan for the channels
-  - will not be implemented, this is application dependent.
-    kwintv provides quite good wizard for this task.
