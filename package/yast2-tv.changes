@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Wed Jul 24 13:10:26 UTC 2013 - lslezak@suse.cz
+
+- removed obsoleted screenshots, save some space
+- updated the documentation
+- created devel-doc subpackage with development documentation
+- 2.24.0
+
+-------------------------------------------------------------------
 Thu Mar 29 16:15:57 CEST 2012 - jsuchome@suse.cz
 
 - merged proofread texts 
