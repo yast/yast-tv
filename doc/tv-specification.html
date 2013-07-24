@@ -7,27 +7,6 @@
 
 <H1>TV card configuration</H1>
 
-<P>
-<I>Author: Jan Holesovsky
-&lt;<A HREF="mailto:kendy@suse.cz">kendy@suse.cz</A>&gt;,
-based on e-mails with Gerd Knorr
-&lt;<A HREF="mailto:kraxel@suse.de">kraxel@suse.de</A>&gt;</I>
-</P>
-
-<P>
-Changes:
-</P>
-
-<UL>
-  <LI><B>2002-08-28:</B> Updated documentation.
-  <LI><B>2001-07-17:</B> Added [Select tuner] to the Manual dialog.
-                         Changed the Manual selection: Details screen.
-  <LI><B>2001-07-12:</B> Details dialog, overview of the dialogs.
-  <LI><B>2001-07-11:</B> Manual and Overview dialogs. Dialogs cleanup.
-  <LI><B>2001-07-10:</B> Detected and Audio dialogs.
-  <LI><B>2001-07-09:</B> Initial.
-</UL>
-
 <DL>
 
 <DT>
@@ -40,17 +19,9 @@ The documentation about the
 <A HREF="file:/usr/src/linux/Documentation/video4linux">kernel modules for video</A>.
 </P>
 
-<P>
-A <A HREF="modinfo-video.txt">list</A> of the
-<TT>kernel/drivers/media/video</TT> modules parameters
-(generated using <TT>modinfo</TT>).
-</P>
 
 <P>
 <A HREF="http://bytesex.org/bttv">BTTV homepage</A>,
-<A HREF="http://www.ibiblio.org/pub/Linux/docs/HOWTO/mini/other-formats/html_single/BTTV.html">BTTV Mini-HOWTO</A>,
-<A HREF="http://roadrunner.swansea.uk.linux.org/v4l.shtml">Video 4 Linux</A>,
-<A HREF="http://www.kwintv.org">kWinTV homepage</A>.
 </P>
 
 </DD>
@@ -136,116 +107,9 @@ the minor numbers, i.e. you can give them fixed minor numbers this way:
 <H3>Scan for the channels</H3>
 
 <P>
-This is application-dependent and will not be implemented. Theoretically,
-<TT>scantv</TT> command-line tool can be used, but it can write just
-<TT>xawtv</TT> configuration files.
-</P>
-
-<P>
-Anyway, it is not a big problem, because the recommended application
-(<TT>kwintv</TT>) has a wizard for scanning the channels.
-</P>
-</DD>
-
-<DT>
-<H2>The workflow</H2>
-</DT>
-
-<DD>
-<H3>Overview</H3>
-
-<P>
-The module starts to the <B>TV card setup</B> (Detected, Edit configuration
-or Configure manually?) screen.
-The list contains the detected but not yet configured cards.
-There could be one more menuentry in the Control Center which starts the
-module directly in the <B>TV card overview</B> (Overview dialog).
-</P>
-
-<P>
-<A HREF="tv.dia">(source)</A>, <a href="tv.png">(image)</a>
-</P>
-<!--
-<P>
-<IMG SRC="tv.png">
-</P>
--->
-
-<H3>The first screen: Detected, Edit configuration or Configure manually?</H3>
-
-<P>
-<B>TV card</B> refers to the type of the card if the autodetection is able
-to provide it, else it is the name of the chipset.
-</P>
-
-<P>
-<A HREF="tv-detect.ui">(source)</A>
-</P>
-
-<P>
-<IMG SRC="tv-detect.png">
-</P>
-
-<H3>Manual configuration</H3>
-
-<P>
-For some bttv cards it is necessary to select tuner as well.
-<B>Select tuner</B> button opens a pup-up, where it is possible to choose
-one. A choice <B>Autodetected</B> should be present for the cards that
-do not need the tuner explicitely mentioned.
-</P>
-
-<P>
-<A HREF="tv-manual.ui">(source)</A>
-</P>
-
-<P>
-<IMG SRC="tv-manual.png">
-</P>
-
-<H3>Manual configuration: Details</H3>
-
-<P>
-There must be a warning in the helptext, that changing
-the kernel module resets the parameters.
-</P>
-
-<P>
-<A HREF="tv-manual-details.ui">(source)</A>
-</P>
-
-<P>
-<IMG SRC="tv-manual-details.png">
-</P>
-
-<H3>Is audio output connected to the sound card?</H3>
-
-<P>
-<B>TV card:</B> refers to the type of the card (from autodetection or
-the user's selection).
-</P>
-
-<P>
-<A HREF="tv-audio.ui">(source)</A>
-</P>
-
-<P>
-<IMG SRC="tv-audio.png">
-</P>
-
-<H3>The overview dialog</H3>
-
-<P>
-<B>Card name</B> refers to the type of the card (from autodetection or
-the user's selection).
-</P>
-
-<P>
-<A HREF="tv-overview.ui">(source)</A>
-</P>
-
-<P>
-<IMG SRC="tv-overview.png">
+<TT>scantv</TT> command-line tool is used, but it can write just
+<TT>xawtv</TT> configuration files. It is not a big problem, because the
+recommended application (<TT>kwintv</TT>) has a wizard for scanning the channels.
 </P>
 
 </DD>

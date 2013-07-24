@@ -6,8 +6,5 @@
 
 SUBDIRS = autodocs
 
-doc_DATA = tv-features.txt \
-    modinfo-video.txt    \
-	tv-specification.html tv.png *.ui
+dist_doc_DATA = tv-features.txt tv-specification.html
 
-EXTRA_DIST = $(doc_DATA)
