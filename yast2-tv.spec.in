@@ -20,6 +20,8 @@ PreReq:		sed
 
 BuildArchitectures:	noarch
 
+Requires:       yast2-ruby-bindings >= 1.0.0
+
 Summary:	YaST2 - TV Configuration
 
 %description
@@ -58,7 +60,7 @@ fi
 %defattr(-,root,root)
 %dir @yncludedir@/tv
 @yncludedir@/tv/*
-@clientdir@/*.ycp
+@clientdir@/*.rb
 @moduledir@/*.*
 @desktopdir@/*.desktop
 @scrconfdir@/*.scr
