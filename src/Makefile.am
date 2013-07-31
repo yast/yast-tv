@@ -1,38 +1,36 @@
-#
-# Makefile.am for tv/src
-#
-# $Id$
-#
+# Sources for tv
+
+module_DATA = \
+  modules/Tv.rb \
+  modules/ModulesComments.rb
+
+client_DATA = \
+  clients/tv_auto.rb \
+  clients/tv.rb \
+  clients/tv_proposal.rb \
+  clients/tv_write.rb \
+  clients/irc.rb
 
 yncludedir = @yncludedir@/tv
+ynclude_DATA = \
+  include/tv/irc_ui.rb \
+  include/tv/ui.rb \
+  include/tv/misc.rb \
+  include/tv/helps.rb
 
-client_DATA =			\
-	tv.ycp			\
-	tv_auto.ycp		\
-	tv_proposal.ycp		\
-	tv_write.ycp		\
-	irc.ycp
+scrconf_DATA = \
+  scrconf/cfg_lirc.scr \
+  scrconf/xawtvrc.scr \
+  scrconf/modprobe_tv.scr
 
-ynclude_DATA =			\
-	helps.ycp		\
-	misc.ycp		\
-	ui.ycp			\
-	irc_ui.ycp
+ydata_DATA = \
+  data/tv_dvbcards.ycp \
+  data/tv_dvbfirmware.ycp \
+  data/tv_cards-lirc_gpio.ycp
 
-desktop_DATA =			\
-	tv.desktop
+desktop_DATA = \
+  desktop/tv.desktop
 
-module_DATA =			\
-	Tv.ycp			\
-	ModulesComments.ycp
-
-YCPCFLAGS = -I .
-
-ycpchook = tv
-
-tv:
-	ln -s . tv
-
-EXTRA_DIST = $(client_DATA) $(desktop_DATA) $(ynclude_DATA) $(module_DATA)
+EXTRA_DIST = $(module_DATA) $(client_DATA) $(ynclude_DATA) $(scrconf_DATA) $(ydata_DATA) $(desktop_DATA)
 
 include $(top_srcdir)/Makefile.am.common
