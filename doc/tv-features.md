@@ -1,14 +1,19 @@
 Fetures of a the YaST2 module
 =============================
 
-Name: YaST2 TV configurator
-~~~~~
+Name:
+-----
+YaST2 TV configurator
+
+
 Purpose:
-~~~~~~~~
+--------
 Configure the TV card using autodetection or manual configuration.
 
+
 Additional features:
-~~~~~~~~~~~~~~~~~~~~
+--------------------
+
 - provide a database of cards for manual configuration.
 - configure the volume of the soundcard, if the TV card's output is connected
   to the soundcard (ask user about it). Configure the soundcard entirely

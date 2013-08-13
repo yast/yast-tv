@@ -6,5 +6,5 @@
 
 SUBDIRS = autodocs
 
-dist_doc_DATA = tv-features.txt tv-specification.html
+dist_doc_DATA = tv-features.md tv-specification.md
 
