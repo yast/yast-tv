@@ -64,7 +64,7 @@ fi
 @moduledir@/*.*
 @desktopdir@/*.desktop
 @scrconfdir@/*.scr
-@ydatadir@/*.ycp
+@ydatadir@/*.yml
 %dir @docdir@
 %doc @docdir@/README
 %doc @docdir@/COPYING
