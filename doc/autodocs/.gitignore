@@ -1,0 +1,7 @@
+Makefile
+Makefile.in
+.yardoc/
+*.html
+js/
+css/
+Yast/

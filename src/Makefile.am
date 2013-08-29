@@ -24,9 +24,9 @@ scrconf_DATA = \
   scrconf/modprobe_tv.scr
 
 ydata_DATA = \
-  data/tv_dvbcards.ycp \
-  data/tv_dvbfirmware.ycp \
-  data/tv_cards-lirc_gpio.ycp
+  data/tv_dvb_cards.yml \
+  data/tv_dvb_firmware.yml \
+  data/tv_lirc_gpio.yml
 
 desktop_DATA = \
   desktop/tv.desktop

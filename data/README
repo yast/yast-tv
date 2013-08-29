@@ -1,3 +1,2 @@
-Files CARDLIST.bttv, CARDLIST.cx88, CARDLIST.saa7134 and CARDLIST.tuner
-are located in /usr/src/linux/Documentation/video4linux (package kernel-sources)
-
+Files CARDLIST.* are located in /usr/src/linux/Documentation/video4linux
+in kernel-sources RPM package.

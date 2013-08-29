@@ -1,5 +1,0 @@
-Read	.target.yast2 "tv_tuners.ycp" $[]
-Return	true
-Return	true
-Read	.target.yast2 "tv_tuners.ycp" $["bttv":[$["name":"No tuner", "parameters":$["tuner":"4"]], $["name":"Alps HSBH1", "parameters":$["tuner":"9"]]]]
-Return	true

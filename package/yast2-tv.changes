@@ -1,4 +1,12 @@
 -------------------------------------------------------------------
+Fri Aug  9 12:36:03 UTC 2013 - lslezak@suse.cz
+
+- updated TV driver database (Linux kernel 3.10.1)
+- use YAML data files (instead of obsolete YCP)
+- updated documentation
+- 3.0.1
+
+-------------------------------------------------------------------
 Wed Jul 31 08:43:48 UTC 2013 - yast-devel@opensuse.org
 
 - converted from YCP to Ruby by YCP Killer
