@@ -10,6 +10,7 @@
 # Representation of the configuration of TV cards.
 # Input and output routines.
 require "yast"
+require "yaml"
 
 module Yast
   class TvClass < Module
@@ -171,7 +172,7 @@ module Yast
       @remotes = []
 
       # TV cards using irc_kbd_gpio module
-      # (matching card numbers from tv_cards.ycp)
+      # (matching card numbers from tv_cards.yml)
       @cards_with_ir_kbd_gpio = {}
 
       # id's of TV cards, using irc_kbd_gpio module
@@ -248,6 +249,10 @@ module Yast
 
       Yast.include self, "tv/misc.rb"
       Yast.include self, "sound/write_routines.rb"
+
+      # TODO FIXME: the sound include above switches the module textdomain
+      # to "sound", revert it back manually
+      textdomain "tv"
     end
 
     # ------------------- function definitions:
@@ -348,21 +353,28 @@ module Yast
     # @return [Boolean] Was the read successful?
     def ReadCardsDatabase
       if @cards_database == nil
-        @cards_database = Convert.to_list(
-          Builtins.eval(SCR.Read(path(".target.yast2"), "tv_cards.ycp"))
-        )
+        @cards_database = read_yaml_db("tv_cards.yml")
+
         if @cards_database == nil
           # Error message popup:
           Report.Error(_("Unable to read the TV card database."))
           @cards_database = []
           return false
+        else
+          # translate some entries
+          @cards_database.each do |vendor_cards|
+            vendor_cards["name"] = _("Other vendors") if vendor_cards["name"] == "Other vendors"
+            vendor_cards["cards"].each do |card|
+              # TRANSLATORS: %s is a kernel driver name like "bttv", "saa7134", "cx88", ...
+              card["name"] = _("Unknown card (driver %s)") % $1 if card["name"].match(/Unknown card \(driver (.*)\)/)
+            end
+          end
         end
       end
 
       if @firmware_database == nil
-        @firmware_database = Convert.to_map(
-          Builtins.eval(SCR.Read(path(".target.yast2"), "tv_dvbfirmware.ycp"))
-        )
+        @firmware_database = read_yaml_db("tv_dvb_firmware.yml")
+
         if @firmware_database == nil
           # Error message popup:
           Report.Error(_("Unable to read the TV card database."))
@@ -372,9 +384,7 @@ module Yast
       end
 
       if @dvb_cards_database == nil
-        @dvb_cards_database = Convert.to_list(
-          Builtins.eval(SCR.Read(path(".target.yast2"), "tv_dvbcards.ycp"))
-        )
+        @dvb_cards_database = read_yaml_db("tv_dvb_cards.yml")
 
         if @dvb_cards_database == nil
           # Error message popup:
@@ -383,7 +393,7 @@ module Yast
           return false
         end
 
-        Builtins.y2debug("DVB db: %1", @dvb_cards_database)
+        Builtins.y2milestone("DVB db size: %1", @dvb_cards_database.size)
 
         # add DVB flag to each card
         Builtins.foreach(
@@ -446,9 +456,25 @@ module Yast
     # @return [Boolean] Was the read successful?
     def ReadTunersDatabase
       if @tuners_database == nil
-        @tuners_database = Convert.to_map(
-          Builtins.eval(SCR.Read(path(".target.yast2"), "tv_tuners.ycp"))
-        )
+        @tuners_database = read_yaml_db("tv_tuners.yml")
+
+        if @tuners_database == nil
+          # Error message popup:
+          Report.Error(_("Unable to read the tuner database."))
+          @tuners_database = {}
+          return false
+        end
+
+        Builtins.y2debug("Loaded tuners database: %1 ", @tuners_database)
+
+        # translate "No Tuner" name
+        no_tuner = "No Tuner"
+        Builtins.y2milestone("Translating '%1' to '%2'", no_tuner, _("No Tuner"))
+
+        # TRANSLATORS: tuner name, "No Tuner" means the card does not have
+        # a tuner at all (can only grab from external video source)
+        @tuners_database.values.flatten.select { |t| t['name'] == no_tuner }
+          .each { |t| t["name"] = _("No Tuner") }
 
         Builtins.foreach(
           Convert.convert(
@@ -479,16 +505,6 @@ module Yast
           end
         end
       end
-      if @tuners_database == nil
-        # Error message popup:
-        Report.Error(_("Unable to read the tuner database."))
-        @tuners_database = {}
-        return false
-      end
-
-      # translate it
-      @tuners_database = Builtins.eval(@tuners_database)
-      @tuners_by_id = Builtins.eval(@tuners_by_id)
 
       true
     end
@@ -3244,9 +3260,7 @@ module Yast
 
       @lirc_installed = true
 
-      @cards_with_ir_kbd_gpio = Convert.to_map(
-        SCR.Read(path(".target.yast2"), "tv_cards-lirc_gpio.ycp")
-      )
+      @cards_with_ir_kbd_gpio = read_yaml_db("tv_lirc_gpio.yml")
 
       @use_irc = Service.Info("lirc") != {} ?
         Service.Status("lirc") == 0 :
@@ -3981,6 +3995,12 @@ module Yast
           :to   => "list <string>"
         )
       )
+    end
+
+    private
+
+    def read_yaml_db(db_file_name)
+      YAML.load_file(File.join(Directory.datadir, db_file_name)) rescue nil
     end
 
     publish :variable => :cards, :type => "list", :private => true

@@ -64,12 +64,12 @@ fi
 @moduledir@/*.*
 @desktopdir@/*.desktop
 @scrconfdir@/*.scr
-@ydatadir@/*.ycp
+@ydatadir@/*.yml
 %dir @docdir@
 %doc @docdir@/README
 %doc @docdir@/COPYING
-%doc @docdir@/tv-features.txt
+%doc @docdir@/tv-features.md
 
 %files devel-doc
 %doc @docdir@/autodocs
-%doc @docdir@/tv-specification.html
+%doc @docdir@/tv-specification.md
