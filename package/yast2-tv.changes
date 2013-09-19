@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Thu Sep 19 17:41:51 UTC 2013 - lslezak@suse.cz
+
+- do not use *.spec.in template, use *.spec file with RPM macros
+  instead
+- 3.1.0
+
+-------------------------------------------------------------------
 Fri Aug  9 12:36:03 UTC 2013 - lslezak@suse.cz
 
 - updated TV driver database (Linux kernel 3.10.1)
