@@ -1,9 +1,0 @@
-config/
-run/
-*.test/
-tmp.out.*
-tmp.err.*
-site.exp
-testsuite.log
-yast2-tv.log
-yast2-tv.sum
